@@ -129,17 +129,17 @@ For the final presentation layer, we strictly follow Kimball principles.
 
 ## 3. Source-to-Target Mapping
 
-This mapping traces the nested JSON fields from the raw YouTube Channel API response down to their final destination in the dimensional layer.
+This mapping traces the nested JSON fields from the raw YouTube Channel API response down to their final destination in the dimensional layer, flowing through the Transient Landing, Persistent Raw, and Staging layers.
 
 | Source JSON Path (API Response) | Intermediate Stage | Final Mart Destination | Target Column Name | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| `items[].id` | `landing.raw_json` -> `stg_youtube_channel_stats` | `dim_channel` / Facts | `channel_id` | Used as the natural grain across models |
-| `items[].snippet.title` | `landing.raw_json` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_title` | SCD2 tracked for renames |
-| `items[].snippet.customUrl` | `landing.raw_json` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_custom_url` | SCD2 tracked |
-| `items[].snippet.publishedAt` | `landing.raw_json` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_published_at` | Static metadata |
-| `items[].snippet.country` | `landing.raw_json` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_country` | SCD2 tracked |
-| `items[].statistics.subscriberCount` | `landing.raw_json` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_subscribers` | Cumulative total at extraction time |
+| `items[].id` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `dim_channel` / Facts | `channel_id` | Used as the natural grain across models |
+| `items[].snippet.title` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_title` | SCD2 tracked for renames |
+| `items[].snippet.customUrl` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_custom_url` | SCD2 tracked |
+| `items[].snippet.publishedAt` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_published_at` | Static metadata |
+| `items[].snippet.country` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_country` | SCD2 tracked |
+| `items[].statistics.subscriberCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_subscribers` | Cumulative total at extraction time |
 | *Calculated in Staging* | `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `daily_subscriber_growth` | `total_subscribers` today - `total_subscribers` yesterday |
-| `items[].statistics.viewCount` | `landing.raw_json` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_views` | Cumulative channel views |
-| `items[].statistics.videoCount` | `landing.raw_json` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_videos` | Cumulative video count |
+| `items[].statistics.viewCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_views` | Cumulative channel views |
+| `items[].statistics.videoCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_videos` | Cumulative video count |
 | *Hierarchy Seed File (CSV)* | `seed_channels_hierarchy` | `dim_channel` | `organization`, `team_studio`, `content_type` | Merged via static mapping |
