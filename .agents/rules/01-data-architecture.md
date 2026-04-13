@@ -2,21 +2,18 @@
 
 ## 1. Snowflake Environment Architecture
 **Database and Schema Design:**
-To maintain strict separation between workloads, the foundation will rely on entirely distinct databases for Development/Testing and Production.
+To align with the Phase 1 scope, the foundation will initially rely on a single Production database. Development and Testing environments will be introduced in future phases as the pipeline matures.
 
-*   **Production Environment:**
+*   **Production Environment (Phase 1):**
     *   Database: `YT_METRICS_PROD`
     *   Schemas:
-        *   `LANDING` (Layer 1): Transient landing area for the Python extraction script. Stores raw API responses and uses a delete/insert method for daily updates.
+        *   `LANDING` (Layer 1): Transient landing area for the Python extraction script. Stores raw API responses and uses a delete/insert method for 1-2x daily updates.
         *   `RAW` (Layer 2): Persistent historical storage layer. Stores all data including historical loads, updating existing records from the `LANDING` layer.
         *   `STAGING` (Layer 3): Processing layer where required calculations are performed and correct column formats/data types are applied.
         *   `MART` (Layer 4): Presentation layer for different visualizations (e.g., Streamlit). *Note: As the project is currently simple, these visualization models can essentially be lightweight views built directly on top of Layer 3.*
-*   **Development & Testing Environment:**
-    *   Database: `YT_METRICS_DEV` (or feature-branch specific databases like `YT_METRICS_DBT_PR_123` for CI/CD).
-    *   Schemas: Replicates the `LANDING`, `RAW`, `STAGING`, and `MART` structure, allowing engineers to test schema changes and validate models without risking production stability.
 
 **Warehouse Sizing Strategy:**
-Since the pipeline will run strictly 1x/day as a batch load, and the data volume is minimal to moderate (initially a few channels, capping at 20-30 for Version 1.0), an **X-Small (X-SMALL)** Snowflake Virtual Warehouse is mandated. This provides more than enough compute for flattening JSON and executing daily dimensional modeling while optimizing for cost efficiency.
+Since the pipeline will run 1-2 times per day as a batch load, and the data volume is minimal in Phase 1 (starting with 4 channels, expanding later), an **X-Small (X-SMALL)** Snowflake Virtual Warehouse is mandated. This provides more than enough compute for flattening JSON and executing dimensional modeling while optimizing for cost efficiency.
 
 ## 2. Data Modeling Strategy (dbt Layer)
 The hierarchical mapping of **Organization > Team > Channel** will be treated as cleanly maintained static metadata.
@@ -44,7 +41,7 @@ All dbt development must enforce strict naming conventions and quality checks:
 *   **Testing Requirements:**
     *   **Primary Keys:** Must implement strict `unique` and `not_null` tests.
     *   **Foreign Keys:** `channel_id` in fact models must pass `relationships` tests against the hierarchy dimension/seed table to catch orphaned data.
-    *   **Metrics:** Standard numerical fields (views, subscribers) must have `>= 0` value constraints.
+    *   **Metrics:** Standard numerical fields (e.g., views, likes, comments, subscribers, duration) must have `>= 0` value constraints.
 
 ## 5. Security Standards
 *   **No Hardcoded Credentials:** Under no circumstances will any API keys, Snowflake passwords, or sensitive connection strings be hardcoded into Python source code, dbt profiles, or Streamlit configurations.
