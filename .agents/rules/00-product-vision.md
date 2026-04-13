@@ -1,22 +1,48 @@
 # Product Requirements Document: YouTube Metrics Pipeline
 
-## Executive Summary
-This project is an automated data pipeline that extracts YouTube metrics for Hungarian channels via Python, processes the data in Snowflake using dbt, and visualizes the results in a Streamlit application. Built using agentic development, it aims to provide a scalable foundation for hierarchical channel analytics while maintaining cost-effective batch processing.
+## 1. Project Overview
+A hobby project focused on building an automated data pipeline to extract YouTube channel metrics via a Python script, process them in Snowflake using dbt, and visualize the data in a Streamlit application. The ultimate goal is to provide deep insights into channel and video performance.
 
-## Core Objectives
-*   **Scalable Foundation:** Establish a strong architectural base capable of scaling up to 20-30 channels in the future, seamlessly introducing new KPIs over time.
-*   **Metadata Hierarchy:** Support complex organizational structures by accurately storing and separating data across an Organization > Team > Channel hierarchy.
-*   **Cost Efficiency:** Run the automated processing pipeline strictly once a day to minimize operational and compute costs while ensuring daily reporting.
-*   **Environment Management:** Implement strictly separated environments for development/testing and production workloads.
-*   **Historical Data Onboarding:** Design the system with a clear, robust mechanism for onboarding and backfilling historical video and channel data.
+## 2. Infrastructure & Environments
+*   **Environment:** Initially, only **1 environment (PROD)** will be used to build the foundational architecture and onboard the first set of channels.
 
-## In-Scope Features (Version 1.0)
-*   **Data Extraction & Processing:** A Python script to extract limited key metrics (specifically number of views on videos and subscriber counts) for a small, initial subset of Hungarian YouTube channels, pushed to Snowflake and mapped via dbt.
-*   **Visualization (Streamlit):** A clean, premium dark-themed dashboard.
-*   **Core Dashboard Metrics:** Visualizations specifically highlighting *daily subscriber growth* and *average views per video*.
-*   **Basic Scheduling:** A daily execution trigger for the pipeline.
+## 3. Scope & Phasing
+### Phase 1: The Base (Fókusz Stúdió)
+*   **Target Channels (4):**
+    *   [Fókusz Csoport](https://www.youtube.com/@fokuszcsoport)
+    *   [Jólvanezígy](https://www.youtube.com/@jolvanezigy)
+    *   [Kókusz Plusz](https://www.youtube.com/@KokuszPlusz)
+    *   [Világjegy Csatorna](https://www.youtube.com/@vilagjegycsatorna)
 
-## Out of Scope (Version 1.0)
-*   **Extended Metrics:** Extraction of comments, detailed video-level engagement, and full total/daily subscription change logs (beyond the core dashboard requirements).
-*   **Broad Scale Rollout:** Inclusion of the full 20-30 channel roster; V1.0 remains scoped strictly to the initial test channels.
-*   **Intraday Refresh:** Running the pipeline more than once a day (e.g., twice daily or real-time streaming).
+*   **Organizational Hierarchy:**
+    *   These initial channels are managed by **Fókusz Stúdió**.
+    *   Fókusz Stúdió is a member of the broader organization, **Cérnagyár**.
+
+### Phase 2: Future Expansion
+*   **Cérnagyár Expansion:** Onboarding many other content creators and channels housed under Cérnagyár.
+*   **External Expansion:** Onboarding channels outside of Cérnagyár across various content types (e.g., cars, news, kitchen, etc.).
+
+## 4. Technical Requirements
+
+### 4.1 Master Data Management
+*   **Static Channel Metadata Table:** A dedicated static table (dimension table) must be created to store organizational metadata for all onboarded channels. Attributes should include, but are not limited to:
+    *   Organization (e.g., Cérnagyár)
+    *   Team/Studio (e.g., Fókusz Stúdió)
+    *   Channel Name / ID
+    *   Content Type / Niche
+
+### 4.2 Data Ingestion & Refresh Strategy
+*   **Historical Load:** Full extraction and onboarding of all historical data for newly added channels initially.
+*   **Ongoing Updates:** Incremental daily updates running **1-2 times per day** to capture the latest metrics.
+
+### 4.3 Metrics to Collect
+*   **Video-Level Data:**
+    *   Video length/duration
+    *   Number of views
+    *   Number of likes
+    *   Number of comments
+*   **Channel-Level Data:**
+    *   Number of subscribers
+
+## 5. Visualization Layer
+*   A **Streamlit application** will be built as the presentation layer to generate and explore insights from the collected metrics transformed via dbt.
