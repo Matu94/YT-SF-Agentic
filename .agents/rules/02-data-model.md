@@ -137,24 +137,24 @@ This mapping traces the nested JSON fields from the raw YouTube Channel API resp
 
 | Source JSON Path (API Response) | Intermediate Stage | Final Mart Destination | Target Column Name | Notes |
 | :--- | :--- | :--- | :--- | :--- |
-| `items[].id` | `landing.raw_json` -> `stg_youtube_channel_stats` | `dim_channel` / Facts | `channel_id` | Used as the natural grain across models |
-| `items[].snippet.title` | `landing.raw_json` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_title` | SCD2 tracked for renames |
-| `items[].snippet.customUrl` | `landing.raw_json` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_custom_url` | SCD2 tracked |
-| `items[].snippet.publishedAt` | `landing.raw_json` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_published_at` | Static metadata |
-| `items[].snippet.country` | `landing.raw_json` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_country` | SCD2 tracked |
-| `items[].statistics.subscriberCount` | `landing.raw_json` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_subscribers` | Cumulative total at extraction time |
+| `items[].id` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `dim_channel` / Facts | `channel_id` | Used as the natural grain across models |
+| `items[].snippet.title` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_title` | SCD2 tracked for renames |
+| `items[].snippet.customUrl` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_custom_url` | SCD2 tracked |
+| `items[].snippet.publishedAt` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_published_at` | Static metadata |
+| `items[].snippet.country` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `dim_channel` | `channel_country` | SCD2 tracked |
+| `items[].statistics.subscriberCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_subscribers` | Cumulative total at extraction time |
 | *Calculated in Staging* | `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `daily_subscriber_growth` | `total_subscribers` today - `total_subscribers` yesterday |
-| `items[].statistics.viewCount` | `landing.raw_json` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_views` | Cumulative channel views |
-| `items[].statistics.videoCount` | `landing.raw_json` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_videos` | Cumulative video count |
+| `items[].statistics.viewCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_views` | Cumulative channel views |
+| `items[].statistics.videoCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_videos` | Cumulative video count |
 | *Hierarchy Seed File (CSV)* | `seed_channels_hierarchy` | `dim_channel` | `organization`, `team_studio`, `content_type` | Merged via static mapping |
-| `items[].id` (Video API) | `landing.raw_json` -> `stg_youtube_video_stats` | `dim_video` / Facts | `video_id` | Used as the natural grain for videos |
-| `items[].snippet.channelId` | `landing.raw_json` -> `stg_youtube_video_stats` | `dim_video` / Facts | `channel_id` | Foreign key mapping to channel |
-| `items[].snippet.title` | `landing.raw_json` -> `stg_youtube_video_stats` | `dim_video` | `video_title` | Static metadata |
-| `items[].contentDetails.duration`| `landing.raw_json` -> `stg_youtube_video_stats` | `dim_video` | `duration_seconds` | Requires ISO 8601 parsing in staging |
-| `items[].snippet.publishedAt` | `landing.raw_json` -> `stg_youtube_video_stats` | `dim_video` | `published_at` | Static metadata |
-| `items[].statistics.viewCount` | `landing.raw_json` -> `stg_youtube_video_stats` | `fct_daily_video_metrics`| `total_views` | Cumulative video views |
-| `items[].statistics.likeCount` | `landing.raw_json` -> `stg_youtube_video_stats` | `fct_daily_video_metrics`| `total_likes` | Cumulative video likes |
-| `items[].statistics.commentCount`| `landing.raw_json` -> `stg_youtube_video_stats` | `fct_daily_video_metrics`| `total_comments` | Cumulative video comments |
+| `items[].id` (Video API) | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` / Facts | `video_id` | Used as the natural grain for videos |
+| `items[].snippet.channelId` | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` / Facts | `channel_id` | Foreign key mapping to channel |
+| `items[].snippet.title` | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` | `video_title` | Static metadata |
+| `items[].contentDetails.duration`| `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` | `duration_seconds` | Requires ISO 8601 parsing in staging |
+| `items[].snippet.publishedAt` | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` | `published_at` | Static metadata |
+| `items[].statistics.viewCount` | `landing` -> `raw` -> `stg_youtube_video_stats` | `fct_daily_video_metrics`| `total_views` | Cumulative video views |
+| `items[].statistics.likeCount` | `landing` -> `raw` -> `stg_youtube_video_stats` | `fct_daily_video_metrics`| `total_likes` | Cumulative video likes |
+| `items[].statistics.commentCount`| `landing` -> `raw` -> `stg_youtube_video_stats` | `fct_daily_video_metrics`| `total_comments` | Cumulative video comments |
 | *Calculated in Staging* | `stg_youtube_video_stats` | `fct_daily_video_metrics`| `daily_views` | `total_views` today - yesterday |
 | *Calculated in Staging* | `stg_youtube_video_stats` | `fct_daily_video_metrics`| `daily_likes` | `total_likes` today - yesterday |
 | *Calculated in Staging* | `stg_youtube_video_stats` | `fct_daily_video_metrics`| `daily_comments` | `total_comments` today - yesterday |
