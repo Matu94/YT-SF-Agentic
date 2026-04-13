@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # Product Requirements Document: YouTube Metrics Pipeline
 
 ## 1. Project Overview
@@ -27,7 +31,7 @@ A hobby project focused on building an automated data pipeline to extract YouTub
 ### 4.1 Master Data Management
 *   **Static Channel Metadata Table:** A dedicated static table (dimension table) must be created to store organizational metadata for all onboarded channels. Attributes should include, but are not limited to:
     *   Organization (e.g., Cérnagyár)
-    *   Team/Studio (e.g., Fókusz Stúdió)
+    *   Team/Studio/Creator (e.g., Fókusz Stúdió)
     *   Channel Name / ID
     *   Content Type / Niche
 
