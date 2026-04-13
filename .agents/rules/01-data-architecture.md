@@ -16,15 +16,22 @@ To align with the Phase 1 scope, the foundation will initially rely on a single 
 Since the pipeline will run 1-2 times per day as a batch load, and the data volume is minimal in Phase 1 (starting with 4 channels, expanding later), an **X-Small (X-SMALL)** Snowflake Virtual Warehouse is mandated. This provides more than enough compute for flattening JSON and executing dimensional modeling while optimizing for cost efficiency.
 
 ## 2. Data Modeling Strategy (dbt Layer)
-The hierarchical mapping of **Organization > Team > Channel** will be treated as cleanly maintained static metadata.
+The pipeline will adopt a Kimball Dimensional Modeling approach (Star Schema) in the presentation layer.
 
-*   **Hierarchy Ingestion:** Maintain a `channels_hierarchy.csv` in the `seeds/` directory of the dbt project. This seed maps `channel_id` to its respective `channel_name`, `team_name`, and `organization_name`.
-*   **Data Flow & Joins:**
-    1.  dbt materialize this CSV into Snowflake as a static table (e.g., `seed_channels_hierarchy`).
-    2.  The Python extraction script pushes raw API JSON data into transient tables in the `LANDING` schema using delete/insert logic.
-    3.  dbt merges new data from `LANDING` into the `RAW` schema, preserving historical entries and updating changed records.
-    4.  The `STAGING` layer standardizes column formats, executes required calculations, and deduplicates the persistent raw data.
-    5.  In the `MART` visualization layer, fact models join the clean `STAGING` metrics against the `seed_channels_hierarchy` to support smooth aggregation in the BI layer.
+*   **Dimensional Modeling (MART Layer):**
+    *   **Dimensions (Context):**
+        *   `dim_channel`: Tracks changing channel metadata (e.g., title, description, organizational hierarchy). Implemented as a **Slowly Changing Dimension (SCD) Type 2** using **dbt Snapshots** to automatically track `valid_from` and `valid_to` history.
+        *   `dim_video`: Captures video-level static data (duration, title, publish date).
+        *   `dim_date`: Standard date dimension for Streamlit BI filtering.
+    *   **Facts (Metrics):**
+        *   `fct_daily_channel_metrics`: Captures channel-level metrics (e.g., total subscribers and calculated daily subscriber growth).
+        *   `fct_daily_video_metrics`: Captures video-level engagement (e.g., views, likes, comments).
+
+*   **Data Flow & Processing Logic:**
+    1.  **Hierarchy Integration:** Organizational mapping (Organization > Team) is maintained via a `channels_hierarchy.csv` seed in dbt.
+    2.  **Landing & Raw:** Python extracts push cumulative API metrics into `LANDING` transient tables. dbt merges this into the persistent `RAW` history.
+    3.  **Staging (The Delta Calculation):** Because the YouTube API provides cumulative lifetime totals, the `STAGING` layer takes on the heavy lifting of calculating daily discrete performance. It will use window functions (e.g., `LAG()`) over the recorded `RAW` history to calculate daily deltas (e.g., `Today - Yesterday = Daily Growth`).
+    4.  **Mart Aggregation:** In the `MART` layer, fact models join the clean `STAGING` metrics against the active SCD `dim_channel` records to feed the Streamlit dashboards efficiently.
 
 ## 3. Historical Backfill Mechanism
 To safely onboard historical video and channel data as requested in the PRD:

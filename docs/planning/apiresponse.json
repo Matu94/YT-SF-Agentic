@@ -1,0 +1,44 @@
+{
+    "kind": "youtube#channelListResponse",
+    "etag": "Y_q3_mock_etag_8f7d6",
+    "pageInfo": {
+        "totalResults": 1,
+        "resultsPerPage": 5
+    },
+    "items": [
+        {
+            "kind": "youtube#channel",
+            "etag": "mock_item_etag_1a2b3c",
+            "id": "UC_mock_jolvanezigy_id",
+            "snippet": {
+                "title": "Jólvanezígy",
+                "description": "Közélet, hírek, és beszélgetés minden hétköznap.",
+                "customUrl": "@jolvanez",
+                "publishedAt": "2022-05-10T08:00:00Z",
+                "thumbnails": {
+                    "default": {
+                        "url": "https://yt3.ggpht.com/mock_url_default",
+                        "width": 88,
+                        "height": 88
+                    },
+                    "high": {
+                        "url": "https://yt3.ggpht.com/mock_url_high",
+                        "width": 800,
+                        "height": 800
+                    }
+                },
+                "localized": {
+                    "title": "Jólvanezígy",
+                    "description": "Közélet, hírek, és beszélgetés minden hétköznap."
+                },
+                "country": "HU"
+            },
+            "statistics": {
+                "viewCount": "145230890",
+                "subscriberCount": "178000",
+                "hiddenSubscriberCount": false,
+                "videoCount": "642"
+            }
+        }
+    ]
+}
