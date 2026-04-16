@@ -1,21 +1,49 @@
-USE ROLE SYSADMIN;
+USE ROLE ACCOUNTADMIN;
 
--- 1. Create the database
-CREATE DATABASE IF NOT EXISTS YT_SF_PROD
-  COMMENT = 'Production database for YouTube Metrics pipeline';
+-- 0. Create Resource Monitors to cap spending
+-- Note: 5 Euros is roughly equivalent to 2 Snowflake Credits (depending on your tier)
+CREATE RESOURCE MONITOR IF NOT EXISTS YT_SF_CICD_RM
+  WITH CREDIT_QUOTA = 5
+  FREQUENCY = MONTHLY
+  START_TIMESTAMP = IMMEDIATELY
+  TRIGGERS 
+    ON 80 PERCENT DO NOTIFY
+    ON 100 PERCENT DO SUSPEND
+    ON 110 PERCENT DO SUSPEND_IMMEDIATE;
 
--- 2. Create Warehouses
+CREATE RESOURCE MONITOR IF NOT EXISTS YT_SF_TRANSFORM_RM
+  WITH CREDIT_QUOTA = 5
+  FREQUENCY = MONTHLY
+  START_TIMESTAMP = IMMEDIATELY
+  TRIGGERS 
+    ON 80 PERCENT DO NOTIFY
+    ON 100 PERCENT DO SUSPEND
+    ON 110 PERCENT DO SUSPEND_IMMEDIATE;
+
+-- 1. Create Warehouses under ACCOUNTADMIN so we can natively assign the monitors
 CREATE WAREHOUSE IF NOT EXISTS YT_SF_CICD_WH
   WAREHOUSE_SIZE = 'XSMALL'
   AUTO_SUSPEND = 60
   AUTO_RESUME = TRUE
+  RESOURCE_MONITOR = YT_SF_CICD_RM
   COMMENT = 'Warehouse for CI/CD ingestion and deployment';
 
 CREATE WAREHOUSE IF NOT EXISTS YT_SF_TRANSFORM_WH
   WAREHOUSE_SIZE = 'XSMALL'
   AUTO_SUSPEND = 60
   AUTO_RESUME = TRUE
+  RESOURCE_MONITOR = YT_SF_TRANSFORM_RM
   COMMENT = 'Warehouse for transformation, dbt, and manual queries';
+
+-- Transfer ownership immediately back to Sysadmin (it will later be moved to Admin role in grants step)
+GRANT OWNERSHIP ON WAREHOUSE YT_SF_CICD_WH TO ROLE SYSADMIN REVOKE CURRENT GRANTS;
+GRANT OWNERSHIP ON WAREHOUSE YT_SF_TRANSFORM_WH TO ROLE SYSADMIN REVOKE CURRENT GRANTS;
+
+USE ROLE SYSADMIN;
+
+-- 2. Create the database
+CREATE DATABASE IF NOT EXISTS YT_SF_PROD
+  COMMENT = 'Production database for YouTube Metrics pipeline';
 
 -- 3. Create Managed Access Schemas
 -- Creating WITH MANAGED ACCESS ensures that whoever owns the schema centrally manages permissions
