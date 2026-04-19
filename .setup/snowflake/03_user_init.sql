@@ -16,6 +16,14 @@ CREATE USER IF NOT EXISTS YT_SF_DBT_USER
 
 GRANT ROLE YT_SF_TRANSFORM_ROLE TO USER YT_SF_DBT_USER;
 
+-- 3. Create a user for Python data ingestion process
+CREATE USER IF NOT EXISTS YT_SF_LOAD_USER
+  DEFAULT_ROLE = YT_SF_LOAD_ROLE
+  DEFAULT_WAREHOUSE = YT_SF_CICD_WH -- the load script shares the pipeline warehouse
+  MUST_CHANGE_PASSWORD = FALSE;
+
+GRANT ROLE YT_SF_LOAD_ROLE TO USER YT_SF_LOAD_USER;
+
 /* Keypair Auth Setup:
 using OpenSSL on your local machine. Run these commands in your bash terminal:
 

@@ -21,7 +21,7 @@ All schemas are created `WITH MANAGED ACCESS`. This means object privileges are 
 
 Operations are split across dedicated warehouses to allow for workload isolation without encountering concurrency bottlenecks.
 
-* **`YT_SF_CICD_WH`**: Used strictly for the CI/CD pipeline (extracting/loading data via Python, deploying infrastructure). 
+* **`YT_SF_CICD_WH`**: Shared by CI/CD orchestrated deployments and automated data ingestion scripts.
 * **`YT_SF_TRANSFORM_WH`**: Used for data transformations using dbt, as well as manual querying and analytical processes.
 
 ### Cost Controls (Resource Monitors)
@@ -32,32 +32,48 @@ Both warehouses are strictly configured to prevent runaway costs:
     * At 80% usage, an alert constraint triggers. 
     * At 100% usage, the warehouses are hard-suspended to prevent further billing.
 
+---
+
 ## 3. Security & RBAC Model
 
-The environment utilizes a custom Role-Based Access Control hierarchy, scaling strictly on the principles of least privilege.
+The environment utilizes a modern two-tier Role-Based Access Control hierarchy, leveraging underlying "Object Roles" mapped upwards into broader "Functional Roles".
 
-### Roles and Duties
+### 3.1 Schema Object Roles
+For every schema (`LANDING`, `RAW`, `STAGING`, `MART`), three distinct access profiles reside underneath the hood:
+- **`_SR` (Schema Read)**: Grants `USAGE`, `SELECT`, and `READ` on all existing/future objects.
+- **`_SW` (Schema Write)**: Inherits `_SR`, and adds `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, and `WRITE`.
+- **`_SFULL` (Schema Full)**: Inherits `_SW`, and adds `CREATE TABLE/VIEW` capability as well as `OWNERSHIP`.
+
+### 3.2 Functional Roles (Users are assigned here)
+The underlying Schema Object Roles are then distributed to the following Functional profiles based strictly on the principles of least privilege:
+
 1. **`YT_SF_ADMIN_ROLE`** 
     * ***Purpose:*** System governance and top-level administration. 
-    * ***Grants:*** Owns `YT_SF_PROD` and all 4 Managed Access Schemas. Owns both Virtual Warehouses.
+    * ***Grants:*** Mapped to `_SFULL` everywhere. Owns the database, all schemas, and warehouses.
 2. **`YT_SF_CICD_ROLE`**
-    * ***Purpose:*** CI/CD deployer and raw ingestion engine.
-    * ***Grants:*** Has broad Create, Modify, and Select permissions universally across all schemas (`LANDING`, `RAW`, `STAGING`, `MART`). This permits CI/CD tools like GitHub Actions to deploy views, tasks, dynamic tables, pipelines, and Streamlit apps anywhere in the database.
-3. **`YT_SF_TRANSFORM_ROLE`**
-    * ***Purpose:*** Business logic execution (typically dbt) and manual querying.
-    * ***Grants:*** Read-only access to `RAW`. Full read/write and object creation capabilities in `STAGING` and `MART`.
+    * ***Purpose:*** CI/CD deployment orchestrator.
+    * ***Grants:*** Mapped to `_SFULL` everywhere. This permits tools like GitHub Actions to automate migrations and drop/create assets universally across all layers.
+3. **`YT_SF_LOAD_ROLE`**
+    * ***Purpose:*** Python pipeline extraction tasks.
+    * ***Grants:*** Mapped to `_SFULL` on `LANDING` (to create transient landing caches) and `_SW` on `RAW` (to UPSERT into history).
+4. **`YT_SF_TRANSFORM_ROLE`**
+    * ***Purpose:*** Data Build Tool (dbt) processing and manual querying.
+    * ***Grants:*** Restrained to `_SR` on `RAW` (read-only), but granted `_SFULL` on `STAGING` and `MART` to build models.
 
-*Inheritance:* All three custom roles are rolled up into the native Snowflake `SYSADMIN` role. This allows Account level administrators to oversee the architecture natively without borrowing external roles.
+*Inheritance:* All custom functional roles automatically roll up into the native Snowflake `SYSADMIN` role. This allows Account-level administrators to oversee the architecture natively without borrowing external roles.
 
 ### Machine Users & Authentication
-Passwords are intentionally disabled. Authentication relies internally on Key-Pair (RSA) authentication to ensure robust security for automated processes.
+Passwords are intentionally disabled. Authentication relies entirely on Key-Pair (RSA) authentication to ensure robust security for automated processes.
 
-* **`YT_SF_CICD_USER`**: Machine user assigned strictly to `YT_SF_CICD_ROLE` and `YT_SF_CICD_WH`.
-* **`YT_SF_DBT_USER`**: Service user assigned strictly to `YT_SF_TRANSFORM_ROLE` and `YT_SF_TRANSFORM_WH`.
+* **`YT_SF_CICD_USER`**: Machine user serving `YT_SF_CICD_ROLE`.
+* **`YT_SF_LOAD_USER`**: Machine user serving `YT_SF_LOAD_ROLE`.
+* **`YT_SF_DBT_USER`**: Service user serving `YT_SF_TRANSFORM_ROLE`.
+
+---
 
 ## 4. Initialization Scripts
-To recreate this environment from scratch, execute the scripts within `.setup/snowflake/` in numerical order using a highly privileged administrative user (e.g., `ACCOUNTADMIN`):
-1. `00_infrastructure_init.sql` (Creates DB, Warehouses, Resource Monitors, Schemas)
-2. `01_role_init.sql` (Establishes role hierarchy)
-3. `02_grant_init.sql` (Applies granular deployer/reader mappings)
-4. `03_user_init.sql` (Provisions machine users and keypairs)
+To recreate this environment from scratch identically, simply execute the scripts within `.setup/snowflake/` in numerical order using an administrative user (e.g., `ACCOUNTADMIN`):
+1. `00_infrastructure_init.sql` *(Execution: ACCOUNTADMIN -> SYSADMIN)*
+2. `01_role_init.sql` *(Execution: SECURITYADMIN)*
+3. `02_grant_init.sql` *(Execution: SECURITYADMIN. NOTE: This executes the Object Role paradigm)*
+4. `03_user_init.sql` *(Execution: SECURITYADMIN)*

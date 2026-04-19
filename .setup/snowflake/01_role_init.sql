@@ -1,17 +1,56 @@
 USE ROLE SECURITYADMIN;
 
--- 1. Create custom roles
+-- ==============================================================
+-- 1. OBJECT ROLES (Schema-specific access)
+-- ==============================================================
+
+-- LANDING SCHEMA ROLES
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_LANDING_SR;
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_LANDING_SW;
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_LANDING_SFULL;
+GRANT ROLE _YT_SF_PROD_LANDING_SR TO ROLE _YT_SF_PROD_LANDING_SW;
+GRANT ROLE _YT_SF_PROD_LANDING_SW TO ROLE _YT_SF_PROD_LANDING_SFULL;
+
+-- RAW SCHEMA ROLES
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_RAW_SR;
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_RAW_SW;
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_RAW_SFULL;
+GRANT ROLE _YT_SF_PROD_RAW_SR TO ROLE _YT_SF_PROD_RAW_SW;
+GRANT ROLE _YT_SF_PROD_RAW_SW TO ROLE _YT_SF_PROD_RAW_SFULL;
+
+-- STAGING SCHEMA ROLES
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_STAGING_SR;
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_STAGING_SW;
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_STAGING_SFULL;
+GRANT ROLE _YT_SF_PROD_STAGING_SR TO ROLE _YT_SF_PROD_STAGING_SW;
+GRANT ROLE _YT_SF_PROD_STAGING_SW TO ROLE _YT_SF_PROD_STAGING_SFULL;
+
+-- MART SCHEMA ROLES
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_MART_SR;
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_MART_SW;
+CREATE ROLE IF NOT EXISTS _YT_SF_PROD_MART_SFULL;
+GRANT ROLE _YT_SF_PROD_MART_SR TO ROLE _YT_SF_PROD_MART_SW;
+GRANT ROLE _YT_SF_PROD_MART_SW TO ROLE _YT_SF_PROD_MART_SFULL;
+
+-- ==============================================================
+-- 2. FUNCTIONAL ROLES
+-- ==============================================================
+
 CREATE ROLE IF NOT EXISTS YT_SF_ADMIN_ROLE
   COMMENT = 'System Admin Duties: Owns DB, Schemas, Warehouses';
 
-CREATE ROLE IF NOT EXISTS YT_SF_TRANSFORM_ROLE
-  COMMENT = 'Transformation & Data Build Tool (dbt) role for processing and manual querying';
-
 CREATE ROLE IF NOT EXISTS YT_SF_CICD_ROLE
-  COMMENT = 'CI/CD pipeline role for automated deployment and python ingestion';
+  COMMENT = 'Universal orchestrator/deployer for automated pipelines';
 
--- 2. Grant roles to SYSADMIN to maintain a robust RBAC hierarchy
--- This ensures Account Admins can natively oversee operations without explicitly borrowing these roles
+CREATE ROLE IF NOT EXISTS YT_SF_TRANSFORM_ROLE
+  COMMENT = 'Transformation & Data Build Tool (dbt) role for processing';
+
+CREATE ROLE IF NOT EXISTS YT_SF_LOAD_ROLE
+  COMMENT = 'Ingestion script role (Python) for loading data into Landing/Raw';
+
+-- 3. Base Role Inheritances
+-- Grant all high-level functional roles to SYSADMIN to naturally expose to Account Admins
 GRANT ROLE YT_SF_ADMIN_ROLE TO ROLE SYSADMIN;
-GRANT ROLE YT_SF_TRANSFORM_ROLE TO ROLE SYSADMIN;
 GRANT ROLE YT_SF_CICD_ROLE TO ROLE SYSADMIN;
+GRANT ROLE YT_SF_TRANSFORM_ROLE TO ROLE SYSADMIN;
+GRANT ROLE YT_SF_LOAD_ROLE TO ROLE SYSADMIN;
