@@ -5,15 +5,19 @@
 To align with the Phase 1 scope, the foundation will initially rely on a single Production database. Development and Testing environments will be introduced in future phases as the pipeline matures.
 
 *   **Production Environment (Phase 1):**
-    *   Database: `YT_METRICS_PROD`
-    *   Schemas:
+    *   Database: `YT_SF_PROD`
+    *   Schemas (all configured `WITH MANAGED ACCESS` for centralized privilege control):
         *   `LANDING` (Layer 1): Transient landing area for the Python extraction script. Stores raw API responses and uses a delete/insert method for 1-2x daily updates.
         *   `RAW` (Layer 2): Persistent historical storage layer. Stores all data including historical loads, updating existing records from the `LANDING` layer.
         *   `STAGING` (Layer 3): Processing layer where required calculations are performed and correct column formats/data types are applied.
         *   `MART` (Layer 4): Presentation layer for different visualizations (e.g., Streamlit). *Note: As the project is currently simple, these visualization models can essentially be lightweight views built directly on top of Layer 3.*
 
-**Warehouse Sizing Strategy:**
-Since the pipeline will run 1-2 times per day as a batch load, and the data volume is minimal in Phase 1 (starting with 4 channels, expanding later), an **X-Small (X-SMALL)** Snowflake Virtual Warehouse is mandated. This provides more than enough compute for flattening JSON and executing dimensional modeling while optimizing for cost efficiency.
+**Warehouse & Compute Strategy:**
+To ensure workload isolation and prevent concurrency bottlenecks, compute is split across three dedicated **X-Small (X-SMALL)** Virtual Warehouses with 60-second auto-suspend:
+*   `YT_SF_CICD_WH`: For automated deployments and CI/CD pipelines.
+*   `YT_SF_TRANSFORM_WH`: For dbt transformations and analytical querying.
+*   `YT_SF_ADMIN_WH`: For database administration and maintenance.
+*Cost Controls:* Each warehouse is strictly bound by its own Resource Monitor (`YT_SF_CICD_RM`, etc.), capping spend at ~5 EUR per month.
 
 ## 2. Data Modeling Strategy (dbt Layer)
 The pipeline will adopt a Kimball Dimensional Modeling approach (Star Schema) in the presentation layer.
@@ -50,6 +54,11 @@ All dbt development must enforce strict naming conventions and quality checks:
     *   **Foreign Keys:** `channel_id` in fact models must pass `relationships` tests against the hierarchy dimension/seed table to catch orphaned data.
     *   **Metrics:** Standard numerical fields (e.g., views, likes, comments, subscribers, duration) must have `>= 0` value constraints.
 
-## 5. Security Standards
-*   **No Hardcoded Credentials:** Under no circumstances will any API keys, Snowflake passwords, or sensitive connection strings be hardcoded into Python source code, dbt profiles, or Streamlit configurations.
-*   **Environment Variables:** All environments must rely entirely on environment variables (`.env` files for local development, and secure secret managers or injected CI/CD variables for automated/production runs).
+## 5. Security, RBAC & Authentication Standards
+*   **Role-Based Access Control (RBAC):** The environment implements a rigorous Snowflake RBAC model separating schema-level Object Roles (`_SR`, `_SW`, `_SFULL`) from broad Functional Roles:
+    *   `YT_SF_ADMIN_ROLE`: Top-level governance (maps to SYSADMIN).
+    *   `YT_SF_CICD_ROLE`: Pipeline deployment orchestration.
+    *   `YT_SF_LOAD_ROLE`: Granted Write/Full access *only* to the `LANDING` schema for Python ingestion scripts.
+    *   `YT_SF_TRANSFORM_ROLE`: Granted Write/Full access to `RAW`, `STAGING`, and `MART` for dbt operations.
+*   **Authentication (Key-Pair):** Passwords are intentionally disabled for machine service users (`YT_SF_CICD_USER`, `YT_SF_LOAD_USER`, `YT_SF_DBT_USER`) in favor of RSA Key-Pair authentication.
+*   **No Hardcoded Credentials:** Under no circumstances will any API keys, Snowflake passphrases, or sensitive connection strings be hardcoded into Python source code, dbt profiles, or Streamlit configurations. They must be injected securely via environment variables or secret managers.

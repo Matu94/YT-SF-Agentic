@@ -9,6 +9,8 @@ A hobby project focused on building an automated data pipeline to extract YouTub
 
 ## 2. Infrastructure & Environments
 *   **Environment:** Initially, only **1 environment (PROD)** will be used to build the foundational architecture and onboard the first set of channels.
+    *   **Data Warehouse (Snowflake):** The production database (`YT_SF_PROD`) will use a 4-layer architecture: `LANDING` (transient raw drops), `RAW` (persistent history), `STAGING` (dbt transformations), and `MART` (analytics presentation).
+    *   **Compute Isolation:** Dedicated virtual warehouses will be used for CI/CD and data loading (`YT_SF_CICD_WH`), dbt transformations (`YT_SF_TRANSFORM_WH`), and administration (`YT_SF_ADMIN_WH`), all controlled by resource monitors to ensure strict cost management (capped at ~5 EUR/month per warehouse).
 
 ## 3. Scope & Phasing
 ### Phase 1: The Base (Fókusz Stúdió)
