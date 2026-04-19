@@ -17,13 +17,11 @@ GRANT ROLE _YT_SF_PROD_MART_SFULL TO ROLE YT_SF_CICD_ROLE;
 
 -- LOAD: Specifically mapped to ingest python pipelines
 -- SFULL for Landing because pipeline creates and drops the transient landing table
--- SW for RAW because pipeline just natively merges/inserts into the raw history
 GRANT ROLE _YT_SF_PROD_LANDING_SFULL TO ROLE YT_SF_LOAD_ROLE;
-GRANT ROLE _YT_SF_PROD_RAW_SW TO ROLE YT_SF_LOAD_ROLE;
 
 -- TRANSFORM: dbt transformations
--- Reads RAW, and fully controls generation/overwrite of STAGING and MART models
-GRANT ROLE _YT_SF_PROD_RAW_SR TO ROLE YT_SF_TRANSFORM_ROLE;
+-- Manages merging Landing objects into persistent RAW history, and generates STAGING/MART models.
+GRANT ROLE _YT_SF_PROD_RAW_SFULL TO ROLE YT_SF_TRANSFORM_ROLE;
 GRANT ROLE _YT_SF_PROD_STAGING_SFULL TO ROLE YT_SF_TRANSFORM_ROLE;
 GRANT ROLE _YT_SF_PROD_MART_SFULL TO ROLE YT_SF_TRANSFORM_ROLE;
 

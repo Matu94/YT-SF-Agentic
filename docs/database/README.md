@@ -55,10 +55,10 @@ The underlying Schema Object Roles are then distributed to the following Functio
     * ***Grants:*** Mapped to `_SFULL` everywhere. This permits tools like GitHub Actions to automate migrations and drop/create assets universally across all layers.
 3. **`YT_SF_LOAD_ROLE`**
     * ***Purpose:*** Python pipeline extraction tasks.
-    * ***Grants:*** Mapped to `_SFULL` on `LANDING` (to create transient landing caches) and `_SW` on `RAW` (to UPSERT into history).
+    * ***Grants:*** Mapped to `_SFULL` on `LANDING` only. This role builds transient tables for API drops, but relies downstream on dbt to pull it into the warehouse history.
 4. **`YT_SF_TRANSFORM_ROLE`**
     * ***Purpose:*** Data Build Tool (dbt) processing and manual querying.
-    * ***Grants:*** Restrained to `_SR` on `RAW` (read-only), but granted `_SFULL` on `STAGING` and `MART` to build models.
+    * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`. Manages merging the staging drops into persistent history and compiling the analytical models.
 
 *Inheritance:* All custom functional roles automatically roll up into the native Snowflake `SYSADMIN` role. This allows Account-level administrators to oversee the architecture natively without borrowing external roles.
 
