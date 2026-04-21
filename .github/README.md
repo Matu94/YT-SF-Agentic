@@ -15,6 +15,7 @@ This directory configures the GitHub Actions workflows responsible for orchestra
 1. Checks the triggered branch to determine the Environment (`dev` vs `prod`).
 2. Leverages the bespoke pipeline-runner securely inside an AWS subnet.
 3. Sets up Python, establishes Key-Pair authentication via ingested GitHub organization secrets (`SNOWFLAKE_PRIVATE_KEY`), and uses `deploy.py` to calculate file differentials and gracefully roll them out to the Data Warehouse.
+4. Spits out a rich Markdown log mapping deployment successes and failures dynamically to the Action's user interface.
 
 ### 2. Create Release Branch (`create-release-branch.yml`)
 **Purpose**: Serves as the primary automation tool to promote approved changes from the `dev` environment into a static `release/*` tracking branch.
