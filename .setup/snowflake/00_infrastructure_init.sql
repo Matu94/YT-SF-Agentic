@@ -58,21 +58,34 @@ GRANT OWNERSHIP ON WAREHOUSE YT_SF_ADMIN_WH TO ROLE SYSADMIN REVOKE CURRENT GRAN
 
 USE ROLE SYSADMIN;
 
--- 2. Create the database
+-- ==============================================================
+-- 2. CREATE DATABASES (PROD and DEV)
+-- ==============================================================
 CREATE DATABASE IF NOT EXISTS YT_SF_PROD
   COMMENT = 'Production database for YouTube Metrics pipeline';
 
--- 3. Create Managed Access Schemas
--- Creating WITH MANAGED ACCESS ensures that whoever owns the schema centrally manages permissions
--- rather than the object creator retaining individual object ownership.
+CREATE DATABASE IF NOT EXISTS YT_SF_DEV
+  COMMENT = 'Development database for feature testing and CI/CD validation';
+
+-- ==============================================================
+-- 3. CREATE MANAGED ACCESS SCHEMAS
+-- ==============================================================
+-- PROD SCHEMAS
 CREATE SCHEMA IF NOT EXISTS YT_SF_PROD.LANDING WITH MANAGED ACCESS
   COMMENT = 'Transient landing area for raw data extracts';
-
 CREATE SCHEMA IF NOT EXISTS YT_SF_PROD.RAW WITH MANAGED ACCESS
   COMMENT = 'Persistent historical storage layer';
-
 CREATE SCHEMA IF NOT EXISTS YT_SF_PROD.STAGING WITH MANAGED ACCESS
   COMMENT = 'Staging layer for transformed metrics';
-
 CREATE SCHEMA IF NOT EXISTS YT_SF_PROD.MART WITH MANAGED ACCESS
   COMMENT = 'Presentation layer for visualizations';
+
+-- DEV SCHEMAS
+CREATE SCHEMA IF NOT EXISTS YT_SF_DEV.LANDING WITH MANAGED ACCESS
+  COMMENT = 'Transient landing area for raw data extracts (DEV)';
+CREATE SCHEMA IF NOT EXISTS YT_SF_DEV.RAW WITH MANAGED ACCESS
+  COMMENT = 'Persistent historical storage layer (DEV)';
+CREATE SCHEMA IF NOT EXISTS YT_SF_DEV.STAGING WITH MANAGED ACCESS
+  COMMENT = 'Staging layer for transformed metrics (DEV)';
+CREATE SCHEMA IF NOT EXISTS YT_SF_DEV.MART WITH MANAGED ACCESS
+  COMMENT = 'Presentation layer for visualizations (DEV)';

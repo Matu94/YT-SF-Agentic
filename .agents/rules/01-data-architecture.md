@@ -2,10 +2,10 @@
 
 ## 1. Snowflake Environment Architecture
 **Database and Schema Design:**
-To align with the Phase 1 scope, the foundation will initially rely on a single Production database. Development and Testing environments will be introduced in future phases as the pipeline matures.
+The foundation relies on two core environments: Development (`DEV`) and Production (`PROD`).
 
-*   **Production Environment (Phase 1):**
-    *   Database: `YT_SF_PROD`
+*   **Environments:**
+    *   Databases: `YT_SF_DEV` and `YT_SF_PROD`
     *   Schemas (all configured `WITH MANAGED ACCESS` for centralized privilege control):
         *   `LANDING` (Layer 1): Transient landing area for the Python extraction script. Stores raw API responses and uses a delete/insert method for 1-2x daily updates.
         *   `RAW` (Layer 2): Persistent historical storage layer. Stores all data including historical loads, updating existing records from the `LANDING` layer.

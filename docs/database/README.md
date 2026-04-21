@@ -4,10 +4,11 @@ This document outlines the Snowflake environment's infrastructure, compute resou
 
 ## 1. Storage Infrastructure 
 
-The environment uses a single production database structured into four layers, enforcing a Kimball dimensional modeling approach.
+The environment utilizes two dedicated, identically structured databases enforcing a Kimball dimensional modeling approach to cleanly separate development/testing workloads from production data.
 
-### Database
-* **`YT_SF_PROD`**: The production database housing all YouTube metrics data.
+### Databases
+* **`YT_SF_DEV`**: The development environment used for CI/CD pipelines, feature branch testing, and local dbt development.
+* **`YT_SF_PROD`**: The production database housing all live, validated YouTube metrics data serving end-users.
 
 ### Managed Access Schemas
 All schemas are created `WITH MANAGED ACCESS`. This means object privileges are centrally managed by the schema owner (`YT_SF_ADMIN_ROLE`) rather than the individual user who created the table or view.
@@ -48,16 +49,16 @@ For every schema (`LANDING`, `RAW`, `STAGING`, `MART`), three distinct access pr
 ### 3.2 Functional Roles (Users are assigned here)
 The underlying Schema Object Roles are then distributed to the following Functional profiles based strictly on the principles of least privilege:
 
-1. **`YT_SF_ADMIN_ROLE`** 
-    * ***Purpose:*** System governance and top-level administration. 
-    * ***Grants:*** Mapped to `_SFULL` everywhere. Owns the database, all schemas, and warehouses.
-2. **`YT_SF_CICD_ROLE`**
+1. **`YT_SF_{ENV}_ADMIN_ROLE`** 
+    * ***Purpose:*** System governance and top-level administration for that specific environment.
+    * ***Grants:*** Mapped to `_SFULL` everywhere. Owns the databases, all schemas, and warehouses.
+2. **`YT_SF_{ENV}_CICD_ROLE`**
     * ***Purpose:*** CI/CD deployment orchestrator.
-    * ***Grants:*** Mapped to `_SFULL` everywhere. This permits tools like GitHub Actions to automate migrations and drop/create assets universally across all layers.
-3. **`YT_SF_LOAD_ROLE`**
+    * ***Grants:*** Mapped to `_SFULL` everywhere. This permits tools like GitHub Actions to automate migrations and drop/create assets universally across all layers for its respective environment.
+3. **`YT_SF_{ENV}_LOAD_ROLE`**
     * ***Purpose:*** Python pipeline extraction tasks.
     * ***Grants:*** Mapped to `_SFULL` on `LANDING` only. This role builds transient tables for API drops, but relies downstream on dbt to pull it into the warehouse history.
-4. **`YT_SF_TRANSFORM_ROLE`**
+4. **`YT_SF_{ENV}_TRANSFORM_ROLE`**
     * ***Purpose:*** Data Build Tool (dbt) processing and manual querying.
     * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`. Manages merging the staging drops into persistent history and compiling the analytical models.
 
@@ -66,9 +67,9 @@ The underlying Schema Object Roles are then distributed to the following Functio
 ### Machine Users & Authentication
 Passwords are intentionally disabled. Authentication relies entirely on Key-Pair (RSA) authentication to ensure robust security for automated processes.
 
-* **`YT_SF_CICD_USER`**: Machine user serving `YT_SF_CICD_ROLE`.
-* **`YT_SF_LOAD_USER`**: Machine user serving `YT_SF_LOAD_ROLE`.
-* **`YT_SF_DBT_USER`**: Service user serving `YT_SF_TRANSFORM_ROLE`.
+* **`YT_SF_CICD_USER`**: Machine user assigned both `YT_SF_PROD_CICD_ROLE` and `YT_SF_DEV_CICD_ROLE` to execute pipelines identically across both environments.
+* **`YT_SF_LOAD_USER`**: Machine user assigned both `YT_SF_PROD_LOAD_ROLE` and `YT_SF_DEV_LOAD_ROLE`.
+* **`YT_SF_DBT_USER`**: Service user assigned both `YT_SF_PROD_TRANSFORM_ROLE` and `YT_SF_DEV_TRANSFORM_ROLE`.
 
 ---
 
