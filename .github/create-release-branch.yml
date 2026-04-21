@@ -1,0 +1,107 @@
+# =============================================================================
+# Create Release Branch
+# =============================================================================
+# Manually creates a release branch from main/prod containing only the SQL
+# files listed in the release CSV. Files are ordered by folder (01_schemas,
+# 02_file_formats, etc.) for correct deployment order.
+# =============================================================================
+
+name: Create release branch
+
+run-name: "Release branch creation - ${{ inputs.version }}"
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 1-1-1 for release_v1_1_1.csv)"
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: Create release branch
+    runs-on: [atmos-aws-arc-runner-set]
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.11"
+
+      - name: Verify dev branch and release file exist
+        id: release-file
+        run: |
+          if ! git show-ref --verify --quiet refs/remotes/origin/dev; then
+            echo "Error: dev branch does not exist"
+            exit 1
+          fi
+          VERSION="${{ github.event.inputs.version }}"
+          FILE_NAME="release_v${VERSION//-/_}.csv"
+          if ! git show origin/dev:.release/"$FILE_NAME" > /dev/null 2>&1; then
+            echo "Error: .release/$FILE_NAME not found on dev branch"
+            exit 1
+          fi
+          echo "file=$FILE_NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Create release branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -e
+          VERSION="${{ github.event.inputs.version }}"
+          VERSION_DOT="${VERSION//-/.}"
+          RELEASE_BRANCH="release/$VERSION_DOT"
+          FILE_NAME="${{ steps.release-file.outputs.file }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git checkout -b "$RELEASE_BRANCH" "origin/prod"
+
+          python3 << 'PYTHON'
+          import csv
+          import subprocess
+          import sys
+
+          file_name = "${{ steps.release-file.outputs.file }}"
+          result = subprocess.run(
+              ["git", "show", f"origin/dev:.release/{file_name}"],
+              capture_output=True, text=True, check=True
+          )
+          reader = csv.reader(result.stdout.strip().splitlines())
+          rows = list(reader)
+          if rows and rows[0] and rows[0][0].lower() == "file_path":
+              rows = rows[1:]
+          files = [r[0].strip() for r in rows if r and r[0].strip().endswith(".sql")]
+
+          if not files:
+              print("Error: No SQL files in release CSV")
+              sys.exit(1)
+
+          files.sort(key=lambda p: p)
+
+          for f in files:
+              subprocess.run(["git", "checkout", "origin/dev", "--", f], check=True)
+
+          subprocess.run(["git", "checkout", "origin/dev", "--", f".release/{file_name}"], check=True)
+          PYTHON
+
+          git add snowflake/ .release/
+          git status
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Release $VERSION_DOT: SQL files from dev"
+          git push -u origin "$RELEASE_BRANCH"
+
+          echo "Created branch $RELEASE_BRANCH"

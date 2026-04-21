@@ -1,0 +1,94 @@
+# =============================================================================
+# Snowflake Deploy
+# =============================================================================
+# Deploys changed DDL files to Snowflake using the Python connector.
+# =============================================================================
+
+name: Snowflake Deploy
+
+on:
+  push:
+    branches: [dev, prod, "feature/*", "data*"]
+    paths:
+      - snowflake/**
+      - '!snowflake/10_row_access_policies/**'
+  workflow_dispatch:
+    inputs:
+      deployment_mode:
+        description: 'Deployment mode'
+        required: true
+        default: 'diff'
+        type: choice
+        options:
+          - diff
+          - log
+
+jobs:
+  build:
+    name: Resolve environment
+    runs-on: [atmos-aws-arc-runner-set]  
+    outputs:
+      env_name: ${{ steps.env.outputs.env_name }}
+    steps:
+      - name: Set environment from branch
+        id: env
+        run: |
+          ref="${{ github.ref }}"
+          if [[ "$ref" == refs/heads/dev ]] || [[ "$ref" == refs/heads/feature* ]] || [[ "$ref" == refs/heads/data* ]]; then
+            echo "env_name=dev" >> "$GITHUB_OUTPUT"
+          elif [[ "$ref" == refs/heads/prod ]]; then
+            echo "env_name=prod" >> "$GITHUB_OUTPUT"
+          else
+            echo "env_name=dev" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: build
+    runs-on: [atmos-aws-arc-runner-set] 
+    environment: ${{ needs.build.outputs.env_name }}
+    env:
+      SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+      SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+      SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+      SNOWFLAKE_DATABASE: ${{ vars.SNOWFLAKE_DATABASE }}
+      SNOWFLAKE_WAREHOUSE: ${{ vars.SNOWFLAKE_WAREHOUSE }}
+      SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+      PRIVATE_KEY_PASSPHRASE: ${{ secrets.SNOWFLAKE_PRIVATE_KEY_PASS }}
+      SNOWFLAKE_ENVIRONMENT: ${{ needs.build.outputs.env_name }}
+      BRANCH_NAME: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Python connector
+        run: pip install snowflake-connector-python
+
+      - name: Write private key file
+        run: |
+          mkdir -p ~/.snowflake
+          printf '%s\n' "$SNOWFLAKE_PRIVATE_KEY" > ~/.snowflake/rsa_key.p8
+          chmod 600 ~/.snowflake/rsa_key.p8
+
+      - name: Detect changes
+        id: changes
+        run: |
+          MODE="${{ github.event.inputs.deployment_mode || 'diff' }}"
+          if [[ "$MODE" == "log" ]]; then
+            python3 .deployment/deploy.py detect-changes --mode log
+          else
+            python3 .deployment/deploy.py detect-changes --mode diff --base-ref snowflake
+          fi
+          echo "has_changes=$(if [ -s changed_files.txt ]; then echo true; else echo false; fi)" >> "$GITHUB_OUTPUT"
+
+      - name: Deploy Snowflake
+        if: steps.changes.outputs.has_changes == 'true'
+        run: >
+          python3 .deployment/deploy.py deploy
+          --branch "${{ github.ref_name }}"
+          --commit "${{ github.sha }}"

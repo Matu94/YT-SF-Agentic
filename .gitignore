@@ -1,5 +1,5 @@
 .env
-snowflake_changed_files.txt
+changed_files.txt
 .snowflake_last_deploy_commit
 venv/
 # --- macOS ---
