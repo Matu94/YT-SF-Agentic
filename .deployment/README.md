@@ -17,8 +17,8 @@ This directory houses the foundational logic for synchronizing local SQL files w
 ### Sub-Commands
 You can directly execute the python module or interface with it via the root repository's `Makefile`.
 
-*   `python deploy.py detect-changes`: Calculates diffs via `git` or scans all files (`--mode log`) to construct a definitive execution list (`snowflake_changed_files.txt`). 
-*   `python deploy.py deploy`: Takes the generated file list, establishes a Snowflake connection, bootstraps the tracking tables if they don't exist, and systematically executes un-deployed SQL schemas.
+*   `python deploy.py detect-changes`: Calculates diffs via `git` or scans all files (`--mode log`) to construct a definitive execution list (`changed_files.txt`). This list maps any altered file codebase-wide.
+*   `python deploy.py deploy`: Takes the generated file list, filters strictly for valid `snowflake/**.sql` files to safely isolate DDL targets, establishes a Snowflake connection, bootstraps the tracking tables if they don't exist, and systematically executes un-deployed schemas.
 *   `python deploy.py seed`: Works identically to `deploy`, however, it strictly populates the target Snowflake environment's History Tables with `SUCCESS` states **without executing the actual SQL queries**. This is useful for onboarding an environment where the database already contains the structural tables.
 *   `python deploy.py last-commit`: Interrogates Snowflake directly for the Last Successful Deployment SHA to intelligently calculate differential pipelines.
 

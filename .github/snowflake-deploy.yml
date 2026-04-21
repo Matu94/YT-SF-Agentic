@@ -84,7 +84,7 @@ jobs:
           else
             python3 .deployment/deploy.py detect-changes --mode diff --base-ref snowflake
           fi
-          echo "has_changes=$(if [ -s snowflake_changed_files.txt ]; then echo true; else echo false; fi)" >> "$GITHUB_OUTPUT"
+          echo "has_changes=$(if [ -s changed_files.txt ]; then echo true; else echo false; fi)" >> "$GITHUB_OUTPUT"
 
       - name: Deploy Snowflake
         if: steps.changes.outputs.has_changes == 'true'

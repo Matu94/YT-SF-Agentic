@@ -40,4 +40,4 @@ If an environment instance already functionally encapsulates raw definitions, re
 4. From then on, standard active deployments natively skip over the artifacts because they appear fully executed on the DB backend.
 
 ## 4. Release Strategy
-Deployments into `PROD` rely on explicitly approved `csv` ledgers defining changes mathematically packaged into isolated Release branches (`.github/create-release-branch.yml`). The target `prod` branch strictly evaluates changes packaged through this promotion utility to preserve a rigid separation from volatile feature pushes.
+Deployments into `PROD` rely on explicitly approved `csv` ledgers defining target files. The promotion utility (`.github/create-release-branch.yml`) creates an isolated release branch exclusively originating from `prod`, and cherry-picks the approved files directly from `dev`. This mathematically packages the approved changes into an isolated branch to preserve a rigid separation from volatile feature pushes.

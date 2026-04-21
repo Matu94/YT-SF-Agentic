@@ -8,6 +8,8 @@
 
 name: Create release branch
 
+run-name: "Release branch creation - ${{ inputs.version }}"
+
 on:
   workflow_dispatch:
     inputs:
@@ -33,18 +35,6 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Determine base branch
-        id: base
-        run: |
-          if git show-ref --verify --quiet refs/remotes/origin/dev; then
-            echo "branch=dev" >> "$GITHUB_OUTPUT"
-          elif git show-ref --verify --quiet refs/remotes/origin/prod; then
-            echo "branch=prod" >> "$GITHUB_OUTPUT"
-          else
-            echo "Error: Neither dev nor prod branch exists"
-            exit 1
-          fi
-
       - name: Verify dev branch and release file exist
         id: release-file
         run: |
@@ -67,14 +57,13 @@ jobs:
           set -e
           VERSION="${{ github.event.inputs.version }}"
           VERSION_DOT="${VERSION//-/.}"
-          BASE="${{ steps.base.outputs.branch }}"
           RELEASE_BRANCH="release/$VERSION_DOT"
           FILE_NAME="${{ steps.release-file.outputs.file }}"
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git checkout -b "$RELEASE_BRANCH" "origin/$BASE"
+          git checkout -b "$RELEASE_BRANCH" "origin/prod"
 
           python3 << 'PYTHON'
           import csv

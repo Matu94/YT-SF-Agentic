@@ -26,7 +26,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 COMPONENT = "snowflake"
-OUTPUT_FILE = "snowflake_changed_files.txt"
+OUTPUT_FILE = "changed_files.txt"
 LAST_DEPLOY_FILE = ".snowflake_last_deploy_commit"
 
 
@@ -158,14 +158,13 @@ def cmd_detect_changes(args):
     base_ref = args.base_ref
 
     if mode == "log":
-        files = sorted(str(p) for p in Path(COMPONENT).rglob("*.sql"))
+        files = sorted(git("ls-files").splitlines())
         Path(OUTPUT_FILE).write_text("\n".join(files) + "\n" if files else "")
         if files:
             print("All files (log-based deploy):")
             for f in files:
                 print(f"  - {f}")
-        else:
-            print(f"No .sql files in {COMPONENT}/")
+            print("No files found via log mode.")
         return
 
     # Diff mode: resolve base ref
@@ -221,7 +220,7 @@ def cmd_detect_changes(args):
             verify = git("cat-file", "-t", base_ref, check=False)
             if verify != "commit":
                 print(f"Warning: base ref {base_ref[:8]} not found in history. Falling back to all SQL files.", file=sys.stderr)
-                diff_output = "\n".join(str(p) for p in Path(COMPONENT).rglob("*.sql"))
+                diff_output = git("ls-files", check=False)
     else:
         # Local mode: prefer last-deploy commit over main
         if base_ref == "dev" and Path(LAST_DEPLOY_FILE).is_file():
@@ -232,12 +231,9 @@ def cmd_detect_changes(args):
             except Exception:
                 pass
 
-        diff_output = git("diff", "--name-only", "--diff-filter=ACMRTUXB", base_ref, "--", f"{COMPONENT}/", check=False)
+        diff_output = git("diff", "--name-only", "--diff-filter=ACMRTUXB", base_ref, check=False)
 
-    files = sorted(
-        line for line in diff_output.splitlines()
-        if line.startswith(f"{COMPONENT}/") and line.endswith(".sql")
-    )
+    files = sorted(line for line in diff_output.splitlines() if line.strip())
 
     Path(OUTPUT_FILE).write_text("\n".join(files) + "\n" if files else "")
     if files:
@@ -245,7 +241,7 @@ def cmd_detect_changes(args):
         for f in files:
             print(f"  - {f}")
     else:
-        print(f"No changed files in {COMPONENT}/")
+        print("No changed files found.")
 
 
 # ---------------------------------------------------------------------------
@@ -265,7 +261,7 @@ def cmd_seed(args):
 
     all_files = [
         line.strip() for line in Path(file_list).read_text().splitlines()
-        if line.strip().endswith(".sql")
+        if line.strip().endswith(".sql") and line.strip().startswith(f"{COMPONENT}/")
     ]
     all_files.sort()
 
@@ -369,7 +365,7 @@ def cmd_deploy(args):
 
     all_files = [
         line.strip() for line in Path(file_list).read_text().splitlines()
-        if line.strip().endswith(".sql")
+        if line.strip().endswith(".sql") and line.strip().startswith(f"{COMPONENT}/")
     ]
     all_files.sort()
 
