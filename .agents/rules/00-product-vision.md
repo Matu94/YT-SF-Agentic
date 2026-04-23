@@ -5,7 +5,7 @@ trigger: always_on
 # Product Requirements Document: YouTube Metrics Pipeline
 
 ## 1. Project Overview
-A hobby project focused on building an automated data pipeline to extract YouTube channel metrics via a Python script, process them in Snowflake using dbt, and visualize the data in a Streamlit application. The ultimate goal is to provide deep insights into channel and video performance.
+A hobby project focused on building an automated data pipeline to extract YouTube channel metrics natively via Snowflake Python Stored Procedures (Snowpark), process them in Snowflake using dbt, and visualize the data in a Streamlit application. The ultimate goal is to provide deep insights into channel and video performance.
 
 ## 2. Infrastructure & Environments
 *   **Environment:** The project utilizes two environments: **DEV** (for development and feature testing) and **PROD** (for production workloads).
@@ -38,8 +38,9 @@ A hobby project focused on building an automated data pipeline to extract YouTub
     *   Content Type / Niche
 
 ### 4.2 Data Ingestion & Refresh Strategy
+*   **Extraction Method (Snowpark):** The pipeline will extract data natively using Snowflake Python Stored Procedures, leveraging Snowflake External Network Access to call the YouTube API directly from the warehouse.
+*   **Orchestration:** Scheduled via native Snowflake Tasks running 1-2 times per day.
 *   **Historical Load:** Full extraction and onboarding of all historical data for newly added channels initially.
-*   **Ongoing Updates:** Incremental daily updates running **1-2 times per day** to capture the latest metrics.
 
 ### 4.3 Metrics to Collect
 *   **Video-Level Data:**
