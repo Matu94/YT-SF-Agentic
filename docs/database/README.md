@@ -75,9 +75,29 @@ Passwords are intentionally disabled. Authentication relies entirely on Key-Pair
 
 ---
 
-## 4. Initialization Scripts
-To recreate this environment from scratch identically, simply execute the scripts within `.setup/snowflake/` in numerical order using an administrative user (e.g., `ACCOUNTADMIN`):
+## 4. External Network Access (Snowpark)
+
+To allow Snowpark Python Stored Procedures to call the YouTube Data API, Snowflake's External Network Access stack is configured in the `TECH` schema of each environment.
+
+| Object | Name | Location | Purpose |
+|:---|:---|:---|:---|
+| **Network Rule** | `YOUTUBE_API_NETWORK_RULE` | `{ENV}.TECH` | Whitelists outbound HTTPS to `youtube.googleapis.com` |
+| **Secret** | `YOUTUBE_API_KEY_SECRET` | `{ENV}.TECH` | Stores the YouTube Data API v3 key securely |
+| **Integration** | `YT_SF_{ENV}_YOUTUBE_API_INTEGRATION` | Account-level | Binds the Network Rule + Secret, attached to procedures |
+
+**Role Privileges:**
+- `YT_SF_{ENV}_ADMIN_ROLE`: Owns and manages the Network Rule, Secret, and Integration (has `CREATE INTEGRATION` account-level privilege).
+- `YT_SF_{ENV}_LOAD_ROLE`: Has `USAGE` on the Integration and `READ` on the Secret — the minimum required to execute procedures that call the YouTube API.
+- `YT_SF_{ENV}_CICD_ROLE`: Has `USAGE` on the Integration and `READ` on the Secret — required to deploy `CREATE OR REPLACE PROCEDURE` statements that reference the integration.
+
+> ⚠️ **Secret Initialization**: The `YOUTUBE_API_KEY_SECRET` is created with a placeholder value (`YOUR_YOUTUBE_API_KEY_HERE`) in script `04_external_access.sql`. The real API key must be injected manually via the Snowsight UI or CLI before the first pipeline run and must **never** be committed to version control.
+
+---
+
+## 5. Initialization Scripts
+To recreate this environment from scratch identically, execute the scripts within `.setup/snowflake/` in numerical order using an administrative user (e.g., `ACCOUNTADMIN`):
 1. `00_infrastructure_init.sql` *(Execution: ACCOUNTADMIN -> SYSADMIN)*
 2. `01_role_init.sql` *(Execution: SECURITYADMIN)*
 3. `02_grant_init.sql` *(Execution: SECURITYADMIN. NOTE: This executes the Object Role paradigm)*
 4. `03_user_init.sql` *(Execution: SECURITYADMIN)*
+5. `04_external_access.sql` *(Execution: ADMIN_ROLE per environment. NOTE: Replace API key placeholder before running!)*
