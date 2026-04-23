@@ -44,25 +44,25 @@ The environment utilizes a modern two-tier Role-Based Access Control hierarchy, 
 For every schema (`LANDING`, `RAW`, `STAGING`, `MART`), three distinct access profiles reside underneath the hood:
 - **`_SR` (Schema Read)**: Grants `USAGE`, `SELECT`, and `READ` on all existing/future objects.
 - **`_SW` (Schema Write)**: Inherits `_SR`, and adds `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, and `WRITE`.
-- **`_SFULL` (Schema Full)**: Inherits `_SW`, and adds `CREATE TABLE/VIEW/STAGE/TASK/DYNAMIC TABLE` capability as well as `OWNERSHIP`. It also has ownership over future `STREAMLITS`.
+- **`_SFULL` (Schema Full)**: Inherits `_SW`, and adds `CREATE TABLE/VIEW/STAGE/TASK/DYNAMIC TABLE` capability. Holds `OWNERSHIP` over standard objects (Tables, Views, Stages, etc). *(Note: Compute objects like Tasks, Dynamic Tables, and Streamlits bypass this and are owned directly by Functional Roles).*
 
 ### 3.2 Functional Roles (Users are assigned here)
 The underlying Schema Object Roles are then distributed to the following Functional profiles based strictly on the principles of least privilege:
 
 1. **`YT_SF_{ENV}_ADMIN_ROLE`** 
     * ***Purpose:*** System governance and top-level administration for that specific environment.
-    * ***Grants:*** Mapped to `_SFULL` everywhere. Owns the databases, all schemas, and warehouses. Holds the powerful `MANAGE GRANTS` global privilege to control security natively.
+    * ***Grants:*** Mapped to `_SFULL` everywhere. Owns the databases, all schemas, and warehouses. Holds the powerful `MANAGE GRANTS` global privilege to control security natively. All other functional roles explicitly roll up into this role.
 2. **`YT_SF_{ENV}_CICD_ROLE`**
     * ***Purpose:*** CI/CD deployment orchestrator.
     * ***Grants:*** Mapped to `_SFULL` everywhere. This permits tools like GitHub Actions to automate migrations and drop/create assets universally across all layers for its respective environment. Holds `EXECUTE TASK` globally.
 3. **`YT_SF_{ENV}_LOAD_ROLE`**
     * ***Purpose:*** Python pipeline extraction tasks.
-    * ***Grants:*** Mapped to `_SFULL` on `LANDING` only. This role builds transient tables for API drops, but relies downstream on dbt to pull it into the warehouse history.
+    * ***Grants:*** Mapped to `_SFULL` on `LANDING` only. Permanently owns all future Tasks and Dynamic Tables within the `LANDING` schemas.
 4. **`YT_SF_{ENV}_TRANSFORM_ROLE`**
     * ***Purpose:*** Data Build Tool (dbt) processing and manual querying.
-    * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`. Manages merging the staging drops into persistent history and compiling the analytical models. Holds `EXECUTE TASK` globally to launch dbt operations and tasks.
+    * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`. Holds `EXECUTE TASK` globally. Permanently owns all future Tasks, Dynamic Tables, and Streamlits downstream of `LANDING`.
 
-*Inheritance:* All custom functional roles automatically roll up into the native Snowflake `SYSADMIN` role. This allows Account-level administrators to oversee the architecture natively without borrowing external roles.
+*Inheritance:* The `LOAD`, `CICD`, and `TRANSFORM` functional roles automatically roll up into the environment's `ADMIN` role. The `ADMIN` role then maps into the native Snowflake `SYSADMIN`. This ensures the Admin can act upon any downstream objects inherently.
 
 ### Machine Users & Authentication
 Passwords are intentionally disabled. Authentication relies entirely on Key-Pair (RSA) authentication to ensure robust security for automated processes.
