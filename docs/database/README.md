@@ -17,6 +17,7 @@ All schemas are created `WITH MANAGED ACCESS`. This means object privileges are 
 * **`RAW`**: Persistent historical storage. Retains a complete, untruncated history of all ingested data over time.
 * **`STAGING`**: The transformation layer. Where JSON is flattened, data types are cast, and daily deltas/calculations are performed using dbt.
 * **`MART`**: The presentation layer. Houses the final clean dimensional tables (Star Schema) optimized for Streamlit visualizations.
+* **`TECH`**: The technical tracking schema. Dedicated entirely to CI/CD state management and administrative logs (e.g., tracking applied deployment files).
 
 ## 2. Compute Infrastructure (Virtual Warehouses)
 
@@ -41,7 +42,7 @@ Both runtime properties and financial bounds are uniformly enforced across all t
 The environment utilizes a modern two-tier Role-Based Access Control hierarchy, leveraging underlying "Object Roles" mapped upwards into broader "Functional Roles".
 
 ### 3.1 Schema Object Roles
-For every schema (`LANDING`, `RAW`, `STAGING`, `MART`), three distinct access profiles reside underneath the hood:
+For every schema (`LANDING`, `RAW`, `STAGING`, `MART`, `TECH`), three distinct access profiles reside underneath the hood:
 - **`_SR` (Schema Read)**: Grants `USAGE`, `SELECT`, and `READ` on all existing/future objects.
 - **`_SW` (Schema Write)**: Inherits `_SR`, and adds `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, and `WRITE`.
 - **`_SFULL` (Schema Full)**: Inherits `_SW`, and adds `CREATE TABLE/VIEW/STAGE/TASK/DYNAMIC TABLE` capability. Holds `OWNERSHIP` over standard objects (Tables, Views, Stages, etc). *(Note: Compute objects like Tasks, Dynamic Tables, and Streamlits bypass this and are owned directly by Functional Roles).*
