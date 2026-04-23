@@ -23,13 +23,13 @@ All schemas are created `WITH MANAGED ACCESS`. This means object privileges are 
 
 Operations are split across dedicated warehouses to allow for workload isolation without encountering concurrency bottlenecks.
 
-* **`YT_SF_CICD_WH`**: Dedicated orchestrator warehouse for GitHub Actions.
-* **`YT_SF_LOAD_WH`**: Dedicated ingestion warehouse for Python API extraction.
+* **`YT_SF_CICD_WH`**: Dedicated orchestrator warehouse for GitHub Actions to run DDL scripts.
+* **`YT_SF_LOAD_WH`**: Dedicated warehouse for the Python data extraction and landing loads.
 * **`YT_SF_TRANSFORM_WH`**: Used for data transformations using dbt, as well as manual querying and analytical processes.
-* **`YT_SF_ADMIN_WH`**: Dedicated backend warehouse for the administrative/maintenance tasks and environmental debugging.
+* **`YT_SF_ADMIN_WH`**: Dedicated backend warehouse for administrative/maintenance tasks and debugging.
 
 ### Cost Controls (Resource Monitors)
-Both runtime properties and financial bounds are uniformly enforced across all three warehouses to prevent runaway costs:
+Both runtime properties and financial bounds are uniformly enforced across all warehouses to prevent runaway costs:
 * **Size**: `XSMALL` (consuming exactly 1 credit per hour).
 * **Auto-Suspend**: Configured to `60` seconds to minimize billing when idle.
 * **Monthly Quota Cap**: A Resource Monitor (`YT_SF_CICD_RM`, `YT_SF_LOAD_RM`, `YT_SF_TRANSFORM_RM`, `YT_SF_ADMIN_RM`) is independently attached to each warehouse, capping spending at **~5 EUR per month** per warehouse (roughly 2-5 Credits depending on enterprise tiering).
