@@ -13,11 +13,12 @@ The foundation relies on two core environments: Development (`DEV`) and Producti
         *   `MART` (Layer 4): Presentation layer for different visualizations (e.g., Streamlit). *Note: As the project is currently simple, these visualization models can essentially be lightweight views built directly on top of Layer 3.*
 
 **Warehouse & Compute Strategy:**
-To ensure workload isolation and prevent concurrency bottlenecks, compute is split across three dedicated **X-Small (X-SMALL)** Virtual Warehouses with 60-second auto-suspend:
-*   `YT_SF_CICD_WH`: For automated deployments and CI/CD pipelines.
+To ensure workload isolation and prevent concurrency bottlenecks, compute is split across four dedicated **X-Small (X-SMALL)** Virtual Warehouses with 60-second auto-suspend:
+*   `YT_SF_CICD_WH`: For automated deployments and CI/CD orchestration.
+*   `YT_SF_LOAD_WH`: For Python data extraction and ingestion into Landing.
 *   `YT_SF_TRANSFORM_WH`: For dbt transformations and analytical querying.
 *   `YT_SF_ADMIN_WH`: For database administration and maintenance.
-*Cost Controls:* Each warehouse is strictly bound by its own Resource Monitor (`YT_SF_CICD_RM`, etc.), capping spend at ~5 EUR per month.
+*Cost Controls:* Each warehouse is strictly bound by its own Resource Monitor (`YT_SF_CICD_RM`, `YT_SF_LOAD_RM`, etc.), capping spend at ~5 EUR per month.
 
 ## 2. Data Modeling Strategy (dbt Layer)
 The pipeline will adopt a Kimball Dimensional Modeling approach (Star Schema) in the presentation layer.
