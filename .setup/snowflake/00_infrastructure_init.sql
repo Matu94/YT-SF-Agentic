@@ -100,6 +100,8 @@ CREATE SCHEMA IF NOT EXISTS YT_SF_PROD.MART WITH MANAGED ACCESS
   COMMENT = 'Presentation layer for visualizations';
 CREATE SCHEMA IF NOT EXISTS YT_SF_PROD.TECH WITH MANAGED ACCESS
   COMMENT = 'Technical schema for CI/CD tracking and logs';
+CREATE SCHEMA IF NOT EXISTS YT_SF_PROD.TECH_BKP WITH MANAGED ACCESS
+  COMMENT = 'Backup schema for manual and automated pre-migration snapshots';
 
 -- DEV SCHEMAS
 CREATE SCHEMA IF NOT EXISTS YT_SF_DEV.LANDING WITH MANAGED ACCESS
@@ -112,3 +114,5 @@ CREATE SCHEMA IF NOT EXISTS YT_SF_DEV.MART WITH MANAGED ACCESS
   COMMENT = 'Presentation layer for visualizations (DEV)';
 CREATE SCHEMA IF NOT EXISTS YT_SF_DEV.TECH WITH MANAGED ACCESS
   COMMENT = 'Technical schema for CI/CD tracking and logs (DEV)';
+CREATE SCHEMA IF NOT EXISTS YT_SF_DEV.TECH_BKP WITH MANAGED ACCESS
+  COMMENT = 'Backup schema for manual and automated pre-migration snapshots (DEV)';
