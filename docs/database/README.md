@@ -18,6 +18,7 @@ All schemas are created `WITH MANAGED ACCESS`. This means object privileges are 
 * **`STAGING`**: The transformation layer. Where JSON is flattened, data types are cast, and daily deltas/calculations are performed using dbt.
 * **`MART`**: The presentation layer. Houses the final clean dimensional tables (Star Schema) optimized for Streamlit visualizations.
 * **`TECH`**: The technical tracking schema. Dedicated entirely to CI/CD state management and administrative logs (e.g., tracking applied deployment files).
+* **`TECH_BKP`**: The backup schema. A safe sandbox for manual snapshots of any object (tables cloned with `CREATE TABLE ... CLONE`, stored procedures, ad-hoc query results) before risky migrations or DDL changes. Objects here are **never** touched by automated pipelines.
 
 ## 2. Compute Infrastructure (Virtual Warehouses)
 
@@ -43,7 +44,7 @@ Both runtime properties and financial bounds are uniformly enforced across all w
 The environment utilizes a modern two-tier Role-Based Access Control hierarchy, leveraging underlying "Object Roles" mapped upwards into broader "Functional Roles".
 
 ### 3.1 Schema Object Roles
-For every schema (`LANDING`, `RAW`, `STAGING`, `MART`, `TECH`), three distinct access profiles reside underneath the hood:
+For every schema (`LANDING`, `RAW`, `STAGING`, `MART`, `TECH`, `TECH_BKP`), three distinct access profiles reside underneath the hood:
 - **`_SR` (Schema Read)**: Grants `USAGE`, `SELECT`, and `READ` on all existing/future objects.
 - **`_SW` (Schema Write)**: Inherits `_SR`, and adds `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, and `WRITE`.
 - **`_SFULL` (Schema Full)**: Inherits `_SW`, and adds `CREATE TABLE/VIEW/STAGE/TASK/DYNAMIC TABLE` capability. Holds `OWNERSHIP` over standard objects (Tables, Views, Stages, etc). *(Note: Compute objects like Tasks, Dynamic Tables, and Streamlits bypass this and are owned directly by Functional Roles).*
@@ -63,6 +64,8 @@ The underlying Schema Object Roles are then distributed to the following Functio
 4. **`YT_SF_{ENV}_TRANSFORM_ROLE`**
     * ***Purpose:*** Data Build Tool (dbt) processing and manual querying.
     * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`. Holds `EXECUTE TASK` globally. Permanently owns all future Tasks, Dynamic Tables, and Streamlits downstream of `LANDING`.
+
+> **`TECH_BKP` Access Policy:** Only `ADMIN_ROLE` receives `_SFULL` on `TECH_BKP`. `CICD_ROLE` receives `_SR` (read-only). `LOAD_ROLE` and `TRANSFORM_ROLE` have **no access** to this schema. This ensures automated pipelines can never accidentally overwrite or read from backup objects.
 
 *Inheritance:* The `LOAD`, `CICD`, and `TRANSFORM` functional roles automatically roll up into the environment's `ADMIN` role. The `ADMIN` role then maps into the native Snowflake `SYSADMIN`. This ensures the Admin can act upon any downstream objects inherently.
 

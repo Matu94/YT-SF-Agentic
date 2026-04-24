@@ -11,6 +11,8 @@ The foundation relies on two core environments: Development (`DEV`) and Producti
         *   `RAW` (Layer 2): Persistent historical storage layer. Stores all data including historical loads, updating existing records from the `LANDING` layer.
         *   `STAGING` (Layer 3): Processing layer where required calculations are performed and correct column formats/data types are applied.
         *   `MART` (Layer 4): Presentation layer for different visualizations (e.g., Streamlit). *Note: As the project is currently simple, these visualization models can essentially be lightweight views built directly on top of Layer 3.*
+        *   `TECH` (Infrastructure): CI/CD deployment tracking, External Network Access objects (Secrets, Network Rules).
+        *   `TECH_BKP` (Infrastructure): Manual backup sandbox. Holds cloned tables, ad-hoc snapshots, and any object copy created before a risky migration. Never touched by automated pipelines.
 
 **Warehouse & Compute Strategy:**
 To ensure workload isolation and prevent concurrency bottlenecks, compute is split across four dedicated **X-Small (X-SMALL)** Virtual Warehouses with 60-second auto-suspend:
