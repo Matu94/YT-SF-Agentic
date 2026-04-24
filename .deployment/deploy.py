@@ -273,101 +273,101 @@ def cmd_seed(args):
     ]
     all_files.sort()
 
-        if not all_files:
-            print("No files to seed.")
-            return
+    if not all_files:
+        print("No files to seed.")
+        return
 
-        print(f"Seeding started for folder: '{COMPONENT}'")
+    print(f"Seeding started for folder: '{COMPONENT}'")
 
-        deployment_id = str(uuid.uuid4())
-        start_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Deployment ID (Seed): {deployment_id}")
-        
-        summary_lines = [f"## Seed Summary (`{COMPONENT}`)"]
-        summary_lines.append(f"**Deployment ID**: `{deployment_id}` | **Branch**: `{branch}`\n")
-        summary_lines.append("| File | Status | Detail |")
-        summary_lines.append("| --- | --- | --- |")
+    deployment_id = str(uuid.uuid4())
+    start_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    print(f"Deployment ID (Seed): {deployment_id}")
 
-        conn = snowflake_connect()
-        try:
-            cur = conn.cursor()
-            bootstrap_tables(cur)
+    summary_lines = [f"## Seed Summary (`{COMPONENT}`)"]
+    summary_lines.append(f"**Deployment ID**: `{deployment_id}` | **Branch**: `{branch}`\n")
+    summary_lines.append("| File | Status | Detail |")
+    summary_lines.append("| --- | --- | --- |")
 
-            cur.execute("""
-                INSERT INTO TECH.DEPLOYMENT_HISTORY
-                (DEPLOYMENT_ID, FOLDER_NAME, COMMIT_SHA, DEPLOYMENT_STATUS, START_TIME, BRANCH_NAME)
-                VALUES (%s, %s, %s, 'PENDING', %s, %s)
-            """, (deployment_id, COMPONENT, commit, start_time, branch))
+    conn = snowflake_connect()
+    try:
+        cur = conn.cursor()
+        bootstrap_tables(cur)
 
-            # Query already-deployed (file_path, file_hash) pairs across all branches
-            cur.execute("""
-                SELECT fh.FILE_PATH, fh.FILE_HASH
-                FROM TECH.DEPLOYMENT_FILE_HISTORY fh
-                JOIN TECH.DEPLOYMENT_HISTORY h ON fh.DEPLOYMENT_ID = h.DEPLOYMENT_ID
-                WHERE h.DEPLOYMENT_ID != %s AND fh.STATUS = 'SUCCESS' AND fh.FILE_HASH IS NOT NULL
-            """, (deployment_id,))
-            deployed = {(row[0], row[1]) for row in cur.fetchall()}
+        cur.execute("""
+            INSERT INTO TECH.DEPLOYMENT_HISTORY
+            (DEPLOYMENT_ID, FOLDER_NAME, COMMIT_SHA, DEPLOYMENT_STATUS, START_TIME, BRANCH_NAME)
+            VALUES (%s, %s, %s, 'PENDING', %s, %s)
+        """, (deployment_id, COMPONENT, commit, start_time, branch))
 
-            files_to_seed = [
-                f for f in all_files
-                if os.path.isfile(f) and (f, file_hash(f)) not in deployed
-            ]
-            
-            for f in all_files:
-                if os.path.isfile(f) and (f, file_hash(f)) in deployed:
-                    summary_lines.append(f"| `{f}` | ⏭️ Skipped | Already registered |")
+        # Query already-deployed (file_path, file_hash) pairs across all branches
+        cur.execute("""
+            SELECT fh.FILE_PATH, fh.FILE_HASH
+            FROM TECH.DEPLOYMENT_FILE_HISTORY fh
+            JOIN TECH.DEPLOYMENT_HISTORY h ON fh.DEPLOYMENT_ID = h.DEPLOYMENT_ID
+            WHERE h.DEPLOYMENT_ID != %s AND fh.STATUS = 'SUCCESS' AND fh.FILE_HASH IS NOT NULL
+        """, (deployment_id,))
+        deployed = {(row[0], row[1]) for row in cur.fetchall()}
 
-            if not files_to_seed:
-                print("All files already seeded/deployed. Nothing to do.")
-                cur.execute(
-                    "UPDATE TECH.DEPLOYMENT_HISTORY SET DEPLOYMENT_STATUS = 'SUCCESS', END_TIME = CURRENT_TIMESTAMP() WHERE DEPLOYMENT_ID = %s",
-                    (deployment_id,),
-                )
-                _write_last_commit(commit)
-                if len(all_files) == 0:
-                    summary_lines.append(f"> No `{COMPONENT}` sql files detected in change list.")
-                append_step_summary("\n".join(summary_lines))
-                return
+        files_to_seed = [
+            f for f in all_files
+            if os.path.isfile(f) and (f, file_hash(f)) not in deployed
+        ]
 
-            for fp in files_to_seed:
-                if not os.path.isfile(fp):
-                    print(f"  ⚠️ Skipping (not found): {fp}")
-                    summary_lines.append(f"| `{fp}` | ⚠️ Skipped | File not found physically |")
-                    continue
+        for f in all_files:
+            if os.path.isfile(f) and (f, file_hash(f)) in deployed:
+                summary_lines.append(f"| `{f}` | ⏭️ Skipped | Already registered |")
 
-                fhash = file_hash(fp)
-                try:
-                    cur.execute("""
-                        INSERT INTO TECH.DEPLOYMENT_FILE_HISTORY
-                        (DEPLOYMENT_ID, FILE_PATH, FILE_HASH, STATUS, DEPLOYED_AT)
-                        VALUES (%s, %s, %s, 'SUCCESS', CURRENT_TIMESTAMP())
-                    """, (deployment_id, fp, fhash))
-                    print(f"  ✓ Seeded {fp}")
-                    summary_lines.append(f"| `{fp}` | ✅ Seeded | Metadata injected |")
-                except Exception as e:
-                    err_msg = str(e)[:1000]
-                    cur.execute("""
-                        INSERT INTO TECH.DEPLOYMENT_FILE_HISTORY
-                        (DEPLOYMENT_ID, FILE_PATH, FILE_HASH, STATUS, ERROR_MESSAGE, DEPLOYED_AT)
-                        VALUES (%s, %s, %s, 'FAILED', %s, CURRENT_TIMESTAMP())
-                    """, (deployment_id, fp, fhash, err_msg))
-                    cur.execute(
-                        "UPDATE TECH.DEPLOYMENT_HISTORY SET DEPLOYMENT_STATUS = 'FAILED', END_TIME = CURRENT_TIMESTAMP() WHERE DEPLOYMENT_ID = %s",
-                        (deployment_id,),
-                    )
-                    print(f"  ✗ {fp}: {e}", file=sys.stderr)
-                    summary_lines.append(f"| `{fp}` | ❌ Failed | `{err_msg}` |")
-                    append_step_summary("\n".join(summary_lines))
-                    sys.exit(1)
-
+        if not files_to_seed:
+            print("All files already seeded/deployed. Nothing to do.")
             cur.execute(
                 "UPDATE TECH.DEPLOYMENT_HISTORY SET DEPLOYMENT_STATUS = 'SUCCESS', END_TIME = CURRENT_TIMESTAMP() WHERE DEPLOYMENT_ID = %s",
                 (deployment_id,),
             )
-            print("✅ Seeding complete.")
+            _write_last_commit(commit)
+            if len(all_files) == 0:
+                summary_lines.append(f"> No `{COMPONENT}` sql files detected in change list.")
             append_step_summary("\n".join(summary_lines))
-        finally:
-            conn.close()
+            return
+
+        for fp in files_to_seed:
+            if not os.path.isfile(fp):
+                print(f"  ⚠️ Skipping (not found): {fp}")
+                summary_lines.append(f"| `{fp}` | ⚠️ Skipped | File not found physically |")
+                continue
+
+            fhash = file_hash(fp)
+            try:
+                cur.execute("""
+                    INSERT INTO TECH.DEPLOYMENT_FILE_HISTORY
+                    (DEPLOYMENT_ID, FILE_PATH, FILE_HASH, STATUS, DEPLOYED_AT)
+                    VALUES (%s, %s, %s, 'SUCCESS', CURRENT_TIMESTAMP())
+                """, (deployment_id, fp, fhash))
+                print(f"  ✓ Seeded {fp}")
+                summary_lines.append(f"| `{fp}` | ✅ Seeded | Metadata injected |")
+            except Exception as e:
+                err_msg = str(e)[:1000]
+                cur.execute("""
+                    INSERT INTO TECH.DEPLOYMENT_FILE_HISTORY
+                    (DEPLOYMENT_ID, FILE_PATH, FILE_HASH, STATUS, ERROR_MESSAGE, DEPLOYED_AT)
+                    VALUES (%s, %s, %s, 'FAILED', %s, CURRENT_TIMESTAMP())
+                """, (deployment_id, fp, fhash, err_msg))
+                cur.execute(
+                    "UPDATE TECH.DEPLOYMENT_HISTORY SET DEPLOYMENT_STATUS = 'FAILED', END_TIME = CURRENT_TIMESTAMP() WHERE DEPLOYMENT_ID = %s",
+                    (deployment_id,),
+                )
+                print(f"  ✗ {fp}: {e}", file=sys.stderr)
+                summary_lines.append(f"| `{fp}` | ❌ Failed | `{err_msg}` |")
+                append_step_summary("\n".join(summary_lines))
+                sys.exit(1)
+
+        cur.execute(
+            "UPDATE TECH.DEPLOYMENT_HISTORY SET DEPLOYMENT_STATUS = 'SUCCESS', END_TIME = CURRENT_TIMESTAMP() WHERE DEPLOYMENT_ID = %s",
+            (deployment_id,),
+        )
+        print("✅ Seeding complete.")
+        append_step_summary("\n".join(summary_lines))
+    finally:
+        conn.close()
 
     _write_last_commit(commit)
 
@@ -394,111 +394,111 @@ def cmd_deploy(args):
     ]
     all_files.sort()
 
-        if not all_files:
-            print("No files to deploy.")
-            return
+    if not all_files:
+        print("No files to deploy.")
+        return
 
-        print(f"Deployment started for folder: '{COMPONENT}'")
+    print(f"Deployment started for folder: '{COMPONENT}'")
 
-        if dry_run:
-            _dry_run(all_files)
-            return
+    if dry_run:
+        _dry_run(all_files)
+        return
 
-        deployment_id = str(uuid.uuid4())
-        start_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        print(f"Deployment ID: {deployment_id}")
-        
-        summary_lines = [f"## Deployment Summary (`{COMPONENT}`)"]
-        summary_lines.append(f"**Deployment ID**: `{deployment_id}` | **Branch**: `{branch}`\n")
-        summary_lines.append("| File | Status | Detail |")
-        summary_lines.append("| --- | --- | --- |")
+    deployment_id = str(uuid.uuid4())
+    start_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    print(f"Deployment ID: {deployment_id}")
 
-        conn = snowflake_connect()
-        try:
-            cur = conn.cursor()
-            bootstrap_tables(cur)
+    summary_lines = [f"## Deployment Summary (`{COMPONENT}`)"]
+    summary_lines.append(f"**Deployment ID**: `{deployment_id}` | **Branch**: `{branch}`\n")
+    summary_lines.append("| File | Status | Detail |")
+    summary_lines.append("| --- | --- | --- |")
 
-            cur.execute("""
-                INSERT INTO TECH.DEPLOYMENT_HISTORY
-                (DEPLOYMENT_ID, FOLDER_NAME, COMMIT_SHA, DEPLOYMENT_STATUS, START_TIME, BRANCH_NAME)
-                VALUES (%s, %s, %s, 'PENDING', %s, %s)
-            """, (deployment_id, COMPONENT, commit, start_time, branch))
+    conn = snowflake_connect()
+    try:
+        cur = conn.cursor()
+        bootstrap_tables(cur)
 
-            # Query already-deployed (file_path, file_hash) pairs across all branches
-            cur.execute("""
-                SELECT fh.FILE_PATH, fh.FILE_HASH
-                FROM TECH.DEPLOYMENT_FILE_HISTORY fh
-                JOIN TECH.DEPLOYMENT_HISTORY h ON fh.DEPLOYMENT_ID = h.DEPLOYMENT_ID
-                WHERE h.DEPLOYMENT_ID != %s AND fh.STATUS = 'SUCCESS' AND fh.FILE_HASH IS NOT NULL
-            """, (deployment_id,))
-            deployed = {(row[0], row[1]) for row in cur.fetchall()}
+        cur.execute("""
+            INSERT INTO TECH.DEPLOYMENT_HISTORY
+            (DEPLOYMENT_ID, FOLDER_NAME, COMMIT_SHA, DEPLOYMENT_STATUS, START_TIME, BRANCH_NAME)
+            VALUES (%s, %s, %s, 'PENDING', %s, %s)
+        """, (deployment_id, COMPONENT, commit, start_time, branch))
 
-            files_to_deploy = [
-                f for f in all_files
-                if os.path.isfile(f) and (f, file_hash(f)) not in deployed
-            ]
-            
-            for f in all_files:
-                if os.path.isfile(f) and (f, file_hash(f)) in deployed:
-                    summary_lines.append(f"| `{f}` | ⏭️ Skipped | Hash matches existing history |")
+        # Query already-deployed (file_path, file_hash) pairs across all branches
+        cur.execute("""
+            SELECT fh.FILE_PATH, fh.FILE_HASH
+            FROM TECH.DEPLOYMENT_FILE_HISTORY fh
+            JOIN TECH.DEPLOYMENT_HISTORY h ON fh.DEPLOYMENT_ID = h.DEPLOYMENT_ID
+            WHERE h.DEPLOYMENT_ID != %s AND fh.STATUS = 'SUCCESS' AND fh.FILE_HASH IS NOT NULL
+        """, (deployment_id,))
+        deployed = {(row[0], row[1]) for row in cur.fetchall()}
 
-            if not files_to_deploy:
-                print("All files already deployed successfully. Nothing to do.")
-                cur.execute(
-                    "UPDATE TECH.DEPLOYMENT_HISTORY SET DEPLOYMENT_STATUS = 'SUCCESS', END_TIME = CURRENT_TIMESTAMP() WHERE DEPLOYMENT_ID = %s",
-                    (deployment_id,),
-                )
-                _write_last_commit(commit)
-                if len(all_files) == 0:
-                    summary_lines.append(f"> No `{COMPONENT}` sql files detected in change list.")
-                append_step_summary("\n".join(summary_lines))
-                return
+        files_to_deploy = [
+            f for f in all_files
+            if os.path.isfile(f) and (f, file_hash(f)) not in deployed
+        ]
 
-            for fp in files_to_deploy:
-                if not os.path.isfile(fp):
-                    print(f"  ⚠️ Skipping (not found): {fp}")
-                    summary_lines.append(f"| `{fp}` | ⚠️ Skipped | File missing |")
-                    continue
+        for f in all_files:
+            if os.path.isfile(f) and (f, file_hash(f)) in deployed:
+                summary_lines.append(f"| `{f}` | ⏭️ Skipped | Hash matches existing history |")
 
-                sql = Path(fp).read_text()
-                for var in ("SNOWFLAKE_DATABASE", "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_ENVIRONMENT"):
-                    sql = sql.replace(f"{{{{{var}}}}}", os.environ.get(var, ""))
-
-                fhash = file_hash(fp)
-                try:
-                    cur.execute(sql, num_statements=0)
-                    consume_results(cur)
-                    cur.execute("""
-                        INSERT INTO TECH.DEPLOYMENT_FILE_HISTORY
-                        (DEPLOYMENT_ID, FILE_PATH, FILE_HASH, STATUS, DEPLOYED_AT)
-                        VALUES (%s, %s, %s, 'SUCCESS', CURRENT_TIMESTAMP())
-                    """, (deployment_id, fp, fhash))
-                    print(f"  ✓ {fp}")
-                    summary_lines.append(f"| `{fp}` | ✅ Executed | |")
-                except Exception as e:
-                    err_msg = str(e)[:1000]
-                    cur.execute("""
-                        INSERT INTO TECH.DEPLOYMENT_FILE_HISTORY
-                        (DEPLOYMENT_ID, FILE_PATH, FILE_HASH, STATUS, ERROR_MESSAGE, DEPLOYED_AT)
-                        VALUES (%s, %s, %s, 'FAILED', %s, CURRENT_TIMESTAMP())
-                    """, (deployment_id, fp, fhash, err_msg))
-                    cur.execute(
-                        "UPDATE TECH.DEPLOYMENT_HISTORY SET DEPLOYMENT_STATUS = 'FAILED', END_TIME = CURRENT_TIMESTAMP() WHERE DEPLOYMENT_ID = %s",
-                        (deployment_id,),
-                    )
-                    print(f"  ✗ {fp}: {e}", file=sys.stderr)
-                    summary_lines.append(f"| `{fp}` | ❌ Failed | `{err_msg}` |")
-                    append_step_summary("\n".join(summary_lines))
-                    sys.exit(1)
-
+        if not files_to_deploy:
+            print("All files already deployed successfully. Nothing to do.")
             cur.execute(
                 "UPDATE TECH.DEPLOYMENT_HISTORY SET DEPLOYMENT_STATUS = 'SUCCESS', END_TIME = CURRENT_TIMESTAMP() WHERE DEPLOYMENT_ID = %s",
                 (deployment_id,),
             )
-            print("SQL executed successfully.")
+            _write_last_commit(commit)
+            if len(all_files) == 0:
+                summary_lines.append(f"> No `{COMPONENT}` sql files detected in change list.")
             append_step_summary("\n".join(summary_lines))
-        finally:
-            conn.close()
+            return
+
+        for fp in files_to_deploy:
+            if not os.path.isfile(fp):
+                print(f"  ⚠️ Skipping (not found): {fp}")
+                summary_lines.append(f"| `{fp}` | ⚠️ Skipped | File missing |")
+                continue
+
+            sql = Path(fp).read_text()
+            for var in ("SNOWFLAKE_DATABASE", "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_ENVIRONMENT"):
+                sql = sql.replace(f"{{{{{var}}}}}", os.environ.get(var, ""))
+
+            fhash = file_hash(fp)
+            try:
+                cur.execute(sql, num_statements=0)
+                consume_results(cur)
+                cur.execute("""
+                    INSERT INTO TECH.DEPLOYMENT_FILE_HISTORY
+                    (DEPLOYMENT_ID, FILE_PATH, FILE_HASH, STATUS, DEPLOYED_AT)
+                    VALUES (%s, %s, %s, 'SUCCESS', CURRENT_TIMESTAMP())
+                """, (deployment_id, fp, fhash))
+                print(f"  ✓ {fp}")
+                summary_lines.append(f"| `{fp}` | ✅ Executed | |")
+            except Exception as e:
+                err_msg = str(e)[:1000]
+                cur.execute("""
+                    INSERT INTO TECH.DEPLOYMENT_FILE_HISTORY
+                    (DEPLOYMENT_ID, FILE_PATH, FILE_HASH, STATUS, ERROR_MESSAGE, DEPLOYED_AT)
+                    VALUES (%s, %s, %s, 'FAILED', %s, CURRENT_TIMESTAMP())
+                """, (deployment_id, fp, fhash, err_msg))
+                cur.execute(
+                    "UPDATE TECH.DEPLOYMENT_HISTORY SET DEPLOYMENT_STATUS = 'FAILED', END_TIME = CURRENT_TIMESTAMP() WHERE DEPLOYMENT_ID = %s",
+                    (deployment_id,),
+                )
+                print(f"  ✗ {fp}: {e}", file=sys.stderr)
+                summary_lines.append(f"| `{fp}` | ❌ Failed | `{err_msg}` |")
+                append_step_summary("\n".join(summary_lines))
+                sys.exit(1)
+
+        cur.execute(
+            "UPDATE TECH.DEPLOYMENT_HISTORY SET DEPLOYMENT_STATUS = 'SUCCESS', END_TIME = CURRENT_TIMESTAMP() WHERE DEPLOYMENT_ID = %s",
+            (deployment_id,),
+        )
+        print("SQL executed successfully.")
+        append_step_summary("\n".join(summary_lines))
+    finally:
+        conn.close()
 
     _write_last_commit(commit)
     print("✅ DDL deployment complete.")
