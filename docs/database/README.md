@@ -18,7 +18,7 @@ All schemas are created `WITH MANAGED ACCESS`. This means object privileges are 
 * **`STAGING`**: The transformation layer. Where JSON is flattened, data types are cast, and daily deltas/calculations are performed using dbt.
 * **`MART`**: The presentation layer. Houses the final clean dimensional tables (Star Schema) optimized for Streamlit visualizations.
 * **`TECH`**: The technical tracking schema. Dedicated entirely to CI/CD state management and administrative logs (e.g., tracking applied deployment files).
-* **`TECH_BKP`**: The backup schema. A safe sandbox for manual snapshots of any object (tables cloned with `CREATE TABLE ... CLONE`, stored procedures, ad-hoc query results) before risky migrations or DDL changes. Objects here are **never** touched by automated pipelines.
+* **`TECH_BKP`**: The backup schema. Used both for **manual admin snapshots** and **automated pre-migration backups** triggered by the CI/CD pipeline. Before any destructive DDL (e.g., adding a column, recreating a table), the pipeline clones the existing object here, allowing data to be read back and re-ingested if the migration needs to be rolled back.
 
 ## 2. Compute Infrastructure (Virtual Warehouses)
 
@@ -65,7 +65,11 @@ The underlying Schema Object Roles are then distributed to the following Functio
     * ***Purpose:*** Data Build Tool (dbt) processing and manual querying.
     * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`. Holds `EXECUTE TASK` globally. Permanently owns all future Tasks, Dynamic Tables, and Streamlits downstream of `LANDING`.
 
-> **`TECH_BKP` Access Policy:** Only `ADMIN_ROLE` receives `_SFULL` on `TECH_BKP`. `CICD_ROLE` receives `_SR` (read-only). `LOAD_ROLE` and `TRANSFORM_ROLE` have **no access** to this schema. This ensures automated pipelines can never accidentally overwrite or read from backup objects.
+> **`TECH_BKP` Access Policy:**
+> - `ADMIN_ROLE` → `_SFULL`: Full ownership and management.
+> - `CICD_ROLE` → `_SFULL`: Full access required so the deployment pipeline can clone objects into this schema before a destructive migration, insert backup data, and read it back during a rollback within the same pipeline run.
+> - `LOAD_ROLE` → **No access**: The ingestion pipeline is completely blind to this schema.
+> - `TRANSFORM_ROLE` → **No access**: dbt models never reference backup objects.
 
 *Inheritance:* The `LOAD`, `CICD`, and `TRANSFORM` functional roles automatically roll up into the environment's `ADMIN` role. The `ADMIN` role then maps into the native Snowflake `SYSADMIN`. This ensures the Admin can act upon any downstream objects inherently.
 
