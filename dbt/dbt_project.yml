@@ -1,0 +1,28 @@
+name: 'youtube_metrics'
+version: '1.0.0'
+config-version: 2
+
+profile: 'youtube_metrics'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  youtube_metrics:
+    raw:
+      +schema: RAW
+      +materialized: incremental
+    staging:
+      +schema: STAGING
+      +materialized: view
+    mart:
+      +schema: MART
+      +materialized: table

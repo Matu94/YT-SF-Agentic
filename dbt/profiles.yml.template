@@ -1,0 +1,28 @@
+youtube_metrics:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      role: YT_SF_DEV_TRANSFORM_ROLE
+      warehouse: YT_SF_TRANSFORM_WH
+      database: YT_SF_DEV
+      schema: TECH
+      threads: 4
+      client_session_keep_alive: False
+      authenticator: SNOWFLAKE_JWT
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      role: YT_SF_PROD_TRANSFORM_ROLE
+      warehouse: YT_SF_TRANSFORM_WH
+      database: YT_SF_PROD
+      schema: TECH
+      threads: 4
+      client_session_keep_alive: False
+      authenticator: SNOWFLAKE_JWT
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
