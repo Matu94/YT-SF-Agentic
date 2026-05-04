@@ -8,7 +8,14 @@ This project manages the transformation and semantic layers of the YouTube Metri
 - **Mart Layer (`models/mart/`)**: Implements the Kimball Star Schema (Facts and Dimensions).
 - **Snapshots (`snapshots/`)**: Implements SCD Type 2 tracking for channel metadata.
 
-## Setup
+## Setup & Execution
+This project uses the **Snowflake-integrated dbt** environment for production workloads. 
+
+### Production Runs
+*   **Triggered**: Automatically via GitHub integration or dbt Cloud scheduler.
+*   **Credentials**: Managed securely within the dbt Cloud / Snowflake interface.
+
+### Local Development (Optional)
 1.  Copy `profiles.yml.template` to `~/.dbt/profiles.yml`.
 2.  Set the following environment variables:
     - `SNOWFLAKE_ACCOUNT`

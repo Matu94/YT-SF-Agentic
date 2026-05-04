@@ -2,7 +2,13 @@
 
 dbt (data build tool) is the "T" in **ELT** (Extract, Load, Transform). It does not move data from one place to another; instead, it provides a framework to transform data that is already inside your warehouse (Snowflake) using SQL.
 
-## 1. Core Syntax: Beyond Plain SQL
+## 1. Integrated Environment: "Built-in" dbt
+In this project, we leverage the **Snowflake-integrated dbt** environment. This means that while our code lives in Git, the execution and management are deeply tied to the Snowflake ecosystem.
+*   **No Manual Install**: You don't necessarily need to install dbt locally for production runs; Snowflake handles the execution environment.
+*   **Cloud Connectivity**: The `profiles.yml` is typically managed within the dbt Cloud / Snowflake integration interface, securely storing credentials without needing them on your local machine.
+*   **Unified UI**: You can often view run histories and lineage directly within the integrated Snowflake/dbt dashboards.
+
+## 2. Core Syntax: Beyond Plain SQL
 The power of dbt comes from mixing SQL with **Jinja** (a Python-based templating language). This allows your code to be dynamic and aware of its environment.
 
 *   **`{{ source('schema', 'table') }}`**: Connects your models to the raw data in the `LANDING` or `RAW` schemas. It creates a formal dependency between dbt and the outside world.
