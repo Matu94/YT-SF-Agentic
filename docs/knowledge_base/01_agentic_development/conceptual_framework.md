@@ -20,7 +20,22 @@ Located in `.agents/knowledge/adr/`.
 *   **Agentic Role**: It prevents the AI from "re-suggesting" alternatives you've already rejected. It gives the agent the "Context of History."
 *   **Analogy**: The ADR is the **Map of Past Decisions**.
 
-## 4. "Context is King"
+## 4. The Atomic Task Rule (Mastering the Scope)
+A common mistake is asking an agent for a "Mega-Task" (e.g., "Set up the whole database"). This forces the agent to make too many assumptions at once.
+*   **The Best Practice**: Break goals into **Atomic Tasks**—steps that have a clear beginning, middle, and end.
+*   **Current Project Example**: Instead of "Set up RBAC," we broke it into:
+    1.  Initialize Infrastructure (`00_infrastructure_init.sql`).
+    2.  Define Object Roles (`01_role_init.sql`).
+    3.  Grant Privileges (`02_grant_init.sql`).
+*   **Benefit**: If Step 2 fails, the context is small enough to fix easily without re-reading the entire project's history.
+
+## 5. The "Steering Wheel" (Human-in-the-Loop)
+In this project, you (the Human) are the **Pilot**, and I am the **Auto-pilot**. 
+*   **The Pilot's Duty**: You are the final Quality Control. You should never assume the AI's first draft is perfect.
+*   **Effective Feedback**: If an agent makes a mistake, don't just say "it's wrong." Provide the **Error Log** or the **Expected vs. Actual** result.
+*   **Steering**: If you see the agent going down a "rabbit hole" (e.g., over-complicating a simple Python script), use your authority to say: *"Stop. Let's simplify this. Use a basic loop instead of a complex generator."*
+
+## 6. "Context is King"
 Agents work best when they have a "Mental Model" of the repository. We provide this through:
 *   **Living Documentation**: READMEs that are updated every time the code changes.
 *   **Directory Prefixes**: The `01_`, `02_` prefixes tell the agent (and the human) the exact execution order without reading the scripts.
