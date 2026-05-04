@@ -1,36 +1,81 @@
-# YouTube Metrics Pipeline
+# 🚀 YouTube Metrics Pipeline: An Agentic Data Odyssey
 
-![Status](https://img.shields.io/badge/Status-In%20Development-yellow) ![Snowflake](https://img.shields.io/badge/Built%20on-Snowflake-blue) ![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
+![Status](https://img.shields.io/badge/Status-In%20Development-yellow) ![Snowflake](https://img.shields.io/badge/Built%20on-Snowflake-blue) ![dbt](https://img.shields.io/badge/Logic-dbt-orange) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
 
-## Project Overview
-This project is an automated, end-to-end data pipeline designed to extract YouTube channel and video metrics, process them in Snowflake using dbt, and visualize the insights through an interactive Streamlit application. The ultimate goal is to provide deep insights into channel and video performance.
+An automated, end-to-end data platform built to extract, transform, and visualize YouTube channel performance. This project isn't just about data; it's a showcase of **Agentic AI Development**—a seamless synergy between human architectural vision and AI-driven implementation.
 
-The entire architecture and codebase are being designed and implemented using an agent-driven development methodology via Google Antigravity.
+---
 
-## Architecture
+## 🌌 The Vision
+Our mission is to turn raw, cumulative YouTube API metrics into deep, actionable insights for the **Cérnagyár** organization, starting with the **Fókusz Stúdió** creators. We leverage the full power of the Snowflake Native stack to build a platform that is scalable, cost-efficient, and secure.
 
-The pipeline uses a modern, robust data stack built on the following layers:
+## 🏗️ Technical Architecture
 
-1. **Extraction (Python)**: A Python-based automation script extracts historical and daily incremental metrics from the YouTube Data API.
-2. **Data Warehouse (Snowflake)**: A 4-layer architecture (`LANDING`, `RAW`, `STAGING`, `MART`) ensuring clean separation of transient api data, persistent history, and presentation-ready facts and dimensions.
-3. **Transformation (dbt)**: Utilizes the Kimball Dimensional Modeling approach (Star Schema). Handles daily delta calculations, static organization hierarchies mapping (e.g. Cérnagyár -> Fókusz Stúdió), and SCD Type 2 dimension tracking. 
-4. **Visualization (Streamlit)**: Serves as the presentation layer to generate and explore insights using the final `MART` schemas.
+```mermaid
+graph LR
+    subgraph "External"
+        API[YouTube Data API]
+    end
 
-## Infrastructure & Security
+    subgraph "Snowflake (Target)"
+        direction TB
+        L[01_LANDING] --> R[02_RAW]
+        R --> S[03_STAGING]
+        S --> M[04_MART]
+    end
 
-- **Workload Isolation & Cost Control**: Compute is split across dedicated virtual warehouses for CI/CD, extraction loading, transformation, and database administration. Each warehouse's spending is capped via independent Snowflake Resource Monitors.
-- **Role-Based Access Control**: Implements a strict two-tier Snowflake RBAC model separating schema-level Object Roles (`_SR`, `_SW`, `_SFULL`) from Functional Roles mapped to the principle of least privilege. 
-- **Authentication**: Key-Pair (RSA) authentication is utilized for machine and service users.
+    subgraph "Control Plane"
+        SP[Snowpark Python] --> API
+        Tasks[Snowflake Tasks] --> SP
+        dbt[dbt Cloud/Core] --> S
+    end
 
-For full database documentation, see [docs/database/README.md](docs/database/README.md).
+    subgraph "Presentation"
+        ST[Streamlit App]
+    end
 
-## Project Setup & Status
+    M --> ST
+```
 
-### Phase 1: The Base (Fókusz Stúdió) - *Current*
-- Laying the foundation mapping out the base internal hierarchy for initial tracking.
-- Initiating automated Snowflake infrastructure via setup scripts in `.setup/snowflake/`.
-- Developing the extraction pipeline and dbt transformations for cumulative metrics and daily delta calculation.
+### The Stack
+*   **Extraction**: Snowflake Native **Snowpark (Python)** Stored Procedures calling the YouTube API via External Network Access.
+*   **Orchestration**: Snowflake **Tasks** for daily 1-2x refresh cycles.
+*   **Transformation**: **dbt** (Data Build Tool) implementing Kimball Dimensional Modeling (Star Schema).
+*   **Infrastructure**: Custom Python-driven **DDL Deployment Engine** (`deploy.py`) for SHA256-based idempotency.
+*   **Governance**: Two-tier **RBAC** model with strict workload isolation and resource monitor capping (~5 EUR/month per warehouse).
 
-### Phase 2: Future Expansion - *Planned*
-- Streamlit Dashboard implementation.
-- Extending channel metrics modeling outside of initial seed hierarchy.
+---
+
+## 🧠 Agentic Development Methodology
+This repository is built using an **Agentic AI Lifecycle**. Every line of code and architectural pivot is a collaboration between the Human Pilot and a team of specialized AI Personas:
+
+*   **Antigravity**: The Architectural Conscience & Project Mentor.
+*   **Data Architect**: Strategic visionary for modeling and security.
+*   **Data Engineer**: Precision builder of dbt models and SQL logic.
+*   **DevOps Engineer**: Master of automation and the GitOps pipeline.
+*   **Product Manager**: Bridge between business vision and engineering requirements.
+
+---
+
+## 📚 Knowledge Base & Learning
+This project serves as a "Living Masterclass." Explore our domain-specific guides to learn the "Why" behind the architecture:
+
+*   📖 **[Agentic Framework](docs/knowledge_base/01_agentic_development/conceptual_framework.md)**: PRDs, ADRs, and the Atomic Task Rule.
+*   ❄️ **[Snowflake Patterns](docs/knowledge_base/02_snowflake/architecture_patterns.md)**: Medallion flow, RBAC, and Zero-Copy Cloning.
+*   🧡 **[dbt Essentials](docs/knowledge_base/03_dbt/dbt_essentials.md)**: Materializations, SCD Type 2, and Lineage.
+*   ⚙️ **[GitOps Principles](docs/knowledge_base/04_cicd/gitops_principles.md)**: SHA256 Idempotency and Environmental Isolation.
+
+---
+
+## 📂 Project Structure
+```text
+├── .agents/          # Personas, Rules, and ADRs
+├── .deployment/      # Custom Snowflake Deployer (Python)
+├── .setup/           # Baseline Snowflake Infrastructure (SQL)
+├── dbt/              # dbt Project (Models, Macros, Seeds)
+├── docs/             # Technical & Educational Documentation
+└── snowflake/        # Medallion Layer DDL (Layered & Prefixed)
+```
+
+---
+*Built with passion by **Matu94** & **Antigravity***
