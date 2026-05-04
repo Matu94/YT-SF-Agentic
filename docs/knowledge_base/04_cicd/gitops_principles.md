@@ -46,5 +46,10 @@ How do we know it worked without being a terminal expert?
 Every deployment leaves a digital breadcrumb.
 *   **`DEPLOYMENT_HISTORY`**: This table captures the `COMMIT_SHA` from Git, the `BRANCH_NAME`, and the `START_TIME`.
 *   **The Link**: This creates an unbreakable link between the code in GitHub and the state of the database in Snowflake. If something breaks, we know exactly which commit caused it.
+## 9. Integrated dbt Execution
+While our custom `deploy.py` engine handles the core Snowflake infrastructure (schemas, integrations, procedures), the **Integrated dbt environment** handles the data transformation logic.
+*   **Decoupled Deployment**: You can deploy new tables using the GitOps pipeline, and then immediately trigger the integrated dbt environment to populate them.
+*   **Centralized Secrets**: Credentials for the transformation layer are managed within the dbt Cloud / Snowflake interface, reducing the need for local `profiles.yml` management in production.
+
 ---
 *Created by **Senior DevOps Engineer** — Automation Expert*

@@ -27,7 +27,7 @@ graph LR
     subgraph "Control Plane"
         SP[Snowpark Python] --> API
         Tasks[Snowflake Tasks] --> SP
-        dbt[dbt Cloud/Core] --> S
+        dbt[dbt (Integrated/Cloud)] --> S
     end
 
     subgraph "Presentation"
@@ -40,7 +40,7 @@ graph LR
 ### The Stack
 *   **Extraction**: Snowflake Native **Snowpark (Python)** Stored Procedures calling the YouTube API via External Network Access.
 *   **Orchestration**: Snowflake **Tasks** for daily 1-2x refresh cycles.
-*   **Transformation**: **dbt** (Data Build Tool) implementing Kimball Dimensional Modeling (Star Schema).
+*   **Transformation**: **dbt** (Data Build Tool) implementing Kimball Dimensional Modeling (Star Schema). We utilize the **Snowflake-integrated environment** (dbt Cloud) for centralized management and execution.
 *   **Infrastructure**: Custom Python-driven **DDL Deployment Engine** (`deploy.py`) for SHA256-based idempotency.
 *   **Governance**: Two-tier **RBAC** model with strict workload isolation and resource monitor capping (~5 EUR/month per warehouse).
 
