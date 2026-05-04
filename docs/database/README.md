@@ -108,3 +108,21 @@ To recreate this environment from scratch identically, execute the scripts withi
 3. `02_grant_init.sql` *(Execution: SECURITYADMIN. NOTE: This executes the Object Role paradigm)*
 4. `03_user_init.sql` *(Execution: SECURITYADMIN)*
 5. `04_external_access.sql` *(Execution: ADMIN_ROLE per environment. NOTE: Replace API key placeholder before running!)*
+
+---
+
+## 6. Snowflake Native Git Integration & Workspaces
+
+The architecture leverages Snowflake's native Git Integration to provide a seamless bridge between version control and the Snowflake UI.
+
+### 6.1 Git Repository Object
+A `GIT_REPOSITORY` object is provisioned (typically in the `TECH` schema) to link the Snowflake account to this GitHub repository. This allows Snowflake to treat the repository as a specialized external stage.
+
+### 6.2 Key Capabilities
+*   **Direct Execution**: Assets like Snowpark Python scripts or SQL DDL can be executed directly from Git using `EXECUTE IMMEDIATE FROM @repo/branches/dev/path/to/script.sql`.
+*   **Snowflake Workspaces**: Developers can use the Snowflake Workspaces UI to browse, edit, and commit code directly back to the GitHub repository from within the Snowsight interface.
+*   **Streamlit Integration**: Streamlit applications can be deployed directly from a Git branch, ensuring the UI is always in sync with the latest code without manual uploads.
+
+### 6.3 Security Configuration
+*   **API Integration**: An account-level `API INTEGRATION` (created by `ACCOUNTADMIN`) handles the secure handshake with GitHub using a Personal Access Token (PAT) or SSH key.
+*   **Access Control**: The `YT_SF_{ENV}_ADMIN_ROLE` holds the `CREATE GIT REPOSITORY` privilege within its respective database to manage these integrations.
