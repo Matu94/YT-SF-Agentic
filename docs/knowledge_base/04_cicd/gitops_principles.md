@@ -25,7 +25,8 @@ For a beginner, the most important concept is the **Gatekeeper** system.
 A critical requirement for automated pipelines is **Idempotency**—the ability to run the same process multiple times without changing the result beyond the initial application.
 *   **SHA256 Hashing**: Our `deploy.py` engine generates a unique "fingerprint" for every file.
 *   **State Tracking**: Before executing a file, the engine checks the `TECH.DEPLOYMENT_FILE_HISTORY` table. If the hash matches, it knows the file hasn't changed and skips it.
-*   **Benefit**: This prevents "re-creating" objects that already exist and allows us to safely deploy only the "delta" (the new or modified code).
+*   **Safety Nets (Automated Backups)**: For table DDL changes, the engine automatically clones the existing table to `TECH_BKP` and restores data after the change, preventing data loss during migrations.
+*   **Benefit**: This prevents "re-creating" objects that already exist, allows us to safely deploy only the "delta", and provides a robust fallback for data preservation.
 
 ## 5. Dependency Management (Numerical Ordering)
 Unlike an app where code is loaded into memory, a database has strict dependencies (e.g., a View cannot exist without a Table).

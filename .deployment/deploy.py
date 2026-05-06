@@ -19,6 +19,7 @@ Usage:
 import argparse
 import hashlib
 import os
+import re
 import subprocess
 import sys
 import uuid
@@ -98,6 +99,120 @@ def consume_results(cursor):
             pass
         if not cursor.nextset():
             break
+
+
+# ---------------------------------------------------------------------------
+# Table backup & restore helpers
+# ---------------------------------------------------------------------------
+
+_TABLES_DIR_RE = re.compile(r"^(\d+_)?tables$", re.IGNORECASE)
+
+# Matches: CREATE [OR REPLACE] [TRANSIENT|TEMPORARY] TABLE [IF NOT EXISTS] [[db.]schema.]table
+# The optional (?:\w+\.)? absorbs the database prefix in 3-part names (db.schema.table),
+# so groups 1 and 2 always capture schema and table regardless of whether the db is specified.
+_CREATE_TABLE_RE = re.compile(
+    r"\bCREATE\b[^;]*?\bTABLE\b\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:\w+\.)?(\w+)\.(\w+)",
+    re.IGNORECASE | re.DOTALL,
+)
+
+
+def _is_table_file(fp: str) -> bool:
+    """Return True if the file path is a table DDL (lives under a *_tables or tables directory)."""
+    return any(_TABLES_DIR_RE.match(p) for p in Path(fp).parts) and fp.endswith(".sql")
+
+
+def _parse_schema_table(fp: str) -> tuple[str, str] | None:
+    """Extract (SCHEMA, TABLE) from the CREATE TABLE statement inside the DDL file."""
+    try:
+        content = Path(fp).read_text()
+    except OSError:
+        return None
+    m = _CREATE_TABLE_RE.search(content)
+    if not m:
+        return None
+    return m.group(1).upper(), m.group(2).upper()
+
+
+def _table_exists(cursor, database: str, schema: str, table: str) -> bool:
+    """Check whether a table already exists in Snowflake."""
+    cursor.execute(
+        "SELECT 1 FROM INFORMATION_SCHEMA.TABLES "
+        "WHERE TABLE_CATALOG = %s AND TABLE_SCHEMA = %s AND TABLE_NAME = %s AND TABLE_TYPE = 'BASE TABLE'",
+        (database.upper(), schema.upper(), table.upper()),
+    )
+    return cursor.fetchone() is not None
+
+
+def _backup_table(cursor, database: str, schema: str, table: str) -> str | None:
+    """Clone the table into TECH_BKP.  Returns the backup table name or None on failure."""
+    date_suffix = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    backup_name = f"{schema}_{table}_{date_suffix}"
+
+    # Detect transient tables so the clone preserves the property
+    cursor.execute(
+        "SELECT IS_TRANSIENT FROM INFORMATION_SCHEMA.TABLES "
+        "WHERE TABLE_CATALOG = %s AND TABLE_SCHEMA = %s AND TABLE_NAME = %s",
+        (database.upper(), schema.upper(), table.upper()),
+    )
+    row = cursor.fetchone()
+    transient_kw = "TRANSIENT " if row and row[0] == "YES" else ""
+
+    try:
+        cursor.execute(
+            f"CREATE OR REPLACE {transient_kw}TABLE TECH_BKP.{backup_name} "
+            f"CLONE {schema}.{table}"
+        )
+        consume_results(cursor)
+        print(f"    ↳ Backup created: TECH_BKP.{backup_name}")
+        return backup_name
+    except Exception as exc:
+        print(f"    ⚠️  Backup failed for {schema}.{table}: {exc}", file=sys.stderr)
+        return None
+
+
+def _restore_data(cursor, database: str, schema: str, table: str, backup_name: str) -> bool:
+    """Insert data back from the backup table using the intersection of columns."""
+    # Columns in the newly created table
+    cursor.execute(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS "
+        "WHERE TABLE_CATALOG = %s AND TABLE_SCHEMA = %s AND TABLE_NAME = %s "
+        "ORDER BY ORDINAL_POSITION",
+        (database.upper(), schema.upper(), table.upper()),
+    )
+    new_cols = [r[0] for r in cursor.fetchall()]
+
+    # Columns in the backup table
+    cursor.execute(
+        "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS "
+        "WHERE TABLE_CATALOG = %s AND TABLE_SCHEMA = 'TECH_BKP' AND TABLE_NAME = %s "
+        "ORDER BY ORDINAL_POSITION",
+        (database.upper(), backup_name.upper()),
+    )
+    bkp_cols = {r[0] for r in cursor.fetchall()}
+
+    # Intersection, ordered by the new table's ordinal position
+    common = [c for c in new_cols if c in bkp_cols]
+    if not common:
+        print(f"    ⚠️  No common columns between {schema}.{table} and TECH_BKP.{backup_name} — skipping restore.", file=sys.stderr)
+        return False
+
+    col_list = ", ".join(common)
+    try:
+        cursor.execute(
+            f"INSERT INTO {schema}.{table} ({col_list}) "
+            f"SELECT {col_list} FROM TECH_BKP.{backup_name}"
+        )
+        row_count = cursor.rowcount if cursor.rowcount else 0
+        consume_results(cursor)
+        print(f"    ↳ Data restored: {row_count} row(s) inserted into {schema}.{table} ({len(common)} columns)")
+        return True
+    except Exception as exc:
+        print(
+            f"    ⚠️  Data restore failed for {schema}.{table} from TECH_BKP.{backup_name}: {exc}\n"
+            f"    ⚠️  Backup table TECH_BKP.{backup_name} preserved for manual recovery.",
+            file=sys.stderr,
+        )
+        return False
 
 
 def bootstrap_tables(cursor):
@@ -282,7 +397,7 @@ def cmd_seed(args):
     deployment_id = str(uuid.uuid4())
     start_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     print(f"Deployment ID (Seed): {deployment_id}")
-
+    
     summary_lines = [f"## Seed Summary (`{COMPONENT}`)"]
     summary_lines.append(f"**Deployment ID**: `{deployment_id}` | **Branch**: `{branch}`\n")
     summary_lines.append("| File | Status | Detail |")
@@ -312,7 +427,7 @@ def cmd_seed(args):
             f for f in all_files
             if os.path.isfile(f) and (f, file_hash(f)) not in deployed
         ]
-
+        
         for f in all_files:
             if os.path.isfile(f) and (f, file_hash(f)) in deployed:
                 summary_lines.append(f"| `{f}` | ⏭️ Skipped | Already registered |")
@@ -407,7 +522,7 @@ def cmd_deploy(args):
     deployment_id = str(uuid.uuid4())
     start_time = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     print(f"Deployment ID: {deployment_id}")
-
+    
     summary_lines = [f"## Deployment Summary (`{COMPONENT}`)"]
     summary_lines.append(f"**Deployment ID**: `{deployment_id}` | **Branch**: `{branch}`\n")
     summary_lines.append("| File | Status | Detail |")
@@ -437,7 +552,7 @@ def cmd_deploy(args):
             f for f in all_files
             if os.path.isfile(f) and (f, file_hash(f)) not in deployed
         ]
-
+        
         for f in all_files:
             if os.path.isfile(f) and (f, file_hash(f)) in deployed:
                 summary_lines.append(f"| `{f}` | ⏭️ Skipped | Hash matches existing history |")
@@ -454,6 +569,8 @@ def cmd_deploy(args):
             append_step_summary("\n".join(summary_lines))
             return
 
+        database = os.environ.get("SNOWFLAKE_DATABASE", "")
+
         for fp in files_to_deploy:
             if not os.path.isfile(fp):
                 print(f"  ⚠️ Skipping (not found): {fp}")
@@ -465,9 +582,25 @@ def cmd_deploy(args):
                 sql = sql.replace(f"{{{{{var}}}}}", os.environ.get(var, ""))
 
             fhash = file_hash(fp)
+
+            # --- Backup existing table before CREATE OR REPLACE ---------
+            backup_name = None
+            parsed = _parse_schema_table(fp) if _is_table_file(fp) else None
+            if parsed and database:
+                tbl_schema, tbl_name = parsed
+                if _table_exists(cur, database, tbl_schema, tbl_name):
+                    backup_name = _backup_table(cur, database, tbl_schema, tbl_name)
+            # ------------------------------------------------------------
+
             try:
                 cur.execute(sql, num_statements=0)
                 consume_results(cur)
+
+                # --- Restore data from backup ---------------------------
+                if backup_name and parsed:
+                    _restore_data(cur, database, parsed[0], parsed[1], backup_name)
+                # --------------------------------------------------------
+
                 cur.execute("""
                     INSERT INTO TECH.DEPLOYMENT_FILE_HISTORY
                     (DEPLOYMENT_ID, FILE_PATH, FILE_HASH, STATUS, DEPLOYED_AT)
@@ -515,7 +648,16 @@ def _dry_run(files: list[str]):
         if not fp.endswith(".sql"):
             print(f"  ⚠️  {fp} (skipped: not .sql)")
             continue
-        print(f"  📄 {fp}")
+        is_table = _is_table_file(fp)
+        marker = "📄🔄" if is_table else "📄"
+        print(f"  {marker} {fp}")
+        if is_table:
+            parsed = _parse_schema_table(fp)
+            if parsed:
+                date_suffix = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+                bkp_name = f"{parsed[0]}_{parsed[1]}_{date_suffix}"
+                print(f"     ↳ Will backup to TECH_BKP.{bkp_name} (CLONE) before CREATE OR REPLACE")
+                print(f"     ↳ Will restore data via column-intersection INSERT after DDL execution")
         if os.path.isfile(fp):
             content = Path(fp).read_text()
             content = content.replace("{{SNOWFLAKE_DATABASE}}", db)

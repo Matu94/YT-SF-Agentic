@@ -48,3 +48,11 @@ While the `deploy.py` engine remains the primary tool for **automated, idempoten
 *   **Interactive Development**: Using **Snowflake Workspaces** to edit and commit Snowpark Python or Streamlit code directly from the Snowsight UI.
 *   **Direct Execution**: Executing code directly from Git (e.g., `EXECUTE IMMEDIATE FROM @YT_SF_AGENTIC_REPO/...`) for transient tasks or rapid prototyping.
 *   **UI Synchronization**: Powering Streamlit applications natively from Git branches, ensuring the visualization layer is always aligned with the version-controlled code.
+
+## 6. Automated Safety Nets: Table Backup & Restore
+To prevent accidental data loss during destructive DDL operations (like `CREATE OR REPLACE TABLE`), the `deploy.py` engine implements an automated backup and restore mechanism for table files (located in `*_tables/` directories):
+
+1.  **Pre-Execution Backup**: The engine parses the SQL file to identify the schema and table name. If the table already exists, it is cloned into the `TECH_BKP` schema with a unique timestamp (e.g., `TECH_BKP.STAGING_VIDEO_STATS_20260506_180000`).
+2.  **DDL Execution**: The original SQL file is executed, recreating the table structure.
+3.  **Post-Execution Restore**: The engine calculates the intersection of columns between the backup and the new table. It then performs an `INSERT INTO ... SELECT ...` to restore all existing data into the new structure automatically.
+4.  **Audit Trail**: Both the backup creation and the data restoration are logged in the deployment summary and the terminal output.
