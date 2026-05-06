@@ -108,6 +108,7 @@ To recreate this environment from scratch identically, execute the scripts withi
 3. `02_grant_init.sql` *(Execution: SECURITYADMIN. NOTE: This executes the Object Role paradigm)*
 4. `03_user_init.sql` *(Execution: SECURITYADMIN)*
 5. `04_external_access.sql` *(Execution: ADMIN_ROLE per environment. NOTE: Replace API key placeholder before running!)*
+6. `05_git_integration.sql` *(Execution: ADMIN_ROLE per environment. NOTE: Replace GITHUB_PAT placeholder before running!)*
 
 ---
 
@@ -116,7 +117,7 @@ To recreate this environment from scratch identically, execute the scripts withi
 The architecture leverages Snowflake's native Git Integration to provide a seamless bridge between version control and the Snowflake UI.
 
 ### 6.1 Git Repository Object
-A `GIT_REPOSITORY` object is provisioned (typically in the `TECH` schema) to link the Snowflake account to this GitHub repository. This allows Snowflake to treat the repository as a specialized external stage.
+A `GIT_REPOSITORY` object named `YT_SF_AGENTIC_REPO` is provisioned in the `TECH` schema to link the Snowflake account to this GitHub repository. This allows Snowflake to treat the repository as a specialized external stage.
 
 ### 6.2 Key Capabilities
 *   **Direct Execution**: Assets like Snowpark Python scripts or SQL DDL can be executed directly from Git using `EXECUTE IMMEDIATE FROM @repo/branches/dev/path/to/script.sql`.
@@ -124,5 +125,5 @@ A `GIT_REPOSITORY` object is provisioned (typically in the `TECH` schema) to lin
 *   **Streamlit Integration**: Streamlit applications can be deployed directly from a Git branch, ensuring the UI is always in sync with the latest code without manual uploads.
 
 ### 6.3 Security Configuration
-*   **API Integration**: An account-level `API INTEGRATION` (created by `ACCOUNTADMIN`) handles the secure handshake with GitHub using a Personal Access Token (PAT) or SSH key.
+*   **API Integration**: An account-level `API INTEGRATION` (e.g., `YT_SF_PROD_GITHUB_API_INTEGRATION`) handles the secure handshake with GitHub using a Personal Access Token (PAT) stored in `GITHUB_TOKEN_SECRET`.
 *   **Access Control**: The `YT_SF_{ENV}_ADMIN_ROLE` holds the `CREATE GIT REPOSITORY` privilege within its respective database to manage these integrations.

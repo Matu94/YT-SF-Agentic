@@ -41,3 +41,10 @@ If an environment instance already functionally encapsulates raw definitions, re
 
 ## 4. Release Strategy
 Deployments into `PROD` rely on explicitly approved `csv` ledgers defining target files. The promotion utility (`.github/create-release-branch.yml`) creates an isolated release branch exclusively originating from `prod`, and cherry-picks the approved files directly from `dev`. This mathematically packages the approved changes into an isolated branch to preserve a rigid separation from volatile feature pushes.
+
+## 5. Hybrid GitOps: Native Git Integration
+While the `deploy.py` engine remains the primary tool for **automated, idempotent, and audited DDL/DML deployments**, we leverage Snowflake's Native Git Integration for a "Hybrid" workflow:
+
+*   **Interactive Development**: Using **Snowflake Workspaces** to edit and commit Snowpark Python or Streamlit code directly from the Snowsight UI.
+*   **Direct Execution**: Executing code directly from Git (e.g., `EXECUTE IMMEDIATE FROM @YT_SF_AGENTIC_REPO/...`) for transient tasks or rapid prototyping.
+*   **UI Synchronization**: Powering Streamlit applications natively from Git branches, ensuring the visualization layer is always aligned with the version-controlled code.

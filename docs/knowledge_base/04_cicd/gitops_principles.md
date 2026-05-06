@@ -53,10 +53,10 @@ While our custom `deploy.py` engine handles the core Snowflake infrastructure (s
 
 ## 10. Snowflake Native Git Integration (Workspaces)
 Snowflake recently introduced **Git Integration**, which allows the Snowflake engine to communicate directly with our GitHub repository without an external runner.
-*   **Git Repository Object**: We define a `GIT_REPOSITORY` object in Snowflake that points to our URL. This allows Snowflake to see our folders (like `snowflake/` or `streamlit/`) as if they were an internal stage.
-*   **Direct Execution**: Instead of "pushing" code through Python, we can tell Snowflake to `EXECUTE IMMEDIATE FROM @my_repo/branches/dev/snowflake/init.sql`.
+*   **Git Repository Object**: We define a `GIT_REPOSITORY` object named `YT_SF_AGENTIC_REPO` (located in the `TECH` schema) that points to our URL. This allows Snowflake to see our folders (like `snowflake/` or `streamlit/`) as if they were an internal stage.
+*   **Direct Execution**: Instead of "pushing" code through Python, we can tell Snowflake to `EXECUTE IMMEDIATE FROM @YT_SF_AGENTIC_REPO/branches/dev/snowflake/init.sql`.
 *   **Development Workspaces**: In the Snowflake UI, you can open a "Workspace" that is linked to your branch. This allows you to edit SQL or Python files directly in the Snowflake browser and **commit them back to GitHub**.
-*   **Hybrid Approach**: We use `deploy.py` for automated, tracked deployments to `PROD`, but we leverage **Git Workspaces** for fast, interactive development and testing within the Snowflake UI.
+*   **Hybrid Approach**: We use `deploy.py` for automated, tracked, and idempotent deployments to `PROD` (ensuring every change is hashed and logged), but we leverage **Git Workspaces** for fast, interactive development and testing within the Snowflake UI.
 
 ---
 *Created by **Senior DevOps Engineer** — Automation Expert*
