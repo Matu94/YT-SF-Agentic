@@ -3,11 +3,14 @@ changed_files.txt
 .snowflake_last_deploy_commit
 venv/
 .deployment/__pycache__/
+.snowflake/
+
+
 # --- macOS ---
 .DS_Store
 .AppleDouble
 .LSOverride
-.snowflake/
+
 
 # Icon must end with two \r
 Icon
