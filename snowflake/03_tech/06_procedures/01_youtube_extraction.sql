@@ -28,10 +28,8 @@ def main(session):
         # Phase 1 Target Channels
         # These are placeholders and should ideally be read from a config table in the future
         channel_ids = [
-            'UCJ71D0-12s3c0QJb1675QfA', # Fókusz Csoport
-            'UC9qpYwK7N9EB0-SECANa23g', # Jólvanezígy
-            'UCfS72Yr7hFsHClD3krlP9UA', # Kókusz Plusz
-            'UC3naiRIN8f4grIG0vn2r7lQ'  # Világjegy Csatorna
+            'UCIITmFAHQ4S1FMDWqhZyQKg', # Fókusz Csoport
+            'UC9qpYwK7N9EB0-SECANa23g' # Jólvanezígy
         ]
         
         # Call YouTube API and Insert into LANDING table
