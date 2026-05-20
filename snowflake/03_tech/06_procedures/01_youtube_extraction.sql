@@ -28,21 +28,25 @@ def main(session):
         # Phase 1 Target Channels
         # These are placeholders and should ideally be read from a config table in the future
         channel_ids = [
-            'UC', # Replace with Fókusz Csoport ID
-            'UC', # Replace with Jólvanezígy ID
-            'UC', # Replace with Kókusz Plusz ID
-            'UC'  # Replace with Világjegy Csatorna ID
+            'UCJ71D0-12s3c0QJb1675QfA', # Fókusz Csoport
+            'UC9qpYwK7N9EB0-SECANa23g', # Jólvanezígy
+            'UCfS72Yr7hFsHClD3krlP9UA', # Kókusz Plusz
+            'UC3naiRIN8f4grIG0vn2r7lQ'  # Világjegy Csatorna
         ]
         
-        # Example API Call Structure (to be fully implemented once LANDING tables exist)
-        # for channel_id in channel_ids:
-        #     url = f"https://youtube.googleapis.com/youtube/v3/channels?part=snippet,statistics&id={channel_id}&key={api_key}"
-        #     response = requests.get(url)
-        #     response.raise_for_status()
-        #     data = response.json()
-        #     
-        #     # The data would then be inserted into a variant column in the LANDING layer
-        #     # session.sql(f"INSERT INTO YT_SF_{{SNOWFLAKE_ENVIRONMENT}}.LANDING.RAW_YOUTUBE_CHANNELS (raw_data) SELECT PARSE_JSON('{json.dumps(data)}')").collect()
+        # Call YouTube API and Insert into LANDING table
+        for channel_id in channel_ids:
+            url = f"https://youtube.googleapis.com/youtube/v3/channels?part=snippet,statistics&id={channel_id}&key={api_key}"
+            response = requests.get(url)
+            response.raise_for_status()
+            data = response.json()
+            
+            # Serialize JSON and escape single quotes and backslashes for Snowflake SQL
+            json_str = json.dumps(data).replace("\\", "\\\\").replace("'", "''")
+            
+            # Insert into LANDING layer
+            query = f"INSERT INTO YT_SF_{{SNOWFLAKE_ENVIRONMENT}}.LANDING.YOUTUBE_RAW_DATA (RAW_JSON) SELECT PARSE_JSON('{json_str}')"
+            session.sql(query).collect()
         
         return "SUCCESS: YouTube extraction procedure initialized successfully."
     except Exception as e:
