@@ -51,6 +51,3 @@ def main(session):
         logger.error(f"Error extracting YouTube metrics: {str(e)}")
         return f"FAILED: {str(e)}"
 $$;
-
--- Grant execution to LOAD role
-GRANT USAGE ON PROCEDURE LANDING.EXTRACT_YOUTUBE_METRICS() TO ROLE YT_SF_{{SNOWFLAKE_ENVIRONMENT}}_LOAD_ROLE;
