@@ -12,7 +12,7 @@ This directory houses the foundational logic for synchronizing local SQL files w
 2.  **Lexicographical Execution Pipeline**:
     The script sweeps directories (e.g., `snowflake/`) recursively and naturally orders files alphabetically. Thanks to our numeric-prefix folder structure (e.g., `00_pre`, `01_landing`, `99_post`), the script guarantees that dependencies are created synchronously.
 3.  **Environment Variable Interpolation**:
-    If scripts contain placeholders like `{{SNOWFLAKE_DATABASE}}` or `{{SNOWFLAKE_WAREHOUSE}}`, the Python engine evaluates and injects the live values immediately before piping them to Snowflake.
+    If scripts contain placeholders like `{{SNOWFLAKE_DATABASE}}`, `{{SNOWFLAKE_WAREHOUSE}}`, or `{{YOUTUBE_API_KEY}}`, the Python engine evaluates and injects the live values immediately before piping them to Snowflake.
 4.  **GitHub Native Summaries**:
     When running in CI/CD, the orchestrator detects the `$GITHUB_STEP_SUMMARY` environment variable and injects a formatted markdown table logging exactly which files succeeded, failed, or were intentionally skipped.
 
