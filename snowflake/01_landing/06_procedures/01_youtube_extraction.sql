@@ -1,8 +1,8 @@
 -- 1. Create Snowpark Python Stored Procedure for YouTube API Extraction
--- Resides in TECH schema, executed by tasks or manually to load data to LANDING.
+-- Resides in LANDING schema, executed by tasks or manually to load data to LANDING.
 -- Depends on: 01_infrastructure and 02_integrations
 
-CREATE OR REPLACE PROCEDURE TECH.EXTRACT_YOUTUBE_METRICS()
+CREATE OR REPLACE PROCEDURE LANDING.EXTRACT_YOUTUBE_METRICS()
 RETURNS STRING
 LANGUAGE PYTHON
 RUNTIME_VERSION = '3.10'
@@ -51,3 +51,6 @@ def main(session):
         logger.error(f"Error extracting YouTube metrics: {str(e)}")
         return f"FAILED: {str(e)}"
 $$;
+
+-- Grant execution to LOAD role
+GRANT USAGE ON PROCEDURE LANDING.EXTRACT_YOUTUBE_METRICS() TO ROLE YT_SF_{{SNOWFLAKE_ENVIRONMENT}}_LOAD_ROLE;
