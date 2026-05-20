@@ -34,7 +34,7 @@ def main(session):
         
         # Call YouTube API and Insert into LANDING table
         for channel_id in channel_ids:
-            url = f"https://youtube.googleapis.com/youtube/v3/channels?part=snippet,statistics&id={channel_id}&key={api_key}"
+            url = f"https://youtube.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id={channel_id}&key={api_key}"
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
