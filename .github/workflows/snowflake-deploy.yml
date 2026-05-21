@@ -7,11 +7,11 @@
 name: Snowflake Deploy
 
 on:
-  push:
-    branches: [dev, prod, "feature/*", "data*"]
-    paths:
-      - snowflake/**
-      - '!snowflake/10_row_access_policies/**'
+  #push:
+  #  branches: [dev, prod, "feature/*", "data*"]
+  #  paths:
+  #    - snowflake/**
+  #    - '!snowflake/10_row_access_policies/**'
   workflow_dispatch:
     inputs:
       deployment_mode:
