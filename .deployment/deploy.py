@@ -293,6 +293,7 @@ def cmd_detect_changes(args):
             print("All files (log-based deploy):")
             for f in files:
                 print(f"  - {f}")
+        else:
             print("No files found via log mode.")
         return
 
