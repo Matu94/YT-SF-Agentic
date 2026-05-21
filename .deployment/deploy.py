@@ -59,6 +59,7 @@ def append_step_summary(content: str):
 def snowflake_connect():
     """Build connection params and connect. SSO locally, key-pair in CI."""
     try:
+        # pyrefly: ignore [missing-import]
         import snowflake.connector
     except ImportError:
         print("Error: snowflake-connector-python required. Run: pip install snowflake-connector-python", file=sys.stderr)
@@ -71,6 +72,11 @@ def snowflake_connect():
         sys.exit(1)
 
     key_path = os.path.expanduser("~/.snowflake/rsa_key.p8")
+    if not os.path.isfile(key_path):
+        local_key = os.path.abspath(".snowflake/rsa_key.p8")
+        if os.path.isfile(local_key):
+            key_path = local_key
+
     params = {
         "account": os.environ["SNOWFLAKE_ACCOUNT"],
         "user": os.environ["SNOWFLAKE_USER"],
@@ -287,6 +293,7 @@ def cmd_detect_changes(args):
             print("All files (log-based deploy):")
             for f in files:
                 print(f"  - {f}")
+        else:
             print("No files found via log mode.")
         return
 
@@ -578,7 +585,7 @@ def cmd_deploy(args):
                 continue
 
             sql = Path(fp).read_text()
-            for var in ("SNOWFLAKE_DATABASE", "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_ENVIRONMENT"):
+            for var in ("SNOWFLAKE_DATABASE", "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_ENVIRONMENT", "YOUTUBE_API_KEY"):
                 sql = sql.replace(f"{{{{{var}}}}}", os.environ.get(var, ""))
 
             fhash = file_hash(fp)
@@ -663,6 +670,7 @@ def _dry_run(files: list[str]):
             content = content.replace("{{SNOWFLAKE_DATABASE}}", db)
             content = content.replace("{{SNOWFLAKE_WAREHOUSE}}", wh)
             content = content.replace("{{SNOWFLAKE_ENVIRONMENT}}", env)
+            content = content.replace("{{YOUTUBE_API_KEY}}", os.environ.get("YOUTUBE_API_KEY", "<YOUTUBE_API_KEY>"))
             lines = content.splitlines()
             print("     Preview (with variable substitution):")
             for line in lines[:20]:

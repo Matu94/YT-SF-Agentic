@@ -1,0 +1,7 @@
+-- 1. Create Transient Landing Table for YouTube API Raw Data
+-- Resides in LANDING schema, meant for raw JSON drops.
+
+CREATE OR REPLACE TRANSIENT TABLE LANDING.YOUTUBE_RAW_DATA (
+    RAW_JSON VARIANT,
+    EXTRACTED_AT TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP()
+);

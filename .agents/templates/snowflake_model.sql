@@ -19,7 +19,3 @@ CREATE OR REPLACE TABLE [SCHEMA].[TABLE_NAME] (
     METADATA_UPDATED_AT TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
 )
 COMMENT = '[Description for Snowflake Catalog]';
-
--- [Grants]
--- Note: Managed access schemas handle most grants, but specific object-level logic goes here if needed.
-GRANT SELECT ON TABLE [SCHEMA].[TABLE_NAME] TO ROLE YT_SF_{{SNOWFLAKE_ENVIRONMENT}}_TRANSFORM_ROLE;
