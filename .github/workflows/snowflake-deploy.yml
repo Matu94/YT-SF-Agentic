@@ -26,7 +26,7 @@ on:
 jobs:
   build:
     name: Resolve environment
-    runs-on: [atmos-aws-arc-runner-set]  
+    runs-on: ubuntu-latest
     outputs:
       env_name: ${{ steps.env.outputs.env_name }}
     steps:
@@ -44,7 +44,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: [atmos-aws-arc-runner-set] 
+    runs-on: ubuntu-latest 
     environment: ${{ needs.build.outputs.env_name }}
     env:
       SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}

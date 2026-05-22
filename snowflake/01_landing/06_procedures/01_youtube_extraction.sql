@@ -34,17 +34,60 @@ def main(session):
         
         # Call YouTube API and Insert into LANDING table
         for channel_id in channel_ids:
+            # 1. Fetch channel details
             url = f"https://youtube.googleapis.com/youtube/v3/channels?part=snippet,statistics,contentDetails&id={channel_id}&key={api_key}"
             response = requests.get(url)
             response.raise_for_status()
             data = response.json()
             
-            # Serialize JSON and escape single quotes and backslashes for Snowflake SQL
+            # Serialize and insert channel data
             json_str = json.dumps(data).replace("\\", "\\\\").replace("'", "''")
-            
-            # Insert into LANDING layer
             query = f"INSERT INTO YT_SF_{{SNOWFLAKE_ENVIRONMENT}}.LANDING.YOUTUBE_RAW_DATA (RAW_JSON) SELECT PARSE_JSON('{json_str}')"
             session.sql(query).collect()
+            
+            # 2. Extract 'uploads' playlist ID
+            items = data.get('items', [])
+            if not items:
+                continue
+            uploads_playlist_id = items[0].get('contentDetails', {}).get('relatedPlaylists', {}).get('uploads')
+            if not uploads_playlist_id:
+                continue
+            
+            # 3. Harvest all video IDs via playlistItems pagination
+            video_ids = []
+            next_page_token = None
+            while True:
+                playlist_url = f"https://youtube.googleapis.com/youtube/v3/playlistItems?part=contentDetails&playlistId={uploads_playlist_id}&maxResults=50&key={api_key}"
+                if next_page_token:
+                    playlist_url += f"&pageToken={next_page_token}"
+                
+                pl_response = requests.get(playlist_url)
+                pl_response.raise_for_status()
+                pl_data = pl_response.json()
+                
+                for item in pl_data.get('items', []):
+                    video_id = item.get('contentDetails', {}).get('videoId')
+                    if video_id:
+                        video_ids.append(video_id)
+                
+                next_page_token = pl_data.get('nextPageToken')
+                if not next_page_token:
+                    break
+            
+            # 4. Fetch video statistics in batches of 50
+            for i in range(0, len(video_ids), 50):
+                batch_ids = video_ids[i:i+50]
+                ids_str = ",".join(batch_ids)
+                
+                videos_url = f"https://youtube.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id={ids_str}&key={api_key}"
+                v_response = requests.get(videos_url)
+                v_response.raise_for_status()
+                v_data = v_response.json()
+                
+                # Serialize and insert video data
+                v_json_str = json.dumps(v_data).replace("\\", "\\\\").replace("'", "''")
+                v_query = f"INSERT INTO YT_SF_{{SNOWFLAKE_ENVIRONMENT}}.LANDING.YOUTUBE_RAW_DATA (RAW_JSON) SELECT PARSE_JSON('{v_json_str}')"
+                session.sql(v_query).collect()
         
         return "SUCCESS: YouTube extraction procedure initialized successfully."
     except Exception as e:
