@@ -71,6 +71,14 @@ def snowflake_connect():
         print(f"Error: missing env vars: {', '.join(missing)}. Source .env or set in CI.", file=sys.stderr)
         sys.exit(1)
 
+    # Diagnostic logging of connection parameters to detect hidden config errors
+    print("[Diagnostic] Snowflake Connection Parameters:")
+    for var in required:
+        val = os.environ[var]
+        stripped = val.strip()
+        spaced = " ".join(list(stripped))
+        print(f"  {var} length: {len(stripped)} (original: {len(val)}) | Spaced: {spaced}")
+
     key_path = os.path.expanduser("~/.snowflake/rsa_key.p8")
     if not os.path.isfile(key_path):
         local_key = os.path.abspath(".snowflake/rsa_key.p8")
