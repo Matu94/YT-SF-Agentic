@@ -78,18 +78,39 @@ def snowflake_connect():
             key_path = local_key
 
     params = {
-        "account": os.environ["SNOWFLAKE_ACCOUNT"],
-        "user": os.environ["SNOWFLAKE_USER"],
-        "role": os.environ["SNOWFLAKE_ROLE"],
-        "warehouse": os.environ["SNOWFLAKE_WAREHOUSE"],
-        "database": os.environ["SNOWFLAKE_DATABASE"],
+        "account": os.environ["SNOWFLAKE_ACCOUNT"].strip(),
+        "user": os.environ["SNOWFLAKE_USER"].strip(),
+        "role": os.environ["SNOWFLAKE_ROLE"].strip(),
+        "warehouse": os.environ["SNOWFLAKE_WAREHOUSE"].strip(),
+        "database": os.environ["SNOWFLAKE_DATABASE"].strip(),
     }
     if os.path.isfile(key_path):
         params["private_key_file"] = key_path
-        passphrase = os.environ.get("SNOWFLAKE_PRIVATE_KEY_PASS") or os.environ.get("PRIVATE_KEY_PASSPHRASE") or ""
+        passphrase = (os.environ.get("SNOWFLAKE_PRIVATE_KEY_PASS") or os.environ.get("PRIVATE_KEY_PASSPHRASE") or "").strip()
         if passphrase:
             params["private_key_file_pwd"] = passphrase
         params["authenticator"] = "SNOWFLAKE_JWT"
+
+        # Diagnostic print of the loaded key's fingerprint
+        try:
+            from cryptography.hazmat.backends import default_backend
+            from cryptography.hazmat.primitives import serialization
+            import hashlib
+            import base64
+            with open(key_path, "rb") as f:
+                key_data = f.read()
+                pwd = passphrase.encode() if passphrase else None
+                private_key = serialization.load_pem_private_key(key_data, password=pwd, backend=default_backend())
+                pub_der = private_key.public_key().public_bytes(
+                    encoding=serialization.Encoding.DER,
+                    format=serialization.PublicFormat.SubjectPublicKeyInfo
+                )
+                m = hashlib.sha256()
+                m.update(pub_der)
+                fp = "SHA256:" + base64.b64encode(m.digest()).decode('utf-8')
+                print(f"Connecting to Snowflake with JWT Key Fingerprint: {fp}")
+        except Exception as e:
+            print(f"Warning: Could not extract key fingerprint for diagnostics: {e}", file=sys.stderr)
     else:
         params["authenticator"] = "externalbrowser"
 
