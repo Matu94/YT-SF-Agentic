@@ -71,7 +71,7 @@ The underlying Schema Object Roles are then distributed to the following Functio
 > - `LOAD_ROLE` → **No access**: The ingestion pipeline is completely blind to this schema.
 > - `TRANSFORM_ROLE` → **No access**: dbt models never reference backup objects.
 
-*Inheritance:* The `LOAD`, `CICD`, and `TRANSFORM` functional roles automatically roll up into the environment's `ADMIN` role. The `ADMIN` role then maps into the native Snowflake `SYSADMIN`. This ensures the Admin can act upon any downstream objects inherently.
+*Inheritance:* The `LOAD` and `TRANSFORM` functional roles roll up into the environment's `CICD` role, and all three roll up into the environment's `ADMIN` role. The `ADMIN` role then maps into the native Snowflake `SYSADMIN`. This structure ensures the `CICD` role inherits the ownership privileges necessary to drop/recreate compute objects owned by the `LOAD` and `TRANSFORM` roles, and the `ADMIN` role retains full governance.
 
 ### Machine Users & Authentication
 Passwords are intentionally disabled. Authentication relies entirely on Key-Pair (RSA) authentication to ensure robust security for automated processes.
