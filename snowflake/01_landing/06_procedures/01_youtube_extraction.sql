@@ -22,6 +22,9 @@ logger = logging.getLogger("extract_youtube_metrics")
 
 def main(session):
     try:
+        # Truncate the transient landing table before each new extraction run
+        session.sql("TRUNCATE TABLE YT_SF_{{SNOWFLAKE_ENVIRONMENT}}.LANDING.YOUTUBE_RAW_DATA").collect()
+
         # Retrieve the API key securely
         api_key = _snowflake.get_generic_secret_string('youtube_api_key')
         
