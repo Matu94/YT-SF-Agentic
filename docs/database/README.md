@@ -58,9 +58,9 @@ The underlying Schema Object Roles are then distributed to the following Functio
 2. **`YT_SF_{ENV}_CICD_ROLE`**
     * ***Purpose:*** CI/CD deployment orchestrator.
     * ***Grants:*** Mapped to `_SFULL` everywhere. This permits tools like GitHub Actions to automate migrations and drop/create assets universally across all layers for its respective environment. Holds `EXECUTE TASK` globally.
-3. **`YT_SF_{ENV}_LOAD_ROLE`**
+3. **`YT_SF_{ENV}_LOAD_ROLE`** 
     * ***Purpose:*** Python pipeline extraction tasks.
-    * ***Grants:*** Mapped to `_SFULL` on `LANDING` only. Permanently owns all future Tasks and Dynamic Tables within the `LANDING` schemas.
+    * ***Grants:*** Mapped to `_SFULL` on `LANDING` only. Permanently owns all future Tasks and Dynamic Tables within the `LANDING` schemas. Holds `EXECUTE TASK` and `EXECUTE MANAGED TASK` globally to run the ingestion tasks.
 4. **`YT_SF_{ENV}_TRANSFORM_ROLE`**
     * ***Purpose:*** Data Build Tool (dbt) processing and manual querying.
     * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`. Holds `EXECUTE TASK` globally. Permanently owns all future Tasks, Dynamic Tables, and Streamlits downstream of `LANDING`.
