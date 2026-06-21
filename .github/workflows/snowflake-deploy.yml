@@ -7,17 +7,17 @@
 name: Snowflake Deploy
 
 on:
-  #push:
-  #  branches: [dev, prod, "feature/*", "data*"]
-  #  paths:
-  #    - snowflake/**
-  #    - '!snowflake/10_row_access_policies/**'
+  push:
+    branches: [dev, prod]
+    paths:
+      - snowflake/**
+
   workflow_dispatch:
     inputs:
       deployment_mode:
-        description: 'Deployment mode'
+        description: "Deployment mode"
         required: true
-        default: 'diff'
+        default: "diff"
         type: choice
         options:
           - diff
@@ -44,7 +44,7 @@ jobs:
 
   deploy:
     needs: build
-    runs-on: ubuntu-latest 
+    runs-on: ubuntu-latest
     environment: ${{ needs.build.outputs.env_name }}
     env:
       SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
