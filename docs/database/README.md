@@ -63,7 +63,7 @@ The underlying Schema Object Roles are then distributed to the following Functio
     * ***Grants:*** Mapped to `_SFULL` on `LANDING` only. Permanently owns all future Tasks and Dynamic Tables within the `LANDING` schemas. Holds `EXECUTE TASK` and `EXECUTE MANAGED TASK` globally to run the ingestion tasks.
 4. **`YT_SF_{ENV}_TRANSFORM_ROLE`**
     * ***Purpose:*** Data Build Tool (dbt) processing and manual querying.
-    * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`. Holds `EXECUTE TASK` globally. Permanently owns all future Tasks, Dynamic Tables, and Streamlits downstream of `LANDING`.
+    * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`, and `_SR` on `LANDING`. Holds `EXECUTE TASK` globally. Permanently owns all future Tasks, Dynamic Tables, and Streamlits downstream of `LANDING`.
 
 > **`TECH_BKP` Access Policy:**
 > - `ADMIN_ROLE` → `_SFULL`: Full ownership and management.
