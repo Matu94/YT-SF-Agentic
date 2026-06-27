@@ -57,13 +57,13 @@ The underlying Schema Object Roles are then distributed to the following Functio
     * ***Grants:*** Mapped to `_SFULL` everywhere. Owns the databases, all schemas, and warehouses. Holds the powerful `MANAGE GRANTS` global privilege to control security natively. All other functional roles explicitly roll up into this role.
 2. **`YT_SF_{ENV}_CICD_ROLE`**
     * ***Purpose:*** CI/CD deployment orchestrator.
-    * ***Grants:*** Mapped to `_SFULL` everywhere. This permits tools like GitHub Actions to automate migrations and drop/create assets universally across all layers for its respective environment. Holds `EXECUTE TASK` globally.
+    * ***Grants:*** Mapped to `_SFULL` everywhere. This permits tools like GitHub Actions to automate migrations and drop/create assets universally across all layers for its respective environment. Holds `EXECUTE TASK` globally, and `CREATE SCHEMA` on the database level to support dbt deployments.
 3. **`YT_SF_{ENV}_LOAD_ROLE`** 
     * ***Purpose:*** Python pipeline extraction tasks.
     * ***Grants:*** Mapped to `_SFULL` on `LANDING` only. Permanently owns all future Tasks and Dynamic Tables within the `LANDING` schemas. Holds `EXECUTE TASK` and `EXECUTE MANAGED TASK` globally to run the ingestion tasks.
 4. **`YT_SF_{ENV}_TRANSFORM_ROLE`**
     * ***Purpose:*** Data Build Tool (dbt) processing and manual querying.
-    * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`, and `_SR` on `LANDING`. Holds `EXECUTE TASK` globally. Permanently owns all future Tasks, Dynamic Tables, and Streamlits downstream of `LANDING`.
+    * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`, and `_SR` on `LANDING`. Holds `EXECUTE TASK` globally. Permanently owns all future Tasks, Dynamic Tables, and Streamlits downstream of `LANDING`. Also holds `CREATE SCHEMA` on the database level to support dbt's target and custom schema execution.
 
 > **`TECH_BKP` Access Policy:**
 > - `ADMIN_ROLE` → `_SFULL`: Full ownership and management.
