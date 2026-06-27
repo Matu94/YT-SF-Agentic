@@ -60,22 +60,24 @@ This repository is built using an **Agentic AI Lifecycle**. Every line of code a
 ## 📚 Knowledge Base & Learning
 This project serves as a "Living Masterclass." Explore our domain-specific guides to learn the "Why" behind the architecture:
 
-*   📖 **[Agentic Framework](docs/knowledge_base/01_agentic_development/conceptual_framework.md)**: PRDs, ADRs, and the Atomic Task Rule.
-*   ❄️ **[Snowflake Patterns](docs/knowledge_base/02_snowflake/architecture_patterns.md)**: Medallion flow, RBAC, and Zero-Copy Cloning.
-*   🧡 **[dbt Essentials](docs/knowledge_base/03_dbt/dbt_essentials.md)**: Materializations, SCD Type 2, and Lineage.
-*   ⚙️ **[GitOps Principles](docs/knowledge_base/04_cicd/gitops_principles.md)**: SHA256 Idempotency and Environmental Isolation.
+*   📖 **[Agentic Framework](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/01_agentic_development/conceptual_framework.md)**: PRDs, ADRs, and the Atomic Task Rule.
+*   📈 **[Product Vision & Strategy](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/05_product_management/product_vision_and_strategy.md)**: Target channels, MVP phases, and metadata hierarchy.
+*   📺 **[YouTube API Integration](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/06_data_sources/youtube_api_v3.md)**: API requests, parts, and quota unit budget management.
+*   ❄️ **[Snowflake Patterns](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/02_snowflake/architecture_patterns.md)**: Medallion flow, RBAC, and Zero-Copy Cloning.
+*   🧡 **[dbt Essentials](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/03_dbt/dbt_essentials.md)**: Materializations, SCD Type 2, and Lineage.
+*   ⚙️ **[GitOps Principles](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/04_cicd/gitops_principles.md)**: SHA256 Idempotency and Environmental Isolation.
+*   🤖 **[AI Quota Strategy](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/01_agentic_development/ai_quotas_and_efficiency.md)**: Context caching, token budget optimization, and LLM orchestration.
 
 ---
 
+
 ## 📂 Project Structure
-```text
-├── .agents/          # Personas, Rules, and ADRs
-├── .deployment/      # Custom Snowflake Deployer (Python)
-├── .setup/           # Baseline Snowflake Infrastructure (SQL)
-├── dbt/              # dbt Project (Models, Macros, Seeds)
-├── docs/             # Technical & Educational Documentation
-└── snowflake/        # Medallion Layer DDL (Layered & Prefixed)
-```
+*   📁 **[.agents/](file:///Users/matu/git/YT-SF-Agentic/.agents)**: Personas, rules, and ADRs.
+*   📁 **[.deployment/](file:///Users/matu/git/YT-SF-Agentic/.deployment)**: Custom Snowflake Deployer CLI ([deploy.py](file:///Users/matu/git/YT-SF-Agentic/.deployment/deploy.py)).
+*   📁 **[.setup/](file:///Users/matu/git/YT-SF-Agentic/.setup)**: Snowflake role, database, and user bootstrap scripts.
+*   📁 **[dbt/](file:///Users/matu/git/YT-SF-Agentic/dbt)**: Data transformation models, schemas, and seeds.
+*   📁 **[docs/](file:///Users/matu/git/YT-SF-Agentic/docs)**: Technical guides, diagrams, and documentation.
+*   📁 **[snowflake/](file:///Users/matu/git/YT-SF-Agentic/snowflake)**: Layered Medallion DDL files (e.g., `01_landing`, `02_raw`).
 
 ---
 *Built with passion by **Matu94** & **Antigravity***
