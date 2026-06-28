@@ -56,6 +56,7 @@ erDiagram
         string video_title
         int duration_seconds
         timestamp published_at
+        string video_type
     }
 
     DIM_DATE {
@@ -115,7 +116,7 @@ For the final presentation layer, we strictly follow Kimball principles.
 *   **`dim_video`**
     *   **Primary Key:** `video_id`
     *   **Natural Key:** `video_id`
-    *   **Grain:** One row per unique video. Contains static descriptors that do not change after publishing (duration, title, publish timestamp).
+    *   **Grain:** One row per unique video. Contains static descriptors that do not change after publishing (duration, title, publish timestamp, video type classification).
 
 *   **`dim_date`**
     *   **Primary Key:** `date_id` (Date formatted as `YYYY-MM-DD`).

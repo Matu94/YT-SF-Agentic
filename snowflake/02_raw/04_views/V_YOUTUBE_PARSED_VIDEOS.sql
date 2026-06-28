@@ -9,6 +9,7 @@ SELECT
     value:snippet.title::STRING AS VIDEO_TITLE,
     value:snippet.publishedAt::TIMESTAMP_TZ AS PUBLISHED_AT,
     value:contentDetails.duration::STRING AS DURATION_ISO8601,
+    value:snippet.liveBroadcastContent::STRING AS LIVE_BROADCAST_CONTENT,
     value:statistics.viewCount::INTEGER AS TOTAL_VIEWS,
     value:statistics.likeCount::INTEGER AS TOTAL_LIKES,
     value:statistics.commentCount::INTEGER AS TOTAL_COMMENTS
