@@ -25,8 +25,9 @@ graph LR
     end
 
     subgraph "Control Plane"
-        SP[Snowpark Python] --> API
+        API --> SP[Snowpark Python]
         Tasks[Snowflake Tasks] --> SP
+        SP --> L
         dbt["dbt (Integrated/Cloud)"] --> S
     end
 
