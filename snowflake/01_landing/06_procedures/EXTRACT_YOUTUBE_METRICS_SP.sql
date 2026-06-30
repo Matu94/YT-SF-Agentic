@@ -22,6 +22,9 @@ logger = logging.getLogger("extract_youtube_metrics")
 
 def main(session):
     try:
+        # Set session timezone to Budapest to ensure EXTRACTED_AT defaults correctly
+        session.sql("ALTER SESSION SET TIMEZONE = 'Europe/Budapest'").collect()
+
         # Truncate the transient landing table before each new extraction run
         session.sql("TRUNCATE TABLE YT_SF_{{SNOWFLAKE_ENVIRONMENT}}.LANDING.YOUTUBE_RAW_DATA").collect()
 
