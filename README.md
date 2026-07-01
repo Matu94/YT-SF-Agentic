@@ -1,4 +1,4 @@
-# 🚀 YouTube Metrics Pipeline: An Agentic Data Odyssey
+# 🚀 YouTube Metrics Pipeline
 
 ![Status](https://img.shields.io/badge/Status-In%20Development-yellow) ![Snowflake](https://img.shields.io/badge/Built%20on-Snowflake-blue) ![dbt](https://img.shields.io/badge/Logic-dbt-orange) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
 
