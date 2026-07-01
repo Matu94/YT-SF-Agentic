@@ -88,6 +88,39 @@ erDiagram
         int daily_comments
     }
 
+    %% Presentation Layer (OBT Views for Streamlit)
+    RPT_VIDEO_PERFORMANCE_DAILY {
+        string video_id
+        string video_title
+        int duration_seconds
+        timestamp published_at
+        string channel_id
+        string channel_title
+        string organization
+        string team_studio
+        string content_type
+        date metric_date
+        int total_views
+        int daily_views
+        int total_likes
+        int daily_likes
+        int total_comments
+        int daily_comments
+    }
+
+    RPT_CHANNEL_PERFORMANCE_DAILY {
+        string channel_id
+        string channel_title
+        string organization
+        string team_studio
+        string content_type
+        date metric_date
+        int total_subscribers
+        int daily_subscriber_growth
+        int total_views
+        int total_videos
+    }
+
     %% Relationships
     SEED_CHANNELS_HIERARCHY ||--o{ DIM_CHANNEL : "provides organizational hierarchy"
     STG_YOUTUBE_CHANNEL_STATS ||--o| DIM_CHANNEL : "provides evolving metadata"
@@ -100,6 +133,13 @@ erDiagram
     DIM_CHANNEL ||--o{ DIM_VIDEO : "owns"
     DIM_VIDEO ||--o{ FCT_DAILY_VIDEO_METRICS : "filters/groups"
     DIM_DATE ||--o{ FCT_DAILY_VIDEO_METRICS : "filters/groups"
+
+    DIM_VIDEO ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
+    FCT_DAILY_VIDEO_METRICS ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
+
+    DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_DAILY : "denormalized into"
+    FCT_DAILY_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_DAILY : "denormalized into"
 ```
 
 ## 2. Table Definitions & Grain (Mart Layer)
@@ -131,6 +171,20 @@ For the final presentation layer, we strictly follow Kimball principles.
 *   **`fct_daily_video_metrics`**
     *   **Primary Key:** Composite of `video_id` + `date_id`.
     *   **Grain:** One row per video, per day. Captures performance deltas (views, likes, comments gained on that specific day) as well as the running total at the end of the day.
+
+### Reporting / Presentation Layer (OBT Views)
+
+To simplify downstream analytical consumption and ensure optimal performance for Streamlit applications, we deploy denormalized reporting views (One Big Table format).
+
+*   **`rpt_video_performance_daily`**
+    *   **Grain:** One row per video, per day.
+    *   **Description:** Fully denormalized view combining `fct_daily_video_metrics` with `dim_video` and `dim_channel` details. Pre-computes video descriptors, creator hierarchy, and daily/cumulative engagement metrics, eliminating query-time joins in downstream applications.
+    *   **Core Attributes:** `video_title`, `channel_title`, `organization`, `team_studio`, `metric_date`, `total_views`, `daily_views`, `total_likes`, `daily_likes`.
+
+*   **`rpt_channel_performance_daily`**
+    *   **Grain:** One row per channel, per day.
+    *   **Description:** Fully denormalized view combining `fct_daily_channel_metrics` with `dim_channel` metadata.
+    *   **Core Attributes:** `channel_title`, `organization`, `team_studio`, `content_type`, `metric_date`, `total_subscribers`, `daily_subscriber_growth`, `total_views`.
 
 ## 3. Source-to-Target Mapping
 
