@@ -12,28 +12,17 @@ A hobby project focused on building an automated data pipeline to extract YouTub
     *   **Data Warehouse (Snowflake):** Dedicated databases for each environment (e.g., `YT_SF_DEV`, `YT_SF_PROD`) will use a 4-layer architecture: `LANDING` (transient raw drops), `RAW` (persistent history), `STAGING` (dbt transformations), and `MART` (analytics presentation).
     *   **Compute Isolation:** Dedicated virtual warehouses will be used for CI/CD and data loading (`YT_SF_CICD_WH`), dbt transformations (`YT_SF_TRANSFORM_WH`), and administration (`YT_SF_ADMIN_WH`), all controlled by resource monitors to ensure strict cost management (capped at ~5 EUR/month per warehouse).
 
-## 3. Scope & Phasing
-### Phase 1: The Base (Fókusz Stúdió)
-*   **Target Channels (4):**
-    *   [Fókusz Csoport](https://www.youtube.com/@fokuszcsoport)
-    *   [Jólvanezígy](https://www.youtube.com/@jolvanezigy)
-    *   [Kókusz Plusz](https://www.youtube.com/@KokuszPlusz)
-    *   [Világjegy Csatorna](https://www.youtube.com/@vilagjegycsatorna)
-
-*   **Organizational Hierarchy:**
-    *   These initial channels are managed by **Fókusz Stúdió**.
-    *   Fókusz Stúdió is a member of the broader organization, **Cérnagyár**.
-
-### Phase 2: Future Expansion
-*   **Cérnagyár Expansion:** Onboarding many other content creators and channels housed under Cérnagyár.
-*   **External Expansion:** Onboarding channels outside of Cérnagyár across various content types (e.g., cars, news, kitchen, etc.).
+## 3. Scope & Delivery
+*   **Target:** A continuously growing list of various Hungarian YouTube channels.
+*   **Delivery Strategy:** Features and new channels are delivered continuously to PROD as soon as they are validated in DEV. We don't rely on phased releases.
+*   **Organizational Hierarchy:** Channels are grouped into broader logical units like Studios or Content Networks for aggregate reporting.
 
 ## 4. Technical Requirements
 
 ### 4.1 Master Data Management
 *   **Static Channel Metadata Table:** A dedicated static table (dimension table) must be created to store organizational metadata for all onboarded channels. Attributes should include, but are not limited to:
-    *   Organization (e.g., Cérnagyár)
-    *   Team/Studio/Creator (e.g., Fókusz Stúdió)
+    *   Organization (e.g., Content Network)
+    *   Team/Studio/Creator (e.g., Creator Studio)
     *   Channel Name / ID
     *   Content Type / Niche
 

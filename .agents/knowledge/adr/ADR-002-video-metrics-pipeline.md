@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-As part of the Phase 1 expansion of the YouTube Metrics Pipeline, we need to ingest and track detailed daily video-level data (views, likes, comments, duration, title) for the channels `UCIITmFAHQ4S1FMDWqhZyQKg` (Fókusz Csoport) and `UC9qpYwK7N9EB0-SECANa23g` (Jólvanezígy). 
+As part of the continuous expansion of the YouTube Metrics Pipeline, we need to ingest and track detailed daily video-level data (views, likes, comments, duration, title) for various Hungarian channels.
 
 This requires:
 1. Validating that the ingestion flow aligns with Kimball modeling principles.
@@ -158,7 +158,7 @@ END AS daily_views
 *(This applies identically to `daily_likes` and `daily_comments`.)*
 
 #### B. Scale and Performance Optimizations for Window Functions (`LAG`)
-As Phase 2 expands to track thousands of videos daily, running `LAG` window functions over the entire history of `RAW` data will lead to performance degradation. We implement the following strategies:
+As the pipeline expands to track thousands of videos daily, running `LAG` window functions over the entire history of `RAW` data will lead to performance degradation. We implement the following strategies:
 
 1. **Incremental Materialization in dbt:**
    Rather than performing a full table rebuild each run, `fct_daily_video_metrics` should use `incremental` materialization.
@@ -180,7 +180,7 @@ As Phase 2 expands to track thousands of videos daily, running `LAG` window func
 
 - **Positive:**
   - Robust delta calculations that eliminate artificial view/like/comment spikes on video onboarding.
-  - A clean, performant incremental dbt design that scales seamlessly from Phase 1 to Phase 2.
+  - A clean, performant incremental dbt design that scales seamlessly as more channels are continuously added.
   - Native, SQL-safe duration parsing using built-in Snowflake regex functions without requiring external libraries or UDF deployment overhead.
 - **Negative:**
   - Window functions (`LAG`) in the initial backfill run will still require full table scans, but this is a one-time operation.

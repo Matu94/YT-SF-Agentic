@@ -32,7 +32,7 @@ Staging models are built on top of the historical views in the `RAW` schema. The
 ### 1.3 Seeds
 *   **`STAGING.CHANNELS_HIERARCHY`**
     *   **Source**: [channels_hierarchy.csv](file:///Users/matu/git/YT-SF-Agentic/dbt/seeds/channels_hierarchy.csv).
-    *   **Purpose**: Maps channel IDs to their creator studio/creator team, content type niche, and parent organization (e.g. Cérnagyár > Fókusz Stúdió).
+    *   **Purpose**: Maps channel IDs to their creator studio/creator team, content type niche, and parent organization (e.g. Content Network > Creator Studio).
 
 ---
 

@@ -4,7 +4,7 @@
 *   **Clean & Simple Aesthetics**: Prioritize a clear, minimalist, and simple user interface design. Avoid layout clutter, utilize clean margins, and present data clearly.
 *   **Dark Mode Optimization**: Design exclusively with dark-mode compatibility in mind, leveraging deep background tones, readable contrast, and native dark chart themes.
 *   **Grid Layouts**: Use `st.columns()` to display KPI metric cards side-by-side. Do not stack isolated stats vertically.
-*   **Typography & Colors**: Maintain visual alignment with the Cérnagyár styling. Use semantic colors for trends (green for growth, red for decline).
+*   **Typography & Colors**: Maintain a modern, neutral styling appropriate for multiple creators. Use semantic colors for trends (green for growth, red for decline).
 *   **Sidebar Navigation**: Keep control widgets (e.g. channel filter, date range, metric picker) in the left sidebar to maximize dashboard space.
 *   **Interactive Charting**: Use Altair or Plotly for dynamic charts that support hover tooltips, zoom, and selections.
 

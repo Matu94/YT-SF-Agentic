@@ -7,7 +7,7 @@ An automated, end-to-end data platform built to extract, transform, and visualiz
 ---
 
 ## 🌌 The Vision
-Our mission is to turn raw, cumulative YouTube API metrics into deep, actionable insights for the **Cérnagyár** organization, starting with the **Fókusz Stúdió** creators. We leverage the full power of the Snowflake Native stack to build a platform that is scalable, cost-efficient, and secure.
+Our mission is to turn raw, cumulative YouTube API metrics into deep, actionable insights for various **Hungarian YouTube channels**. We leverage the full power of the Snowflake Native stack to build a platform that is scalable, cost-efficient, and secure.
 
 ## 🏗️ Technical Architecture
 
@@ -62,7 +62,7 @@ This repository is built using an **Agentic AI Lifecycle**. Every line of code a
 This project serves as a "Living Masterclass." Explore our domain-specific guides to learn the "Why" behind the architecture:
 
 *   📖 **[Agentic Framework](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/01_agentic_development/conceptual_framework.md)**: PRDs, ADRs, and the Atomic Task Rule.
-*   📈 **[Product Vision & Strategy](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/05_product_management/product_vision_and_strategy.md)**: Target channels, MVP phases, and metadata hierarchy.
+*   📈 **[Product Vision & Strategy](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/05_product_management/product_vision_and_strategy.md)**: Target channels and metadata hierarchy.
 *   📺 **[YouTube API Integration](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/06_data_sources/youtube_api_v3.md)**: API requests, parts, and quota unit budget management.
 *   ❄️ **[Snowflake Patterns](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/02_snowflake/architecture_patterns.md)**: Medallion flow, RBAC, and Zero-Copy Cloning.
 *   🧡 **[dbt Essentials](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/03_dbt/dbt_essentials.md)**: Materializations, SCD Type 2, and Lineage.
