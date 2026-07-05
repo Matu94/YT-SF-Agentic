@@ -16,7 +16,7 @@ All schemas are created `WITH MANAGED ACCESS`. This means object privileges are 
 * **[`LANDING`](file:///Users/matu/git/YT-SF-Agentic/docs/database/landing.md)**: Transient landing area. Used by the Python ingestion script to dump raw JSON payloads directly from the API.
 * **[`RAW`](file:///Users/matu/git/YT-SF-Agentic/docs/database/raw.md)**: Persistent historical storage. Retains a complete, untruncated history of all ingested data over time.
 * **[`STAGING`](file:///Users/matu/git/YT-SF-Agentic/docs/database/staging.md)**: The transformation layer. Where JSON is flattened, data types are cast, and daily deltas/calculations are performed using dbt.
-* **[`MART`](file:///Users/matu/git/YT-SF-Agentic/docs/database/mart.md)**: The presentation layer. Houses the final clean dimensional tables (Star Schema) optimized for Streamlit visualizations.
+* **[`MART`](file:///Users/matu/git/YT-SF-Agentic/docs/database/mart.md)**: The presentation layer. Houses the final clean dimensional tables (Star Schema) optimized for Streamlit visualizations, as well as the stage and Streamlit app objects.
 * **[`TECH`](file:///Users/matu/git/YT-SF-Agentic/docs/database/tech.md)**: The technical tracking schema. Dedicated entirely to CI/CD state management and administrative logs (e.g., tracking applied deployment files).
 * **[`TECH_BKP`](file:///Users/matu/git/YT-SF-Agentic/docs/database/tech_bkp.md)**: The backup schema. Used both for **manual admin snapshots** and **automated pre-migration backups** triggered by the CI/CD pipeline. Before any destructive DDL (e.g., adding a column, recreating a table), the pipeline clones the existing object here, allowing data to be read back and re-ingested if the migration needs to be rolled back.
 

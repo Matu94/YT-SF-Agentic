@@ -38,6 +38,12 @@ The `MART` schema is the presentation layer serving downstream data consumers (s
     *   **Grain**: One row per channel per day.
     *   **Purpose**: Fully denormalized view combining channel facts (including daily views) with channel metadata.
 
+### 1.4 Streamlit Components
+*   **`MART.STREAMLIT_STAGE` (Stage)**
+    *   **Purpose**: Directory stage containing the Python source files, assets, and dependency definition (`environment.yml`) for the Native Streamlit dashboard.
+*   **`MART.YOUTUBE_METRICS_DASHBOARD` (Streamlit App)**
+    *   **Purpose**: The Snowflake Native Streamlit application object that serves the dashboard in the Snowsight UI. It uses the `YT_SF_TRANSFORM_WH` warehouse for execution.
+
 ---
 
 ## 2. Ingestion Flow & Star Schema Design

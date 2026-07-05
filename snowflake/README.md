@@ -31,10 +31,13 @@ The pipeline is organized into Medallion layers, with each schema applying the r
     - `02_integrations/` (External Access Integrations)
     - `06_procedures/` (Extraction logic)
     - `07_tasks/` (Scheduling)
+- **`04_mart/`**:
+    - `01_infrastructure/` (Streamlit Stage)
+    - `08_streamlit/` (Snowflake Native Streamlit applications)
 
 ## Deployment Order
 Files are executed in lexicographical order based on:
-1. Schema Prefix (`01_landing` -> `02_raw`)
-2. Object Prefix (`01_infrastructure` -> `07_tasks`)
+1. Schema Prefix (`01_landing` -> `02_raw` -> `03_tech` -> `04_mart`)
+2. Object Prefix (`01_infrastructure` -> `08_streamlit`)
 3. Filename (e.g., `01_channels.sql` -> `02_videos.sql`)
 
