@@ -28,6 +28,16 @@ The `MART` schema is the presentation layer serving downstream data consumers (s
     *   **Grain**: One row per video per day.
     *   **Metrics**: Total views, daily view growth, total likes, daily like growth, total comments, and daily comment growth.
 
+### 1.3 Presentation Views (OBT)
+*   **`MART.RPT_VIDEO_PERFORMANCE_DAILY` (View)**
+    *   **Source**: `MART.FCT_DAILY_VIDEO_METRICS`, `MART.DIM_VIDEO`, `MART.DIM_CHANNEL`.
+    *   **Grain**: One row per video per day.
+    *   **Purpose**: Fully denormalized view combining video facts with dimension details to eliminate query-time joins in downstream Streamlit apps.
+*   **`MART.RPT_CHANNEL_PERFORMANCE_DAILY` (View)**
+    *   **Source**: `MART.FCT_DAILY_CHANNEL_METRICS`, `MART.DIM_CHANNEL`.
+    *   **Grain**: One row per channel per day.
+    *   **Purpose**: Fully denormalized view combining channel facts with channel metadata.
+
 ---
 
 ## 2. Ingestion Flow & Star Schema Design
@@ -39,8 +49,16 @@ erDiagram
     DIM_CHANNEL ||--o{ DIM_VIDEO : "owns"
     DIM_VIDEO ||--o{ FCT_DAILY_VIDEO_METRICS : "filters/groups"
     DIM_DATE ||--o{ FCT_DAILY_VIDEO_METRICS : "filters/groups"
+    
+    DIM_VIDEO ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
+    FCT_DAILY_VIDEO_METRICS ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
+
+    DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_DAILY : "denormalized into"
+    FCT_DAILY_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_DAILY : "denormalized into"
 ```
 
 1. **dbt runs** compile the dimensions first (to ensure entity lookups are populated), followed by the facts.
 2. Fact tables join raw metrics against `dim_channel` and `dim_video` to resolve surrogate keys and historical parent groups (e.g. Creator Studios, niches).
-3. The resulting Star Schema provides a fast, structured layer optimized for Streamlit dashboards.
+3. Presentation views denormalize these dimensions and facts into One Big Table (OBT) formats for low-latency querying.
+4. The resulting models provide a fast, structured layer optimized for Streamlit dashboards.

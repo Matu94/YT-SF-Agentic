@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: rpt_video_performance_daily
+    description: "Fully denormalized view combining fct_daily_video_metrics with dim_video and dim_channel details."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_channel_performance_daily
+    description: "Fully denormalized view combining fct_daily_channel_metrics with dim_channel metadata."
+    columns:
+      - name: channel_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
