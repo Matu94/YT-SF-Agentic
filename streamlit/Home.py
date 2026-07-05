@@ -77,11 +77,11 @@ if df_filtered.empty:
     st.info("No data found for the selected filters.")
 else:
     # Altair Chart optimized for Streamlit
-    chart = alt.Chart(df_filtered).mark_line(point=True).encode(
-        x=alt.X('METRIC_DATE:T', title='Date'),
+    chart = alt.Chart(df_filtered).mark_bar().encode(
+        x=alt.X('CHANNEL_TITLE:N', title='Channel', sort='-y'),
         y=alt.Y('DAILY_VIEWS:Q', title='Daily Views'),
-        color=alt.Color('CHANNEL_TITLE:N', title='Channel'),
-        tooltip=['METRIC_DATE:T', 'CHANNEL_TITLE:N', 'DAILY_VIEWS:Q', 'TOTAL_VIEWS:Q', 'ORGANIZATION:N', 'TEAM_STUDIO:N']
+        color=alt.Color('CHANNEL_TITLE:N', legend=None),
+        tooltip=['CHANNEL_TITLE:N', 'DAILY_VIEWS:Q', 'TOTAL_VIEWS:Q', 'ORGANIZATION:N', 'TEAM_STUDIO:N']
     ).properties(
         height=500
     ).interactive()
