@@ -16,7 +16,8 @@ WITH raw_data AS (
         total_views,
         total_likes,
         total_comments,
-        CAST(extracted_at AS DATE) AS metric_date
+        CAST(extracted_at AS DATE) AS metric_date,
+        extracted_at
     FROM {{ source('raw_youtube', 'v_youtube_parsed_videos') }}
     
     {% if is_incremental() %}
