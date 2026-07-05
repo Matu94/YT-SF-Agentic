@@ -40,6 +40,8 @@ models:
       - name: date_id
         tests:
           - not_null
+      - name: daily_views
+        description: "Calculated views from the previous day"
 
   - name: fct_daily_video_metrics
     description: "Daily aggregate performance and discrete deltas for videos."
