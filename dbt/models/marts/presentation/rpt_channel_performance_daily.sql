@@ -12,6 +12,7 @@ SELECT
     f.total_subscribers,
     f.daily_subscriber_growth,
     f.total_views,
+    f.daily_views,
     f.total_videos
 FROM {{ ref('fct_daily_channel_metrics') }} f
 JOIN {{ ref('dim_channel') }} d

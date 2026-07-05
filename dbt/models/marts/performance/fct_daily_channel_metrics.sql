@@ -8,6 +8,7 @@ SELECT
     s.total_subscribers,
     s.daily_subscriber_growth,
     s.total_views,
+    s.daily_views,
     s.total_videos
 FROM {{ ref('stg_youtube_channel_stats') }} s
 JOIN {{ ref('dim_channel') }} d

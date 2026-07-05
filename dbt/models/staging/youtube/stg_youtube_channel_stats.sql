@@ -15,13 +15,13 @@ WITH raw_data AS (
         total_subscribers,
         total_views,
         total_videos,
-        CAST(extracted_at AS DATE) AS metric_date,
+        DATEADD(day, -1, CAST(extracted_at AS DATE)) AS metric_date,
         extracted_at
     FROM {{ source('raw_youtube', 'v_youtube_parsed_channels') }}
     
     {% if is_incremental() %}
     -- Select new data plus the most recent existing day to enable LAG calculations
-    WHERE CAST(extracted_at AS DATE) >= (
+    WHERE DATEADD(day, -1, CAST(extracted_at AS DATE)) >= (
         SELECT COALESCE(max(metric_date), '1970-01-01'::DATE) FROM {{ this }}
     )
     {% endif %}
@@ -73,7 +73,12 @@ calculated_metrics AS (
         total_subscribers - LAG(total_subscribers, 1) OVER (
             PARTITION BY channel_id 
             ORDER BY metric_date ASC
-        ) AS daily_subscriber_growth
+        ) AS daily_subscriber_growth,
+        -- Calculate daily views
+        total_views - LAG(total_views, 1) OVER (
+            PARTITION BY channel_id 
+            ORDER BY metric_date ASC
+        ) AS daily_views
     FROM deduplicated_raw
 )
 

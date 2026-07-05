@@ -20,3 +20,5 @@ models:
       - name: metric_date
         tests:
           - not_null
+      - name: daily_views
+        description: "Calculated views from the previous day"

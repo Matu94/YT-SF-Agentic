@@ -20,6 +20,8 @@ models:
         description: "Calculated subscriber growth from the previous day"
       - name: total_views
         description: "Cumulative total views"
+      - name: daily_views
+        description: "Calculated views from the previous day"
       - name: total_videos
         description: "Cumulative video count"
 
