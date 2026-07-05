@@ -25,6 +25,7 @@ erDiagram
         int total_subscribers
         int daily_subscriber_growth
         int total_views
+        int daily_views
         int total_videos
     }
     
@@ -74,6 +75,7 @@ erDiagram
         int total_subscribers
         int daily_subscriber_growth
         int total_views
+        int daily_views
         int total_videos
     }
 
@@ -118,6 +120,7 @@ erDiagram
         int total_subscribers
         int daily_subscriber_growth
         int total_views
+        int daily_views
         int total_videos
     }
 
@@ -166,7 +169,7 @@ For the final presentation layer, we strictly follow Kimball principles.
 
 *   **`fct_daily_channel_metrics`**
     *   **Primary Key:** Composite of `channel_sk` + `date_id` (or `channel_id` + `date_id`).
-    *   **Grain:** One row per active channel, per day. Captures both cumulative metrics (e.g., total subscribers) and discrete deltas (e.g., net new subscribers for that day).
+    *   **Grain:** One row per active channel, per day. Captures both cumulative metrics (e.g., total subscribers), discrete deltas (e.g., net new subscribers for that day), and daily view counts.
 
 *   **`fct_daily_video_metrics`**
     *   **Primary Key:** Composite of `video_id` + `date_id`.
@@ -184,7 +187,7 @@ To simplify downstream analytical consumption and ensure optimal performance for
 *   **`rpt_channel_performance_daily`**
     *   **Grain:** One row per channel, per day.
     *   **Description:** Fully denormalized view combining `fct_daily_channel_metrics` with `dim_channel` metadata.
-    *   **Core Attributes:** `channel_title`, `organization`, `team_studio`, `content_type`, `metric_date`, `total_subscribers`, `daily_subscriber_growth`, `total_views`.
+    *   **Core Attributes:** `channel_title`, `organization`, `team_studio`, `content_type`, `metric_date`, `total_subscribers`, `daily_subscriber_growth`, `total_views`, `daily_views`.
 
 ## 3. Source-to-Target Mapping
 
@@ -200,7 +203,9 @@ This mapping traces the nested JSON fields from the raw YouTube Channel API resp
 | `items[].statistics.subscriberCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_subscribers` | Cumulative total at extraction time |
 | *Calculated in Staging* | `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `daily_subscriber_growth` | `total_subscribers` today - `total_subscribers` yesterday |
 | `items[].statistics.viewCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_views` | Cumulative channel views |
+| *Calculated in Staging* | `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `daily_views` | `total_views` today - `total_views` yesterday |
 | `items[].statistics.videoCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_videos` | Cumulative video count |
+| `extracted_at` | `stg_youtube_channel_stats` / `stg_youtube_video_stats` | Facts / OBT Views | `metric_date` (mapped as `date_id`) | Shifted by -1 day (`DATEADD(day, -1, CAST(extracted_at AS DATE))`) to map early-morning loads to the actual performance day |
 | *Hierarchy Seed File (CSV)* | `seed_channels_hierarchy` | `dim_channel` | `organization`, `team_studio`, `content_type` | Merged via static mapping |
 | `items[].id` (Video API) | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` / Facts | `video_id` | Used as the natural grain for videos |
 | `items[].snippet.channelId` | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` / Facts | `channel_id` | Foreign key mapping to channel |

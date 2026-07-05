@@ -22,7 +22,7 @@ The `MART` schema is the presentation layer serving downstream data consumers (s
 *   **`MART.FCT_DAILY_CHANNEL_METRICS` (Fact Table)**
     *   **Source**: `STAGING.STG_YOUTUBE_CHANNEL_STATS`.
     *   **Grain**: One row per channel per day.
-    *   **Metrics**: Total subscribers, daily subscriber growth delta, total view count, and total video count.
+    *   **Metrics**: Total subscribers, daily subscriber growth delta, total view count, daily view count delta, and total video count.
 *   **`MART.FCT_DAILY_VIDEO_METRICS` (Fact Table)**
     *   **Source**: `STAGING.STG_YOUTUBE_VIDEO_STATS`.
     *   **Grain**: One row per video per day.
@@ -36,7 +36,7 @@ The `MART` schema is the presentation layer serving downstream data consumers (s
 *   **`MART.RPT_CHANNEL_PERFORMANCE_DAILY` (View)**
     *   **Source**: `MART.FCT_DAILY_CHANNEL_METRICS`, `MART.DIM_CHANNEL`.
     *   **Grain**: One row per channel per day.
-    *   **Purpose**: Fully denormalized view combining channel facts with channel metadata.
+    *   **Purpose**: Fully denormalized view combining channel facts (including daily views) with channel metadata.
 
 ---
 
