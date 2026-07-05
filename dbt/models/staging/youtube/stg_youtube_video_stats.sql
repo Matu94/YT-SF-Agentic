@@ -27,6 +27,39 @@ WITH raw_data AS (
     {% endif %}
 ),
 
+deduplicated_raw AS (
+    SELECT
+        video_id,
+        channel_id,
+        video_title,
+        published_at,
+        duration_iso8601,
+        live_broadcast_content,
+        total_views,
+        total_likes,
+        total_comments,
+        metric_date
+    FROM (
+        SELECT
+            video_id,
+            channel_id,
+            video_title,
+            published_at,
+            duration_iso8601,
+            live_broadcast_content,
+            total_views,
+            total_likes,
+            total_comments,
+            metric_date,
+            ROW_NUMBER() OVER (
+                PARTITION BY video_id, metric_date
+                ORDER BY extracted_at DESC
+            ) AS rn
+        FROM raw_data
+    )
+    WHERE rn = 1
+),
+
 calculated_metrics AS (
     SELECT
         video_id,
@@ -56,7 +89,7 @@ calculated_metrics AS (
             ORDER BY metric_date ASC
         ) AS daily_comments
 
-    FROM raw_data
+    FROM deduplicated_raw
 )
 
 SELECT *

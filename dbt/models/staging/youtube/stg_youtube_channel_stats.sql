@@ -26,6 +26,37 @@ WITH raw_data AS (
     {% endif %}
 ),
 
+deduplicated_raw AS (
+    SELECT
+        channel_id,
+        channel_title,
+        channel_custom_url,
+        channel_published_at,
+        channel_country,
+        total_subscribers,
+        total_views,
+        total_videos,
+        metric_date
+    FROM (
+        SELECT
+            channel_id,
+            channel_title,
+            channel_custom_url,
+            channel_published_at,
+            channel_country,
+            total_subscribers,
+            total_views,
+            total_videos,
+            metric_date,
+            ROW_NUMBER() OVER (
+                PARTITION BY channel_id, metric_date
+                ORDER BY extracted_at DESC
+            ) AS rn
+        FROM raw_data
+    )
+    WHERE rn = 1
+),
+
 calculated_metrics AS (
     SELECT
         channel_id,
@@ -42,7 +73,7 @@ calculated_metrics AS (
             PARTITION BY channel_id 
             ORDER BY metric_date ASC
         ) AS daily_subscriber_growth
-    FROM raw_data
+    FROM deduplicated_raw
 )
 
 SELECT *
