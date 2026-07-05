@@ -35,7 +35,12 @@ def main(session):
         # These are placeholders and should ideally be read from a config table in the future
         channel_ids = [
             'UCIITmFAHQ4S1FMDWqhZyQKg', # Fókusz Csoport
-            'UC9qpYwK7N9EB0-SECANa23g' # Jólvanezígy
+            'UC9qpYwK7N9EB0-SECANa23g', # Jólvanezígy
+            'UCDwyp7fW0R8b27muWFEAgvQ', # Világjegy
+            'UCSFMCn1xtj_4kOy6KNK_fNg', # TheVR Gaming+
+            'UCTY9vSAwOVsXw1lE1vBD0Hg', # theVR Podcast
+            'UCQYlMOshLHIfOqjZjlpkLyQ'  # Aputest Podcast
+
         ]
         
         # Call YouTube API and Insert into LANDING table
