@@ -1,0 +1,9 @@
+name: yt_metrics_app
+channels:
+  - snowflake
+dependencies:
+  - python=3.10
+  - streamlit
+  - snowflake-snowpark-python
+  - pandas
+  - altair
