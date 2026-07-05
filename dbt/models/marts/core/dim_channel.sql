@@ -12,7 +12,12 @@ SELECT
     organization,
     team_studio,
     content_type,
-    dbt_valid_from AS valid_from,
+    -- Back-extend the first version of the dimension to handle historical facts
+    CASE 
+        WHEN ROW_NUMBER() OVER (PARTITION BY channel_id ORDER BY dbt_valid_from) = 1 
+        THEN '1970-01-01'::TIMESTAMP_NTZ 
+        ELSE dbt_valid_from 
+    END AS valid_from,
     dbt_valid_to AS valid_to,
     CASE 
         WHEN dbt_valid_to IS NULL THEN TRUE 
