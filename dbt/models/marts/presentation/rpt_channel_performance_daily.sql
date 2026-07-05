@@ -17,3 +17,4 @@ SELECT
 FROM {{ ref('fct_daily_channel_metrics') }} f
 JOIN {{ ref('dim_channel') }} d
     ON f.channel_sk = d.channel_sk
+WHERE f.date_id = DATEADD(day, -1, CURRENT_DATE())
