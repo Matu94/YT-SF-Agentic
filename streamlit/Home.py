@@ -26,8 +26,11 @@ if not df.empty:
 
 # Welcome user
 try:
-    current_user = session.get_current_user()
-    current_user = current_user.replace('"', '') if current_user else "User"
+    current_user_row = session.sql("SELECT CURRENT_USER()").collect()
+    if current_user_row and current_user_row[0][0]:
+        current_user = current_user_row[0][0].replace('"', '')
+    else:
+        current_user = "User"
 except Exception:
     current_user = "User"
 
@@ -40,9 +43,9 @@ if df.empty:
     st.warning("No data available in the data warehouse.")
     st.stop()
 
-# 1. Latest Refresh Date & Status
+# 1. Latest Data Available & Status
 latest_date = df['METRIC_DATE'].max()
-st.info(f"🟢 **System Status:** Pipeline is healthy. Latest data refresh: **{latest_date.strftime('%Y-%m-%d')}**")
+st.info(f"🟢 **System Status:** Pipeline is healthy. Latest data available: **{latest_date.strftime('%Y-%m-%d')}**")
 
 st.divider()
 
