@@ -115,15 +115,29 @@ top_videos = df_filtered.groupby(['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE', 'V
 
 top_videos['PUBLISHED_AT'] = pd.to_datetime(top_videos['PUBLISHED_AT']).dt.strftime('%Y-%m-%d')
 
+# Construct the YouTube URL from the VIDEO_ID
+top_videos['VIDEO_URL'] = "https://www.youtube.com/watch?v=" + top_videos['VIDEO_ID']
+
+# Prepare the dataframe for display
+display_df = top_videos.rename(columns={
+    'VIDEO_TITLE': 'Video Title',
+    'VIDEO_URL': 'Watch Link',
+    'CHANNEL_TITLE': 'Channel',
+    'VIDEO_TYPE': 'Type',
+    'PUBLISHED_AT': 'Published Date',
+    'DAILY_VIEWS': 'Period Views',
+    'TOTAL_VIEWS': 'Lifetime Views'
+})[['Video Title', 'Watch Link', 'Channel', 'Type', 'Published Date', 'Period Views', 'Lifetime Views']]
+
 st.dataframe(
-    top_videos.rename(columns={
-        'VIDEO_TITLE': 'Video Title',
-        'CHANNEL_TITLE': 'Channel',
-        'VIDEO_TYPE': 'Type',
-        'PUBLISHED_AT': 'Published Date',
-        'DAILY_VIEWS': 'Period Views',
-        'TOTAL_VIEWS': 'Lifetime Views'
-    })[['Video Title', 'Channel', 'Type', 'Published Date', 'Period Views', 'Lifetime Views']], 
+    display_df, 
     hide_index=True, 
-    use_container_width=True
+    use_container_width=True,
+    column_config={
+        "Watch Link": st.column_config.LinkColumn(
+            "Watch Link",
+            help="Click to open this video on YouTube",
+            display_text="▶️ Open on YouTube"
+        )
+    }
 )
