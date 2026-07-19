@@ -34,13 +34,17 @@ def main(session):
         # Phase 1 Target Channels
         # These are placeholders and should ideally be read from a config table in the future
         channel_ids = [
-            'UCIITmFAHQ4S1FMDWqhZyQKg', # Fókusz Csoport
-            'UC9qpYwK7N9EB0-SECANa23g', # Jólvanezígy
-            'UCDwyp7fW0R8b27muWFEAgvQ', # Világjegy
-            'UCSFMCn1xtj_4kOy6KNK_fNg', # TheVR Gaming+
-            'UCTY9vSAwOVsXw1lE1vBD0Hg', # theVR Podcast
-            'UCQYlMOshLHIfOqjZjlpkLyQ'  # Aputest Podcast
-
+            'UCIITmFAHQ4S1FMDWqhZyQKg', #fókuszcsoport
+            'UC9qpYwK7N9EB0-SECANa23g', #JÓLVANEZÍGY
+            'UCDwyp7fW0R8b27muWFEAgvQ', #Világjegy
+            'UC3T5ogRHZVB3jEO5WFvzmIQ', #VÁLSÁGSTÁB
+            'UCpj5XSIwGUaaoVDZnVCBj8Q', #Kultúrsokk
+            'UCrpWCVp9FuGA8OnGtA0rgsw', #TheVR
+            'UCSFMCn1xtj_4kOy6KNK_fNg', #TheVR Gaming+
+            'UCTY9vSAwOVsXw1lE1vBD0Hg', #TheVR Podcast
+            'UCnoVsxmXRCq3935G40SdBKA', #TheVR Shortcut
+            'UCDeRsDqcB8zdkzErxrdHCOw', #TheVR Tech
+            'UCQYlMOshLHIfOqjZjlpkLyQ'  #APUTEST Gaming
         ]
         
         # Call YouTube API and Insert into LANDING table
