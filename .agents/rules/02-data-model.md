@@ -95,6 +95,7 @@ erDiagram
         string video_id
         string video_title
         int duration_seconds
+        string video_type
         timestamp published_at
         string channel_id
         string channel_title
@@ -182,7 +183,7 @@ To simplify downstream analytical consumption and ensure optimal performance for
 *   **`rpt_video_performance_daily`**
     *   **Grain:** One row per video, per day.
     *   **Description:** Fully denormalized view combining `fct_daily_video_metrics` with `dim_video` and `dim_channel` details. Pre-computes video descriptors, creator hierarchy, and daily/cumulative engagement metrics, eliminating query-time joins in downstream applications.
-    *   **Core Attributes:** `video_title`, `channel_title`, `organization`, `team_studio`, `metric_date`, `total_views`, `daily_views`, `total_likes`, `daily_likes`.
+    *   **Core Attributes:** `video_title`, `video_type`, `channel_title`, `organization`, `team_studio`, `metric_date`, `total_views`, `daily_views`, `total_likes`, `daily_likes`.
 
 *   **`rpt_channel_performance_daily`**
     *   **Grain:** One row per channel, per day.
@@ -211,6 +212,7 @@ This mapping traces the nested JSON fields from the raw YouTube Channel API resp
 | `items[].snippet.channelId` | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` / Facts | `channel_id` | Foreign key mapping to channel |
 | `items[].snippet.title` | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` | `video_title` | Static metadata |
 | `items[].contentDetails.duration`| `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` | `duration_seconds` | Requires ISO 8601 parsing in staging |
+| *Calculated in Mart* | `dim_video` | `dim_video` / OBT Views | `video_type` | Derived from duration and live broadcast status ('short', 'live', 'video') |
 | `items[].snippet.publishedAt` | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` | `published_at` | Static metadata |
 | `items[].statistics.viewCount` | `landing` -> `raw` -> `stg_youtube_video_stats` | `fct_daily_video_metrics`| `total_views` | Cumulative video views |
 | `items[].statistics.likeCount` | `landing` -> `raw` -> `stg_youtube_video_stats` | `fct_daily_video_metrics`| `total_likes` | Cumulative video likes |

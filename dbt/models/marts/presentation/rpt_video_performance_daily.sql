@@ -6,6 +6,7 @@ SELECT
     f.video_id,
     v.video_title,
     v.duration_seconds,
+    v.video_type,
     v.published_at,
     v.channel_id,
     d.channel_title,
