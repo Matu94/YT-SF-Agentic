@@ -26,6 +26,11 @@ if df.empty:
 
 df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
 
+# Filter to the latest available day (the "past day")
+latest_date = df['METRIC_DATE'].max()
+df = df[df['METRIC_DATE'] == latest_date]
+st.info(f"📅 Displaying metrics for the latest available date: **{latest_date.strftime('%Y-%m-%d')}**")
+
 # Metric Toggle Placeholder
 metric_grain = st.radio("Select Metric Grain", ["Daily", "Weekly"], horizontal=True)
 if metric_grain == "Weekly":
