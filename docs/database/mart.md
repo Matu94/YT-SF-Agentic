@@ -42,7 +42,17 @@ The `MART` schema is the presentation layer serving downstream data consumers (s
 *   **`MART.STREAMLIT_STAGE` (Stage)**
     *   **Purpose**: Directory stage containing the Python source files, assets, and dependency definition (`environment.yml`) for the Native Streamlit dashboard.
 *   **`MART.YOUTUBE_METRICS_DASHBOARD` (Streamlit App)**
-    *   **Purpose**: The Snowflake Native Streamlit application object that serves the dashboard in the Snowsight UI. It uses the `YT_SF_TRANSFORM_WH` warehouse for execution.
+    *   **Purpose**: The Snowflake Native Streamlit application object that serves the multi-page dashboard in the Snowsight UI. It uses the `YT_SF_TRANSFORM_WH` warehouse for execution.
+    *   **Page Structure**:
+        *   **`Home.py` (Welcome Landing Page)**: Displays welcome message, pipeline health indicator with latest available date, top-level platform KPI metrics (Total Tracked Channels, Total Subscribers, Total Views), and an expandable Channel Directory grouped by Organization and Studio.
+        *   **`pages/1_Daily_Views.py` (Daily Views Dashboard)**: Provides channel-level view performance analytics over time, featuring hierarchical sidebar dropdown filters (Organization -> Studio -> Channel) and Altair charts.
+        *   **`pages/2_Video_Statistics.py` (Video Statistics Dashboard)**: Provides video-level analytics powered by `MART.RPT_VIDEO_PERFORMANCE_DAILY`, featuring:
+            *   *Metric Grain Selector*: Daily/Weekly metric toggle placeholder.
+            *   *Latest Date Filtering*: Automatically filters to the latest `METRIC_DATE` to present single-day video performance.
+            *   *Cascading Multi-Select Filters*: Dependent multi-select dropdowns for Organizations, Teams, and Channels.
+            *   *Content Format Filter*: Multi-select filtering for `VIDEO_TYPE` (`video`, `short`, `live`).
+            *   *Aggregated Chart*: Altair bar chart displaying total views per channel, with tooltips showing channel name, period views, and unique video count (`VIDEO_COUNT`).
+            *   *Top Videos Table*: Interactive data table showing top 100 performing videos with direct YouTube watch links (`LinkColumn`).
 
 ---
 
