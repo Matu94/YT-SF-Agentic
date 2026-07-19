@@ -83,6 +83,8 @@ def main():
             "streamlit/Home.py": "",
             "streamlit/environment.yml": "",
             "streamlit/pages/1_Channel_Info.py": "pages",
+            "streamlit/pages/1_Daily_Views.py": "daily_vies",
+            "streamlit/pages/2_Video_Statistics.py": "Video_Statistics"
         }
         
         print(f"Uploading files to stage @{full_stage}...")
