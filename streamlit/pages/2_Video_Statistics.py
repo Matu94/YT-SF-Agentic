@@ -85,7 +85,10 @@ st.subheader("Aggregated Views per Channel")
 st.markdown("Shows the total sum of daily views for the selected channels and video types.")
 
 # Group by channel
-channel_agg = df_filtered.groupby('CHANNEL_TITLE', as_index=False)['DAILY_VIEWS'].sum()
+channel_agg = df_filtered.groupby('CHANNEL_TITLE', as_index=False).agg({
+    'DAILY_VIEWS': 'sum',
+    'VIDEO_ID': 'nunique'
+}).rename(columns={'VIDEO_ID': 'VIDEO_COUNT'})
 
 chart = alt.Chart(channel_agg).mark_bar().encode(
     x=alt.X('CHANNEL_TITLE:N', title='Channel', sort='-y'),
@@ -93,7 +96,8 @@ chart = alt.Chart(channel_agg).mark_bar().encode(
     color=alt.Color('CHANNEL_TITLE:N', legend=None),
     tooltip=[
         alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
-        alt.Tooltip('DAILY_VIEWS:Q', title='Views')
+        alt.Tooltip('DAILY_VIEWS:Q', title='Period Views (Aggregated)'),
+        alt.Tooltip('VIDEO_COUNT:Q', title='Video Count')
     ]
 ).properties(
     height=450
