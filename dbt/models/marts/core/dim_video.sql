@@ -3,7 +3,7 @@
 ) }}
 
 WITH raw_videos AS (
-    SELECT DISTINCT
+    SELECT
         video_id,
         channel_id,
         video_title,
@@ -11,6 +11,7 @@ WITH raw_videos AS (
         duration_iso8601,
         live_broadcast_content
     FROM {{ ref('stg_youtube_video_stats') }}
+    QUALIFY ROW_NUMBER() OVER (PARTITION BY video_id ORDER BY metric_date DESC) = 1
 ),
 
 parsed_durations AS (
