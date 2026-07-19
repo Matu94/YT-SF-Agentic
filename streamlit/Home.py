@@ -1,89 +1,92 @@
 import streamlit as st
-import altair as alt
 import pandas as pd
 from snowflake.snowpark.context import get_active_session
 
-# Set page config for clean look and dark-mode compatibility
-st.set_page_config(page_title="YT Metrics - Daily Views", layout="wide", initial_sidebar_state="expanded")
+# Set page config for a clean look
+st.set_page_config(page_title="YT Metrics - Home", layout="wide", initial_sidebar_state="expanded")
 
-# Connect to Snowflake using active session (Native App Context)
+# Connect to Snowflake using active session
 session = get_active_session()
 
-# Cache the data fetch to minimize warehouse usage
+# Cache data loading
 @st.cache_data(ttl=3600)
-def load_data():
-    # Load from the MART layer as dictated by Kimball guidelines
+def load_channel_data():
     df = session.sql("SELECT * FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY").to_pandas()
     return df
 
-st.title("YouTube Metrics: Daily Views")
-st.markdown("Monitor daily view performance across organizations, studios, and channels.")
-
-# Load Data
 try:
-    df = load_data()
+    df = load_channel_data()
 except Exception as e:
-    st.error(f"Failed to load data from MART.RPT_CHANNEL_PERFORMANCE_DAILY. Error: {e}")
+    st.error(f"Failed to load data from MART. Error: {e}")
     st.stop()
+
+# Ensure METRIC_DATE is datetime
+if not df.empty:
+    df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
+
+# Welcome user
+try:
+    current_user = session.get_current_user()
+    current_user = current_user.replace('"', '') if current_user else "User"
+except Exception:
+    current_user = "User"
+
+st.title(f"Welcome, {current_user}! 👋")
+st.markdown("Explore deep insights into your YouTube channel and video performance.")
+
+st.divider()
 
 if df.empty:
-    st.warning("No data available in MART.RPT_CHANNEL_PERFORMANCE_DAILY.")
+    st.warning("No data available in the data warehouse.")
     st.stop()
 
-# Ensure METRIC_DATE is datetime for Altair compatibility
-df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
+# 1. Latest Refresh Date & Status
+latest_date = df['METRIC_DATE'].max()
+st.info(f"🟢 **System Status:** Pipeline is healthy. Latest data refresh: **{latest_date.strftime('%Y-%m-%d')}**")
 
-# --- Sidebar Filters ---
-st.sidebar.header("Filter Hierarchy")
+st.divider()
 
-# 1. Organization
+# 2. KPI Metrics
+st.subheader("Platform Overview")
+# Filter to get latest data for KPIs to avoid duplicating metrics over time
+df_latest = df[df['METRIC_DATE'] == latest_date]
+total_subscribers = int(df_latest['TOTAL_SUBSCRIBERS'].sum())
+total_views = int(df_latest['TOTAL_VIEWS'].sum())
+total_channels = df_latest['CHANNEL_ID'].nunique()
+
+col1, col2, col3 = st.columns(3)
+col1.metric("Total Tracked Channels", f"{total_channels}")
+col2.metric("Total Subscribers", f"{total_subscribers:,}")
+col3.metric("Total Views", f"{total_views:,}")
+
+st.divider()
+
+# 3. Channel Directory using Expander
+st.subheader("Available Channels Directory")
+
 organizations = df['ORGANIZATION'].dropna().unique().tolist()
 organizations.sort()
-selected_org = st.sidebar.selectbox("Select Organization", ["All"] + organizations)
 
-if selected_org != "All":
-    df_filtered = df[df['ORGANIZATION'] == selected_org]
-else:
-    df_filtered = df.copy()
-
-# 2. Studio
-if selected_org != "All":
-    studios = df_filtered['TEAM_STUDIO'].dropna().unique().tolist()
-    studios.sort()
-    selected_studio = st.sidebar.selectbox("Select Studio", ["All"] + studios)
-    if selected_studio != "All":
-        df_filtered = df_filtered[df_filtered['TEAM_STUDIO'] == selected_studio]
-else:
-    # If no specific org, we can either disable or show all studios.
-    studios = df_filtered['TEAM_STUDIO'].dropna().unique().tolist()
-    studios.sort()
-    selected_studio = st.sidebar.selectbox("Select Studio", ["All"] + studios)
-    if selected_studio != "All":
-        df_filtered = df_filtered[df_filtered['TEAM_STUDIO'] == selected_studio]
-
-# 3. Channel
-channels = df_filtered['CHANNEL_TITLE'].dropna().unique().tolist()
-channels.sort()
-selected_channel = st.sidebar.selectbox("Select Channel", ["All"] + channels)
-
-if selected_channel != "All":
-    df_filtered = df_filtered[df_filtered['CHANNEL_TITLE'] == selected_channel]
-
-# --- Main Content ---
-channel_label = selected_channel if selected_channel != 'All' else 'All Filtered Channels'
-st.subheader(f"Daily Views: {channel_label}")
-
-if df_filtered.empty:
-    st.info("No data found for the selected filters.")
-else:
-    # Altair Chart optimized for Streamlit
-    chart = alt.Chart(df_filtered).mark_bar().encode(
-        x=alt.X('CHANNEL_TITLE:N', title='Channel', sort='-y'),
-        y=alt.Y('DAILY_VIEWS:Q', title='Daily Views'),
-        color=alt.Color('CHANNEL_TITLE:N', legend=None),
-        tooltip=['CHANNEL_TITLE:N', 'DAILY_VIEWS:Q', 'TOTAL_VIEWS:Q', 'ORGANIZATION:N', 'TEAM_STUDIO:N']
-    ).properties(
-        height=500
-    ).interactive()
-    
-    st.altair_chart(chart, use_container_width=True)
+for org in organizations:
+    with st.expander(f"🏢 Organization: {org}"):
+        df_org = df_latest[df_latest['ORGANIZATION'] == org]
+        studios = df_org['TEAM_STUDIO'].dropna().unique().tolist()
+        studios.sort()
+        
+        for studio in studios:
+            st.markdown(f"**Studio:** {studio}")
+            df_studio = df_org[df_org['TEAM_STUDIO'] == studio]
+            
+            # Select relevant columns and display as a dataframe
+            channels = df_studio[['CHANNEL_TITLE', 'CONTENT_TYPE', 'TOTAL_SUBSCRIBERS']].drop_duplicates().sort_values('CHANNEL_TITLE')
+            
+            # Display channels
+            st.dataframe(
+                channels.rename(columns={
+                    'CHANNEL_TITLE': 'Channel Name',
+                    'CONTENT_TYPE': 'Content/Niche',
+                    'TOTAL_SUBSCRIBERS': 'Subscribers'
+                }), 
+                hide_index=True, 
+                use_container_width=True
+            )
