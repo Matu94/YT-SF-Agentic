@@ -24,17 +24,14 @@ except Exception as e:
 if not df.empty:
     df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
 
-# --- Sidebar Navigation ---
-st.sidebar.title("Navigation")
-st.sidebar.page_link("Home.py", label="Home", icon="🏠")
-st.sidebar.page_link("pages/1_Daily_Views.py", label="Daily Views", icon="📈")
-st.sidebar.page_link("pages/2_Video_Statistics.py", label="Video Statistics", icon="🎥")
-# Also linking Channel Info if it exists
-st.sidebar.page_link("pages/1_Channel_Info.py", label="Channel Info", icon="ℹ️")
+# Welcome user
+try:
+    current_user_row = session.sql("SELECT CURRENT_USER()").collect()
+    current_user = current_user_row[0][0]
+    st.title(f"Welcome, {current_user}! 👋")
+except:
+    st.title(f"Welcome! 👋")
 
-
-
-st.title(f"Welcome! 👋")
 st.markdown("Explore deep insights into your YouTube channel and video performance.")
 
 st.divider()
