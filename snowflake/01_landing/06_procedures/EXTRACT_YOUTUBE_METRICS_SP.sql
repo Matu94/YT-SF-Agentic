@@ -39,6 +39,7 @@ def main(session):
             'UCDwyp7fW0R8b27muWFEAgvQ', #Világjegy
             'UC3T5ogRHZVB3jEO5WFvzmIQ', #VÁLSÁGSTÁB
             'UCpj5XSIwGUaaoVDZnVCBj8Q', #Kultúrsokk
+            'UCfS72Yr7hFsHClD3krlP9UA', #KÓKUSZ+
             'UCrpWCVp9FuGA8OnGtA0rgsw', #TheVR
             'UCSFMCn1xtj_4kOy6KNK_fNg', #TheVR Gaming+
             'UCTY9vSAwOVsXw1lE1vBD0Hg', #TheVR Podcast
