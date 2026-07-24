@@ -34,18 +34,42 @@ def main(session):
         # Phase 1 Target Channels
         # These are placeholders and should ideally be read from a config table in the future
         channel_ids = [
-            'UCIITmFAHQ4S1FMDWqhZyQKg', #fókuszcsoport
-            'UC9qpYwK7N9EB0-SECANa23g', #JÓLVANEZÍGY
-            'UCDwyp7fW0R8b27muWFEAgvQ', #Világjegy
-            'UC3T5ogRHZVB3jEO5WFvzmIQ', #VÁLSÁGSTÁB
-            'UCpj5XSIwGUaaoVDZnVCBj8Q', #Kultúrsokk
-            'UCfS72Yr7hFsHClD3krlP9UA', #KÓKUSZ+
-            'UCrpWCVp9FuGA8OnGtA0rgsw', #TheVR
-            'UCSFMCn1xtj_4kOy6KNK_fNg', #TheVR Gaming+
-            'UCTY9vSAwOVsXw1lE1vBD0Hg', #TheVR Podcast
-            'UCnoVsxmXRCq3935G40SdBKA', #TheVR Shortcut
-            'UCDeRsDqcB8zdkzErxrdHCOw', #TheVR Tech
-            'UCQYlMOshLHIfOqjZjlpkLyQ'  #APUTEST Gaming
+            'UCIITmFAHQ4S1FMDWqhZyQKg', 
+            'UC9qpYwK7N9EB0-SECANa23g', 
+            'UCDwyp7fW0R8b27muWFEAgvQ', 
+            'UC3T5ogRHZVB3jEO5WFvzmIQ', 
+            'UCpj5XSIwGUaaoVDZnVCBj8Q', 
+            'UCfS72Yr7hFsHClD3krlP9UA', 
+            'UCcSAt9uIqRHK8dEV2wVY1dQ', 
+            'UC1R3yteq3HoSUIHQ7hp65XQ',
+            'UCHnd8KvQyMGU0DAlJSuYwhw', 
+            'UCgP9ETA61mi7UwMbbkVsCSQ', 
+            'UC3BxSWxHi_Xt7Bt8wyzzg_A', 
+            'UC4IW7JBJtOJ8zkIpzg31NwQ', 
+            'UCelRSBU3d8DGR04CNNubTdQ', 
+            'UCoXnnnrdhaKljuhA2IrIhVQ', 
+            'UCVIyRUt03aABOiSAWLegy2w', 
+            'UCWALLPCVkSyKLuZLg5bc3QQ', 
+            'UCjn8OWDk9_COueCW6oE2j7Q', 
+            'UCrpWCVp9FuGA8OnGtA0rgsw', 
+            'UCSFMCn1xtj_4kOy6KNK_fNg', 
+            'UCTY9vSAwOVsXw1lE1vBD0Hg', 
+            'UCnoVsxmXRCq3935G40SdBKA', 
+            'UCDeRsDqcB8zdkzErxrdHCOw', 
+            'UCQYlMOshLHIfOqjZjlpkLyQ', 
+            'UCM-1sd-cXSuCsfWp8QMY_OQ', 
+            'UCGoLa-QhHmTxLEdjv_8dxrg', 
+            'UCw0oJgCjz3NvAICbqWImH-A', 
+            'UCEFpEvuosfPGlV1VyUF6QOA', 
+            'UCXxUjsYxbL1llIe9Ra6wcyQ', 
+            'UCFLj8uVcUemF9nF3rQzc-CA', 
+            'UCtWF535qAafjOpd2ggmdpzg', 
+            'UCuFWG5idQ00n4mrYNFZYhOQ', 
+            'UCsiq8vuWW1NdGkaspTLfr0g', 
+            'UCt2uo4f6EtHnBjicvUkOz_w', 
+            'UCVoGCDIv8h3OkzZYySWK6lw', 
+            'UCoZMTeYtBas2Fn2pbIsq-Pw', 
+            'UCkXZcdClprjcI4gWeFuB7Qw'
         ]
         
         # Call YouTube API and Insert into LANDING table
