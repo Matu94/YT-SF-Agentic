@@ -52,3 +52,23 @@ models:
       - name: date_id
         tests:
           - not_null
+
+  - name: fct_rolling_7d_video_metrics
+    description: "Rolling 7-day aggregate performance for videos."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: date_id
+        tests:
+          - not_null
+
+  - name: fct_rolling_7d_channel_metrics
+    description: "Rolling 7-day aggregate performance for channels."
+    columns:
+      - name: channel_sk
+        tests:
+          - not_null
+      - name: date_id
+        tests:
+          - not_null

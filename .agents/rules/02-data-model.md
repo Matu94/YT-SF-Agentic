@@ -89,6 +89,21 @@ erDiagram
         int total_comments
         int daily_comments
     }
+    
+    FCT_ROLLING_7D_CHANNEL_METRICS {
+        string channel_sk FK
+        date date_id FK
+        int rolling_7d_subscriber_growth
+        int rolling_7d_views
+    }
+
+    FCT_ROLLING_7D_VIDEO_METRICS {
+        string video_id FK
+        date date_id FK
+        int rolling_7d_views
+        int rolling_7d_likes
+        int rolling_7d_comments
+    }
 
     %% Presentation Layer (OBT Views for Streamlit)
     RPT_VIDEO_PERFORMANCE_DAILY {
@@ -125,6 +140,28 @@ erDiagram
         int total_videos
     }
 
+    RPT_VIDEO_PERFORMANCE_ROLLING_7D {
+        string video_id
+        string video_title
+        string channel_title
+        string organization
+        string team_studio
+        date metric_date
+        int rolling_7d_views
+        int rolling_7d_likes
+        int rolling_7d_comments
+    }
+
+    RPT_CHANNEL_PERFORMANCE_ROLLING_7D {
+        string channel_id
+        string channel_title
+        string organization
+        string team_studio
+        date metric_date
+        int rolling_7d_subscriber_growth
+        int rolling_7d_views
+    }
+
     %% Relationships
     SEED_CHANNELS_HIERARCHY ||--o{ DIM_CHANNEL : "provides organizational hierarchy"
     STG_YOUTUBE_CHANNEL_STATS ||--o| DIM_CHANNEL : "provides evolving metadata"
@@ -137,6 +174,9 @@ erDiagram
     DIM_CHANNEL ||--o{ DIM_VIDEO : "owns"
     DIM_VIDEO ||--o{ FCT_DAILY_VIDEO_METRICS : "filters/groups"
     DIM_DATE ||--o{ FCT_DAILY_VIDEO_METRICS : "filters/groups"
+    
+    FCT_DAILY_CHANNEL_METRICS ||--o{ FCT_ROLLING_7D_CHANNEL_METRICS : "aggregates"
+    FCT_DAILY_VIDEO_METRICS ||--o{ FCT_ROLLING_7D_VIDEO_METRICS : "aggregates"
 
     DIM_VIDEO ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
     DIM_CHANNEL ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
@@ -144,6 +184,13 @@ erDiagram
 
     DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_DAILY : "denormalized into"
     FCT_DAILY_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_DAILY : "denormalized into"
+
+    DIM_VIDEO ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_7D : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_7D : "denormalized into"
+    FCT_ROLLING_7D_VIDEO_METRICS ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_7D : "denormalized into"
+
+    DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_7D : "denormalized into"
+    FCT_ROLLING_7D_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_7D : "denormalized into"
 ```
 
 ## 2. Table Definitions & Grain (Mart Layer)
@@ -176,6 +223,14 @@ For the final presentation layer, we strictly follow Kimball principles.
     *   **Primary Key:** Composite of `video_id` + `date_id`.
     *   **Grain:** One row per video, per day. Captures performance deltas (views, likes, comments gained on that specific day) as well as the running total at the end of the day.
 
+*   **`fct_rolling_7d_channel_metrics`**
+    *   **Primary Key:** Composite of `channel_sk` + `date_id` (or `channel_id` + `date_id`).
+    *   **Grain:** One row per active channel, per day. Stores the trailing 7-day aggregated metrics (e.g., rolling sum of subscriber growth and views).
+
+*   **`fct_rolling_7d_video_metrics`**
+    *   **Primary Key:** Composite of `video_id` + `date_id`.
+    *   **Grain:** One row per video, per day. Stores the trailing 7-day aggregated metrics (e.g., rolling sum of views, likes, comments).
+
 ### Reporting / Presentation Layer (OBT Views)
 
 To simplify downstream analytical consumption and ensure optimal performance for Streamlit applications, we deploy denormalized reporting views (One Big Table format).
@@ -189,6 +244,14 @@ To simplify downstream analytical consumption and ensure optimal performance for
     *   **Grain:** One row per channel, per day.
     *   **Description:** Fully denormalized view combining `fct_daily_channel_metrics` with `dim_channel` metadata.
     *   **Core Attributes:** `channel_title`, `organization`, `team_studio`, `content_type`, `metric_date`, `total_subscribers`, `daily_subscriber_growth`, `total_views`, `daily_views`.
+
+*   **`rpt_video_performance_rolling_7d`**
+    *   **Grain:** One row per video, per day.
+    *   **Description:** Fully denormalized view for rolling 7-day video metrics.
+
+*   **`rpt_channel_performance_rolling_7d`**
+    *   **Grain:** One row per channel, per day.
+    *   **Description:** Fully denormalized view for rolling 7-day channel metrics.
 
 ## 3. Source-to-Target Mapping
 
