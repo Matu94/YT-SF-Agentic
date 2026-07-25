@@ -269,7 +269,7 @@ This mapping traces the nested JSON fields from the raw YouTube Channel API resp
 | `items[].statistics.viewCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_views` | Cumulative channel views |
 | *Calculated in Staging* | `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `daily_views` | `total_views` today - `total_views` yesterday |
 | `items[].statistics.videoCount` | `landing` -> `raw` -> `stg_youtube_channel_stats` | `fct_daily_channel_metrics`| `total_videos` | Cumulative video count |
-| `extracted_at` | `stg_youtube_channel_stats` / `stg_youtube_video_stats` | Facts / OBT Views | `metric_date` (mapped as `date_id`) | Shifted by -1 day (`DATEADD(day, -1, CAST(extracted_at AS DATE))`) to map early-morning loads to the actual performance day |
+| `extracted_at` | `stg_youtube_channel_stats` / `stg_youtube_video_stats` | Facts / OBT Views | `metric_date` (mapped as `date_id`) | Shifted by -1 day (`DATEADD(day, -1, CAST(extracted_at AS DATE))`) and bounded to published date via `GREATEST(..., CAST(CONVERT_TIMEZONE('UTC', 'Europe/Budapest', published_at) AS DATE))` to prevent assigning metrics before publication |
 | *Hierarchy Seed File (CSV)* | `seed_channels_hierarchy` | `dim_channel` | `organization`, `team_studio`, `content_type` | Merged via static mapping |
 | `items[].id` (Video API) | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` / Facts | `video_id` | Used as the natural grain for videos |
 | `items[].snippet.channelId` | `landing` -> `raw` -> `stg_youtube_video_stats` | `dim_video` / Facts | `channel_id` | Foreign key mapping to channel |

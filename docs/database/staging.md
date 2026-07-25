@@ -12,7 +12,7 @@ Staging models are built on top of the historical views in the `RAW` schema. The
 *   **`STAGING.STG_YOUTUBE_CHANNEL_STATS` (Incremental Table)**
     *   **Source**: `RAW.V_YOUTUBE_PARSED_CHANNELS` and the `STAGING.CHANNELS_HIERARCHY` seed.
     *   **Grain**: One row per channel per day.
-    *   **Calculations**: Deduplicates multiple runs within a single day (by taking the latest `extracted_at` timestamp per `metric_date`) and calculates `daily_subscriber_growth` by subtracting yesterday's cumulative subscribers from today's subscribers:
+    *   **Calculations**: Computes `metric_date` bounded by the channel creation/published date. Deduplicates multiple runs within a single day (by taking the latest `extracted_at` timestamp per `metric_date`) and calculates `daily_subscriber_growth` by subtracting yesterday's cumulative subscribers from today's subscribers:
         ```sql
         total_subscribers - LAG(total_subscribers, 1) OVER (PARTITION BY channel_id ORDER BY metric_date ASC)
         ```
@@ -20,7 +20,7 @@ Staging models are built on top of the historical views in the `RAW` schema. The
 *   **`STAGING.STG_YOUTUBE_VIDEO_STATS` (Incremental Table)**
     *   **Source**: `RAW.V_YOUTUBE_PARSED_VIDEOS`.
     *   **Grain**: One row per video per day.
-    *   **Calculations**: Deduplicates multiple runs within a single day (by taking the latest `extracted_at` timestamp per `metric_date`) and computes `daily_views`, `daily_likes`, and `daily_comments` using `LAG()` window functions over the video's history.
+    *   **Calculations**: Calculates `metric_date` using a lower-bound `GREATEST(DATEADD(day, -1, CAST(extracted_at AS DATE)), CAST(CONVERT_TIMEZONE('UTC', 'Europe/Budapest', published_at) AS DATE))` to prevent assigning performance prior to the published date during intra-day runs. Deduplicates multiple extractions within a single day and computes `daily_views`, `daily_likes`, and `daily_comments` using `LAG()` window functions over the video's history.
     *   **Strategy**: `merge` on `['video_id', 'metric_date']`.
 
 ### 1.2 Snapshots (SCD Type 2)

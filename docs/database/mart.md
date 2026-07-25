@@ -27,6 +27,14 @@ The `MART` schema is the presentation layer serving downstream data consumers (s
     *   **Source**: `STAGING.STG_YOUTUBE_VIDEO_STATS`.
     *   **Grain**: One row per video per day.
     *   **Metrics**: Total views, daily view growth, total likes, daily like growth, total comments, and daily comment growth.
+*   **`MART.FCT_ROLLING_7D_CHANNEL_METRICS` (Periodic Snapshot Fact Table)**
+    *   **Source**: `MART.FCT_DAILY_CHANNEL_METRICS`.
+    *   **Grain**: One row per channel per day.
+    *   **Metrics**: Trailing 7-day rolling subscriber growth (`rolling_7d_subscriber_growth`) and trailing 7-day rolling views (`rolling_7d_views`).
+*   **`MART.FCT_ROLLING_7D_VIDEO_METRICS` (Periodic Snapshot Fact Table)**
+    *   **Source**: `MART.FCT_DAILY_VIDEO_METRICS`.
+    *   **Grain**: One row per video per day.
+    *   **Metrics**: Trailing 7-day rolling views (`rolling_7d_views`), rolling likes (`rolling_7d_likes`), and rolling comments (`rolling_7d_comments`).
 
 ### 1.3 Presentation Views (OBT)
 *   **`MART.RPT_VIDEO_PERFORMANCE_DAILY` (View)**
@@ -37,6 +45,14 @@ The `MART` schema is the presentation layer serving downstream data consumers (s
     *   **Source**: `MART.FCT_DAILY_CHANNEL_METRICS`, `MART.DIM_CHANNEL`.
     *   **Grain**: One row per channel per day.
     *   **Purpose**: Fully denormalized view combining channel facts (including daily views) with channel metadata.
+*   **`MART.RPT_VIDEO_PERFORMANCE_ROLLING_7D` (View)**
+    *   **Source**: `MART.FCT_ROLLING_7D_VIDEO_METRICS`, `MART.DIM_VIDEO`, `MART.DIM_CHANNEL`.
+    *   **Grain**: One row per video per day.
+    *   **Purpose**: Denormalized view for rolling 7-day video performance analytics.
+*   **`MART.RPT_CHANNEL_PERFORMANCE_ROLLING_7D` (View)**
+    *   **Source**: `MART.FCT_ROLLING_7D_CHANNEL_METRICS`, `MART.DIM_CHANNEL`.
+    *   **Grain**: One row per channel per day.
+    *   **Purpose**: Denormalized view for rolling 7-day channel performance analytics.
 
 ### 1.4 Streamlit Components
 *   **`MART.STREAMLIT_STAGE` (Stage)**
@@ -65,6 +81,9 @@ erDiagram
     DIM_CHANNEL ||--o{ DIM_VIDEO : "owns"
     DIM_VIDEO ||--o{ FCT_DAILY_VIDEO_METRICS : "filters/groups"
     DIM_DATE ||--o{ FCT_DAILY_VIDEO_METRICS : "filters/groups"
+
+    FCT_DAILY_CHANNEL_METRICS ||--o{ FCT_ROLLING_7D_CHANNEL_METRICS : "aggregates"
+    FCT_DAILY_VIDEO_METRICS ||--o{ FCT_ROLLING_7D_VIDEO_METRICS : "aggregates"
     
     DIM_VIDEO ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
     DIM_CHANNEL ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
@@ -72,6 +91,13 @@ erDiagram
 
     DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_DAILY : "denormalized into"
     FCT_DAILY_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_DAILY : "denormalized into"
+
+    DIM_VIDEO ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_7D : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_7D : "denormalized into"
+    FCT_ROLLING_7D_VIDEO_METRICS ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_7D : "denormalized into"
+
+    DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_7D : "denormalized into"
+    FCT_ROLLING_7D_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_7D : "denormalized into"
 ```
 
 1. **dbt runs** compile the dimensions first (to ensure entity lookups are populated), followed by the facts.

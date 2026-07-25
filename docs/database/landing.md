@@ -32,7 +32,7 @@ To prevent infinite storage accumulation and keep Snowflake operations lightweig
 *   **`LANDING.EXTRACT_YOUTUBE_METRICS_SP` (Snowpark Python)**
     *   **Purpose**: Programmatically connects to the YouTube API using External Network Access, queries channel and video metrics, parses the raw payload structure, and inserts it into `LANDING.YOUTUBE_RAW_DATA`.
     *   **Flow**:
-        1. Alters the session timezone to `Europe/Budapest`.
+        1. Sets session/account timezone context to `Europe/Budapest` (guaranteeing `CURRENT_DATE()` alignment across morning loads per ADR-005).
         2. Truncates `LANDING.YOUTUBE_RAW_DATA`.
         3. Fetches details for the targeted channels (configured inside the procedure).
         4. Extracts the "uploads" playlist for each channel and paginates through all video IDs.

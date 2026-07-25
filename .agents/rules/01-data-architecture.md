@@ -33,12 +33,17 @@ The pipeline will adopt a Kimball Dimensional Modeling approach (Star Schema) in
     *   **Facts (Metrics):**
         *   `fct_daily_channel_metrics`: Captures channel-level metrics (e.g., total subscribers and calculated daily subscriber growth).
         *   `fct_daily_video_metrics`: Captures video-level engagement (e.g., views, likes, comments).
+        *   `fct_rolling_7d_channel_metrics`: Pre-aggregates trailing 7-day channel performance (`rolling_7d_subscriber_growth`, `rolling_7d_views`).
+        *   `fct_rolling_7d_video_metrics`: Pre-aggregates trailing 7-day video performance (`rolling_7d_views`, `rolling_7d_likes`, `rolling_7d_comments`).
+    *   **Presentation Views (OBT):**
+        *   `rpt_channel_performance_daily` & `rpt_video_performance_daily`: Fully denormalized daily OBT views for Streamlit dashboards.
+        *   `rpt_channel_performance_rolling_7d` & `rpt_video_performance_rolling_7d`: Fully denormalized rolling 7-day OBT views for weekly trend dashboards.
 
 *   **Data Flow & Processing Logic:**
     1.  **Hierarchy Integration:** Organizational mapping (Organization > Team) is maintained via a `channels_hierarchy.csv` seed in dbt.
-    2.  **Landing & Raw:** Snowflake Tasks execute Python Stored Procedures to pull cumulative API metrics directly into `LANDING` transient tables. dbt then merges this into the persistent `RAW` history.
-    3.  **Staging (The Delta Calculation):** Because the YouTube API provides cumulative lifetime totals, the `STAGING` layer takes on the heavy lifting of calculating daily discrete performance. It will use window functions (e.g., `LAG()`) over the recorded `RAW` history to calculate daily deltas (e.g., `Today - Yesterday = Daily Growth`).
-    4.  **Mart Aggregation:** In the `MART` layer, fact models join the clean `STAGING` metrics against the active SCD `dim_channel` records to feed the Streamlit dashboards efficiently.
+    2.  **Landing & Raw:** Snowflake Tasks execute Python Stored Procedures to pull cumulative API metrics directly into `LANDING` transient tables. dbt then merges this into the persistent `RAW` history. Timezone execution is explicitly configured to `Europe/Budapest` at the account/user level.
+    3.  **Staging (Delta Calculation & Metric Bounding):** Because the YouTube API provides cumulative lifetime totals, the `STAGING` layer calculates daily discrete performance using `LAG()` window functions over `RAW` history. To prevent metrics from mapping prior to a video's actual publication date during intra-day runs, `metric_date` is lower-bounded using `GREATEST(DATEADD(day, -1, CAST(extracted_at AS DATE)), CAST(CONVERT_TIMEZONE('UTC', 'Europe/Budapest', published_at) AS DATE))`.
+    4.  **Mart Aggregation:** In the `MART` layer, fact models and pre-computed rolling 7-day models join clean `STAGING` metrics against SCD `dim_channel` records to feed Streamlit dashboards efficiently without query-time aggregation overhead.
 
 ## 3. Historical Backfill Mechanism
 To safely onboard historical video and channel data as requested in the PRD:

@@ -16,12 +16,12 @@ In our project, we use dedicated warehouses for different workloads to ensure th
 *   **`YT_SF_CICD_WH`**: Dedicated to automated deployments.
 *   **Resource Monitors**: Each warehouse is capped at ~5 EUR/month to prevent runaway costs—a Snowflake best practice for budget control.
 
-## 3. The Medallion Data Flow
+## 3. The Medallion Data Flow & Dimensional Architecture
 We follow the **Kimball Dimensional Modeling** approach, moving data through four logical layers:
-1.  **LANDING (Transient)**: A "temporary parking lot" for raw JSON. We use `TRANSIENT` tables here to save on storage costs because the data is easily reproducible.
+1.  **LANDING (Transient)**: A "temporary parking lot" for raw JSON. We use `TRANSIENT` tables here to save on storage costs because the data is easily reproducible. All session and account operations enforce `Europe/Budapest` timezone context to prevent `CURRENT_DATE()` offset issues.
 2.  **RAW (Persistent)**: The permanent "Source of Truth." Data is moved from Landing to Raw using incremental logic, preserving the entire historical record.
-3.  **STAGING (Processing)**: This is the transformation layer. Since the YouTube API provides cumulative metrics (Total Views), Staging uses window functions to calculate the "Daily Delta" (`Today - Yesterday`).
-4.  **MART (Presentation)**: The final **Star Schema** (Facts and Dimensions) optimized for Streamlit visualizations.
+3.  **STAGING (Processing)**: This is the transformation layer. Since the YouTube API provides cumulative metrics (Total Views), Staging uses `LAG()` window functions to calculate discrete daily deltas (`Today - Yesterday`). Additionally, to prevent metrics from mapping prior to a video's publication date during intra-day runs, `metric_date` is strictly lower-bounded using `GREATEST(DATEADD(day, -1, CAST(extracted_at AS DATE)), CAST(CONVERT_TIMEZONE('UTC', 'Europe/Budapest', published_at) AS DATE))`.
+4.  **MART (Presentation)**: The final **Star Schema** (Dimensions, Daily Facts, and Rolling 7-Day Periodic Snapshot Facts) denormalized into One Big Table (OBT) views (`rpt_video_performance_daily`, `rpt_channel_performance_daily`, `rpt_video_performance_rolling_7d`, `rpt_channel_performance_rolling_7d`) optimized for Streamlit visualizations. Pre-aggregating 7-day rolling metrics in the warehouse avoids expensive query-time window functions in the BI layer.
 
 ## 4. RBAC: Functional vs. Object Roles
 Security in Snowflake is managed through **Role-Based Access Control (RBAC)**. We use a "Two-Tier" model:
