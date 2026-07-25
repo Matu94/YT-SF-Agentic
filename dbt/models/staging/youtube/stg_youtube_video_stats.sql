@@ -75,19 +75,37 @@ calculated_metrics AS (
         metric_date,
         
         -- Calculate daily growth metrics using LAG over the video's history
-        total_views - LAG(total_views, 1) OVER (
-            PARTITION BY video_id 
-            ORDER BY metric_date ASC
+        COALESCE(
+            total_views - LAG(total_views, 1) OVER (
+                PARTITION BY video_id 
+                ORDER BY metric_date ASC
+            ),
+            CASE 
+                WHEN CAST(published_at AS DATE) >= DATEADD(day, -3, metric_date) THEN total_views
+                ELSE 0 
+            END
         ) AS daily_views,
         
-        total_likes - LAG(total_likes, 1) OVER (
-            PARTITION BY video_id 
-            ORDER BY metric_date ASC
+        COALESCE(
+            total_likes - LAG(total_likes, 1) OVER (
+                PARTITION BY video_id 
+                ORDER BY metric_date ASC
+            ),
+            CASE 
+                WHEN CAST(published_at AS DATE) >= DATEADD(day, -3, metric_date) THEN total_likes
+                ELSE 0 
+            END
         ) AS daily_likes,
         
-        total_comments - LAG(total_comments, 1) OVER (
-            PARTITION BY video_id 
-            ORDER BY metric_date ASC
+        COALESCE(
+            total_comments - LAG(total_comments, 1) OVER (
+                PARTITION BY video_id 
+                ORDER BY metric_date ASC
+            ),
+            CASE 
+                WHEN CAST(published_at AS DATE) >= DATEADD(day, -3, metric_date) THEN total_comments
+                ELSE 0 
+            END
         ) AS daily_comments
 
     FROM deduplicated_raw
