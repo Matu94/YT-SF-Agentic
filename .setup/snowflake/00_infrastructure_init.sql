@@ -1,5 +1,7 @@
 USE ROLE ACCOUNTADMIN;
 
+ALTER ACCOUNT SET TIMEZONE = 'Europe/Budapest';
+
 -- 0. Create Resource Monitors to cap spending
 -- Note: 5 Euros is roughly equivalent to 2 Snowflake Credits (depending on your tier)
 CREATE RESOURCE MONITOR IF NOT EXISTS YT_SF_CICD_RM
