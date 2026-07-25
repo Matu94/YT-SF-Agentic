@@ -17,7 +17,7 @@ WITH raw_data AS (
         total_videos,
         GREATEST(
             DATEADD(day, -1, CAST(extracted_at AS DATE)), 
-            CAST(CONVERT_TIMEZONE('UTC', 'Europe/Budapest', channel_published_at) AS DATE)
+            CAST(CONVERT_TIMEZONE('Europe/Budapest', channel_published_at) AS DATE)
         ) AS metric_date,
         extracted_at
     FROM {{ source('raw_youtube', 'v_youtube_parsed_channels') }}
@@ -26,7 +26,7 @@ WITH raw_data AS (
     -- Select new data plus the most recent existing day to enable LAG calculations
     WHERE GREATEST(
         DATEADD(day, -1, CAST(extracted_at AS DATE)), 
-        CAST(CONVERT_TIMEZONE('UTC', 'Europe/Budapest', channel_published_at) AS DATE)
+        CAST(CONVERT_TIMEZONE('Europe/Budapest', channel_published_at) AS DATE)
     ) >= (
         SELECT COALESCE(max(metric_date), '1970-01-01'::DATE) FROM {{ this }}
     )
