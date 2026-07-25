@@ -16,13 +16,19 @@ WITH raw_data AS (
         total_views,
         total_likes,
         total_comments,
-        DATEADD(day, -1, CAST(extracted_at AS DATE)) AS metric_date,
+        GREATEST(
+            DATEADD(day, -1, CAST(extracted_at AS DATE)), 
+            CAST(CONVERT_TIMEZONE('UTC', 'Europe/Budapest', published_at) AS DATE)
+        ) AS metric_date,
         extracted_at
     FROM {{ source('raw_youtube', 'v_youtube_parsed_videos') }}
     
     {% if is_incremental() %}
     -- Select new data plus the most recent existing day to enable LAG calculations
-    WHERE DATEADD(day, -1, CAST(extracted_at AS DATE)) >= (
+    WHERE GREATEST(
+        DATEADD(day, -1, CAST(extracted_at AS DATE)), 
+        CAST(CONVERT_TIMEZONE('UTC', 'Europe/Budapest', published_at) AS DATE)
+    ) >= (
         SELECT COALESCE(max(metric_date), '1970-01-01'::DATE) FROM {{ this }}
     )
     {% endif %}
