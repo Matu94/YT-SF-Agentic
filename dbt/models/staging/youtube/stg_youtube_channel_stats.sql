@@ -70,14 +70,26 @@ calculated_metrics AS (
         total_videos,
         metric_date,
         -- Calculate daily growth using LAG over the channel's history
-        total_subscribers - LAG(total_subscribers, 1) OVER (
-            PARTITION BY channel_id 
-            ORDER BY metric_date ASC
+        COALESCE(
+            total_subscribers - LAG(total_subscribers, 1) OVER (
+                PARTITION BY channel_id 
+                ORDER BY metric_date ASC
+            ),
+            CASE 
+                WHEN CAST(channel_published_at AS DATE) >= DATEADD(day, -3, metric_date) THEN total_subscribers
+                ELSE 0
+            END
         ) AS daily_subscriber_growth,
         -- Calculate daily views
-        total_views - LAG(total_views, 1) OVER (
-            PARTITION BY channel_id 
-            ORDER BY metric_date ASC
+        COALESCE(
+            total_views - LAG(total_views, 1) OVER (
+                PARTITION BY channel_id 
+                ORDER BY metric_date ASC
+            ),
+            CASE 
+                WHEN CAST(channel_published_at AS DATE) >= DATEADD(day, -3, metric_date) THEN total_views
+                ELSE 0
+            END
         ) AS daily_views
     FROM deduplicated_raw
 )
