@@ -123,9 +123,12 @@ if metric_grain == "Daily":
 
 else:
     st.subheader("Rolling 7-Day Views Trend")
-    st.markdown("Displays the 7-day rolling sum of views over time for the selected channels.")
+    st.markdown("Displays the 7-day rolling sum of views over the past 7 days for the selected channels.")
     
-    trend_data = df_full_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
+    seven_days_ago = latest_date - pd.Timedelta(days=6)
+    df_trend_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] >= seven_days_ago]
+    
+    trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
         'ROLLING_7D_VIEWS': 'sum'
     })
     
