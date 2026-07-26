@@ -10,7 +10,7 @@ A hobby project focused on building an automated data pipeline to extract YouTub
 ## 2. Infrastructure & Environments
 *   **Environment:** The project utilizes two environments: **DEV** (for development and feature testing) and **PROD** (for production workloads).
     *   **Data Warehouse (Snowflake):** Dedicated databases for each environment (e.g., `YT_SF_DEV`, `YT_SF_PROD`) will use a 4-layer architecture: `LANDING` (transient raw drops), `RAW` (persistent history), `STAGING` (dbt transformations), and `MART` (analytics presentation).
-    *   **Compute Isolation:** Dedicated virtual warehouses will be used for CI/CD and data loading (`YT_SF_CICD_WH`), dbt transformations (`YT_SF_TRANSFORM_WH`), and administration (`YT_SF_ADMIN_WH`), all controlled by resource monitors to ensure strict cost management (capped at ~5 EUR/month per warehouse).
+    *   **Compute Isolation:** Dedicated virtual warehouses are used for CI/CD (`YT_SF_CICD_WH`), data loading (`YT_SF_LOAD_WH`), dbt transformations (`YT_SF_TRANSFORM_WH`), and administration (`YT_SF_ADMIN_WH`), all controlled by dedicated resource monitors to ensure strict cost management (5 Credits/~5 EUR/month for CI/CD & Admin, and 15 Credits/~15 EUR/month for Load & Transform to support project growth).
 
 ## 3. Scope & Delivery
 *   **Target:** A continuously growing list of various Hungarian YouTube channels.

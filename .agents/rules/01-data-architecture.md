@@ -20,7 +20,7 @@ To ensure workload isolation and prevent concurrency bottlenecks, compute is spl
 *   `YT_SF_LOAD_WH`: Dedicated compute for Snowflake Tasks running Snowpark Python Stored Procedures to extract API data into Landing.
 *   `YT_SF_TRANSFORM_WH`: For dbt transformations and analytical querying.
 *   `YT_SF_ADMIN_WH`: For database administration and maintenance.
-*Cost Controls:* Each warehouse is strictly bound by its own Resource Monitor (`YT_SF_CICD_RM`, `YT_SF_LOAD_RM`, etc.), capping spend at ~5 EUR per month.
+*Cost Controls:* Each warehouse is strictly bound by its own Resource Monitor (`YT_SF_CICD_RM`, `YT_SF_LOAD_RM`, `YT_SF_TRANSFORM_RM`, `YT_SF_ADMIN_RM`), capping spending based on workload requirements (5 Credits/~5 EUR/month for CI/CD & Admin; 15 Credits/~15 EUR/month for Load & Transform to support project growth).
 
 ## 2. Data Modeling Strategy (dbt Layer)
 The pipeline will adopt a Kimball Dimensional Modeling approach (Star Schema) in the presentation layer.

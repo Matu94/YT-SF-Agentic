@@ -14,7 +14,7 @@ In our project, we use dedicated warehouses for different workloads to ensure th
 *   **`YT_SF_LOAD_WH`**: Dedicated only to the Python Snowpark extractions.
 *   **`YT_SF_TRANSFORM_WH`**: Dedicated to dbt and analytical queries.
 *   **`YT_SF_CICD_WH`**: Dedicated to automated deployments.
-*   **Resource Monitors**: Each warehouse is capped at ~5 EUR/month to prevent runaway costs—a Snowflake best practice for budget control.
+*   **Resource Monitors**: Each warehouse is capped by a dedicated resource monitor (5 Credits/month for CI/CD & Admin, 15 Credits/month for Load & Transform) to prevent runaway costs as data volume grows—a Snowflake best practice for budget control.
 
 ## 3. The Medallion Data Flow & Dimensional Architecture
 We follow the **Kimball Dimensional Modeling** approach, moving data through four logical layers:

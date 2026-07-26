@@ -26,7 +26,7 @@ Why do we bother with **DEV** and **PROD** environments in a hobby project?
 In PM, we always look at the **Return on Investment (ROI)**. We want the most value for the least cost.
 *   **The Problem**: Snowflake is powerful but can be expensive if left unmonitored.
 *   **The Solution**: We use **Resource Monitors** and **X-Small warehouses** with aggressive auto-suspend.
-*   **Business Impact**: This ensures the project remains a "Hobby" cost-wise (~EUR 5/month) while providing "Enterprise" level insights.
+*   **Business Impact**: This ensures the project remains highly cost-effective (~EUR 40/month total across all 4 dedicated compute workloads) while providing "Enterprise" level insights as the project grows.
 
 ## 6. Metric Prioritization: Signal vs. Noise
 More data isn't always better. PMs decide which metrics actually drive decisions.

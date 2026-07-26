@@ -43,7 +43,7 @@ graph LR
 *   **Orchestration**: Snowflake **Tasks** for daily 1-2x refresh cycles.
 *   **Transformation**: **dbt** (Data Build Tool) implementing Kimball Dimensional Modeling (Star Schema). We utilize the **Snowflake-integrated environment** (dbt Cloud) for centralized management and execution.
 *   **Infrastructure**: Custom Python-driven **DDL Deployment Engine** (`deploy.py`) for SHA256-based idempotency.
-*   **Governance**: Two-tier **RBAC** model with strict workload isolation and resource monitor capping (~5 EUR/month per warehouse).
+*   **Governance**: Two-tier **RBAC** model with strict workload isolation and resource monitor capping (5 Credits/month for CI/CD & Admin, 15 Credits/month for Load & Transform).
 
 ---
 

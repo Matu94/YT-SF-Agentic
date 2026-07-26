@@ -33,7 +33,11 @@ Operations are split across dedicated warehouses to allow for workload isolation
 Both runtime properties and financial bounds are uniformly enforced across all warehouses to prevent runaway costs:
 * **Size**: `XSMALL` (consuming exactly 1 credit per hour).
 * **Auto-Suspend**: Configured to `60` seconds to minimize billing when idle.
-* **Monthly Quota Cap**: A Resource Monitor (`YT_SF_CICD_RM`, `YT_SF_LOAD_RM`, `YT_SF_TRANSFORM_RM`, `YT_SF_ADMIN_RM`) is independently attached to each warehouse, capping spending at **~5 EUR per month** per warehouse (roughly 2-5 Credits depending on enterprise tiering).
+* **Monthly Quota Cap**: A dedicated Resource Monitor is independently attached to each warehouse, capping spending based on workload intensity to support project growth:
+  * `YT_SF_CICD_RM`: **5 Credits** (~5 EUR/month)
+  * `YT_SF_ADMIN_RM`: **5 Credits** (~5 EUR/month)
+  * `YT_SF_LOAD_RM`: **15 Credits** (~15 EUR/month) to handle increased API data extraction volume
+  * `YT_SF_TRANSFORM_RM`: **15 Credits** (~15 EUR/month) to accommodate expanding dbt transformations
     * At 80% usage, an alert constraint triggers. 
     * At 100% usage, the warehouses are hard-suspended to prevent further billing.
 
