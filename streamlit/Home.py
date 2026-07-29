@@ -7,6 +7,7 @@ st.set_page_config(page_title="YT Metrics - Home", layout="wide", initial_sideba
 
 # Connect to Snowflake using active session
 session = get_active_session()
+session.use_warehouse('YT_SF_REPORTING_WH')
 
 # Cache data loading
 @st.cache_data(ttl=3600)

@@ -5,6 +5,7 @@ from snowflake.snowpark.context import get_active_session
 st.set_page_config(page_title="YT Metrics - Channel Info", layout="wide", initial_sidebar_state="expanded")
 
 session = get_active_session()
+session.use_warehouse('YT_SF_REPORTING_WH')
 
 @st.cache_data(ttl=3600)
 def load_data():
