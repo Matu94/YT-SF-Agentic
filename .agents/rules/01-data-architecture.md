@@ -15,12 +15,13 @@ The foundation relies on two core environments: Development (`DEV`) and Producti
         *   `TECH_BKP` (Infrastructure): Backup sandbox for both manual snapshots and automated pre-migration backups. The CI/CD pipeline clones existing objects here before destructive DDL changes (e.g., adding a column, recreating a table), enabling data to be read back and re-ingested during a rollback. `CICD_ROLE` has full access; `LOAD_ROLE` and `TRANSFORM_ROLE` have no access.
 
 **Warehouse & Compute Strategy:**
-To ensure workload isolation and prevent concurrency bottlenecks, compute is split across four dedicated **X-Small (X-SMALL)** Virtual Warehouses with 60-second auto-suspend:
+To ensure workload isolation and prevent concurrency bottlenecks, compute is split across five dedicated **X-Small (X-SMALL)** Virtual Warehouses with 60-second auto-suspend:
 *   `YT_SF_CICD_WH`: For automated deployments and CI/CD orchestration.
 *   `YT_SF_LOAD_WH`: Dedicated compute for Snowflake Tasks running Snowpark Python Stored Procedures to extract API data into Landing.
 *   `YT_SF_TRANSFORM_WH`: For dbt transformations and analytical querying.
+*   `YT_SF_REPORTING_WH`: Dedicated compute for BI tools and Streamlit visualizations to prevent querying from slowing down ETL tasks.
 *   `YT_SF_ADMIN_WH`: For database administration and maintenance.
-*Cost Controls:* Each warehouse is strictly bound by its own Resource Monitor (`YT_SF_CICD_RM`, `YT_SF_LOAD_RM`, `YT_SF_TRANSFORM_RM`, `YT_SF_ADMIN_RM`), capping spending based on workload requirements (5 Credits/~5 EUR/month for CI/CD & Admin; 15 Credits/~15 EUR/month for Load & Transform to support project growth).
+*Cost Controls:* Each warehouse is strictly bound by its own Resource Monitor (`YT_SF_CICD_RM`, `YT_SF_LOAD_RM`, `YT_SF_TRANSFORM_RM`, `YT_SF_REPORTING_RM`, `YT_SF_ADMIN_RM`), capping spending based on workload requirements (5 Credits/~5 EUR/month for CI/CD & Admin; 15 Credits/~15 EUR/month for Load, Transform, and Reporting to support project growth).
 
 ## 2. Data Modeling Strategy (dbt Layer)
 The pipeline will adopt a Kimball Dimensional Modeling approach (Star Schema) in the presentation layer.
@@ -68,5 +69,6 @@ All dbt development must enforce strict naming conventions and quality checks:
     *   `YT_SF_CICD_ROLE`: Pipeline deployment orchestration.
     *   `YT_SF_LOAD_ROLE`: Granted Write/Full access *only* to the `LANDING` schema. It natively owns and executes the Stored Procedures and Tasks.
     *   `YT_SF_TRANSFORM_ROLE`: Granted Write/Full access to `RAW`, `STAGING`, and `MART` for dbt operations.
+    *   `YT_SF_REPORTING_ROLE`: Granted Read access (`_SR`) strictly to the `MART` schema to isolate BI queries.
 *   **Authentication (Key-Pair):** Passwords are intentionally disabled for machine service users (`YT_SF_CICD_USER`, `YT_SF_LOAD_USER`, `YT_SF_DBT_USER`) in favor of RSA Key-Pair authentication.
 *   **External Network Access & Secrets:** The YouTube API key must **never** be hardcoded. It will be securely stored natively inside a Snowflake `SECRET` object. A Snowflake `NETWORK RULE` and `EXTERNAL ACCESS INTEGRATION` will be bound to this secret, granting the Python Stored Procedure highly governed outbound access to the YouTube API.

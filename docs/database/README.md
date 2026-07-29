@@ -27,6 +27,7 @@ Operations are split across dedicated warehouses to allow for workload isolation
 * **`YT_SF_CICD_WH`**: Dedicated orchestrator warehouse for GitHub Actions to run DDL scripts.
 * **`YT_SF_LOAD_WH`**: Dedicated warehouse for the Python data extraction and landing loads.
 * **`YT_SF_TRANSFORM_WH`**: Used for data transformations using dbt, as well as manual querying and analytical processes.
+* **`YT_SF_REPORTING_WH`**: Dedicated warehouse for BI tools and Streamlit visualizations to prevent querying from impacting ETL workloads.
 * **`YT_SF_ADMIN_WH`**: Dedicated backend warehouse for administrative/maintenance tasks and debugging.
 
 ### Cost Controls (Resource Monitors)
@@ -38,6 +39,7 @@ Both runtime properties and financial bounds are uniformly enforced across all w
   * `YT_SF_ADMIN_RM`: **5 Credits** (~5 EUR/month)
   * `YT_SF_LOAD_RM`: **15 Credits** (~15 EUR/month) to handle increased API data extraction volume
   * `YT_SF_TRANSFORM_RM`: **15 Credits** (~15 EUR/month) to accommodate expanding dbt transformations
+  * `YT_SF_REPORTING_RM`: **15 Credits** (~15 EUR/month) to support BI and visualization workloads
     * At 80% usage, an alert constraint triggers. 
     * At 100% usage, the warehouses are hard-suspended to prevent further billing.
 
@@ -68,6 +70,9 @@ The underlying Schema Object Roles are then distributed to the following Functio
 4. **`YT_SF_{ENV}_TRANSFORM_ROLE`**
     * ***Purpose:*** Data Build Tool (dbt) processing, task creation/execution, and manual querying.
     * ***Grants:*** Mapped to `_SFULL` in all schemas (giving full dbt execution and task creation privileges everywhere). Has global `EXECUTE TASK` and `EXECUTE MANAGED TASK` privileges, and `USAGE` on both `YT_SF_LOAD_WH` and `YT_SF_TRANSFORM_WH` warehouses.
+5. **`YT_SF_{ENV}_REPORTING_ROLE`**
+    * ***Purpose:*** Dedicated role for BI tools and Streamlit applications to query the presentation layer.
+    * ***Grants:*** Mapped to `_SR` (Read-only) strictly in the `MART` schema. Inherits `USAGE` on the `YT_SF_REPORTING_WH`. Has no access to `LANDING`, `RAW`, or `STAGING`.
 
 > **`TECH_BKP` Access Policy:**
 > - `ADMIN_ROLE` → `_SFULL`: Full ownership and management.
