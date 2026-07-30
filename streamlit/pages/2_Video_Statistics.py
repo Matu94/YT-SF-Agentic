@@ -16,16 +16,22 @@ def load_video_data():
 def load_weekly_video_data():
     return session.sql("SELECT * FROM MART.RPT_VIDEO_PERFORMANCE_ROLLING_7D").to_pandas()
 
+@st.cache_data(ttl=3600)
+def load_monthly_video_data():
+    return session.sql("SELECT * FROM MART.RPT_VIDEO_PERFORMANCE_ROLLING_30D").to_pandas()
+
 st.title("YouTube Metrics: Video Statistics")
 st.markdown("Analyze video-level performance, filter by hierarchy, and explore top-performing content.")
 
-metric_grain = st.radio("Select Metric Grain", ["Daily", "Weekly"], horizontal=True)
+metric_grain = st.radio("Select Metric Grain", ["Daily", "Weekly", "Monthly"], horizontal=True)
 
 try:
     if metric_grain == "Daily":
         df = load_video_data()
-    else:
+    elif metric_grain == "Weekly":
         df = load_weekly_video_data()
+    else:
+        df = load_monthly_video_data()
 except Exception as e:
     st.error(f"Failed to load data from MART. Error: {e}")
     st.stop()
@@ -43,8 +49,10 @@ df_full = df.copy()
 
 if metric_grain == "Daily":
     st.info(f"📅 Displaying metrics for the latest available date: **{latest_date.strftime('%Y-%m-%d')}**")
-else:
+elif metric_grain == "Weekly":
     st.info(f"📅 Displaying 7-day rolling metrics up to the latest available date: **{latest_date.strftime('%Y-%m-%d')}**")
+else:
+    st.info(f"📅 Displaying 30-day rolling metrics up to the latest available date: **{latest_date.strftime('%Y-%m-%d')}**")
 
 # --- Sidebar Filters ---
 st.sidebar.header("Hierarchy Filters")
@@ -122,7 +130,7 @@ if metric_grain == "Daily":
 
     st.altair_chart(chart, use_container_width=True)
 
-else:
+elif metric_grain == "Weekly":
     st.subheader("Rolling 7-Day Views Trend")
     st.markdown("Displays the 7-day rolling sum of views over the past 7 days for the selected channels.")
     
@@ -141,6 +149,32 @@ else:
             alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
             alt.Tooltip('METRIC_DATE:T', title='Date', format='%Y-%m-%d'),
             alt.Tooltip('ROLLING_7D_VIEWS:Q', title='Rolling 7-Day Views', format=',')
+        ]
+    ).properties(
+        height=450
+    ).interactive()
+
+    st.altair_chart(line_chart, use_container_width=True)
+
+else:
+    st.subheader("Rolling 30-Day Views Trend")
+    st.markdown("Displays the 30-day rolling sum of views over the past 30 days for the selected channels.")
+    
+    thirty_days_ago = latest_date - pd.Timedelta(days=29)
+    df_trend_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] >= thirty_days_ago]
+    
+    trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
+        'ROLLING_30D_VIEWS': 'sum'
+    })
+    
+    line_chart = alt.Chart(trend_data).mark_line(point=True).encode(
+        x=alt.X('METRIC_DATE:T', title='Date'),
+        y=alt.Y('ROLLING_30D_VIEWS:Q', title='Rolling 30-Day Views'),
+        color=alt.Color('CHANNEL_TITLE:N', title='Channel'),
+        tooltip=[
+            alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
+            alt.Tooltip('METRIC_DATE:T', title='Date', format='%Y-%m-%d'),
+            alt.Tooltip('ROLLING_30D_VIEWS:Q', title='Rolling 30-Day Views', format=',')
         ]
     ).properties(
         height=450
@@ -173,7 +207,7 @@ if metric_grain == "Daily":
         'TOTAL_VIEWS': 'Lifetime Views'
     })[['Video Title', 'Watch Link', 'Channel', 'Type', 'Published Date', 'Period Views', 'Lifetime Views']]
 
-else:
+elif metric_grain == "Weekly":
     cols_to_group = ['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE']
     if 'VIDEO_TYPE' in df_latest_filtered.columns:
         cols_to_group.append('VIDEO_TYPE')
@@ -206,6 +240,42 @@ else:
         display_cols.append('Published Date')
         
     display_cols.append('Rolling 7-Day Views')
+    
+    display_df = top_videos.rename(columns=rename_dict)[display_cols]
+
+else:
+    cols_to_group = ['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE']
+    if 'VIDEO_TYPE' in df_latest_filtered.columns:
+        cols_to_group.append('VIDEO_TYPE')
+    if 'PUBLISHED_AT' in df_latest_filtered.columns:
+        cols_to_group.append('PUBLISHED_AT')
+        
+    top_videos = df_latest_filtered.groupby(cols_to_group, as_index=False).agg({
+        'ROLLING_30D_VIEWS': 'max'
+    }).sort_values(by='ROLLING_30D_VIEWS', ascending=False).head(100)
+    
+    if 'PUBLISHED_AT' in top_videos.columns:
+        top_videos['PUBLISHED_AT'] = pd.to_datetime(top_videos['PUBLISHED_AT']).dt.strftime('%Y-%m-%d')
+        
+    top_videos['VIDEO_URL'] = "https://www.youtube.com/watch?v=" + top_videos['VIDEO_ID']
+    
+    rename_dict = {
+        'VIDEO_TITLE': 'Video Title',
+        'VIDEO_URL': 'Watch Link',
+        'CHANNEL_TITLE': 'Channel',
+        'ROLLING_30D_VIEWS': 'Rolling 30-Day Views'
+    }
+    
+    display_cols = ['Video Title', 'Watch Link', 'Channel']
+    
+    if 'VIDEO_TYPE' in top_videos.columns:
+        rename_dict['VIDEO_TYPE'] = 'Type'
+        display_cols.append('Type')
+    if 'PUBLISHED_AT' in top_videos.columns:
+        rename_dict['PUBLISHED_AT'] = 'Published Date'
+        display_cols.append('Published Date')
+        
+    display_cols.append('Rolling 30-Day Views')
     
     display_df = top_videos.rename(columns=rename_dict)[display_cols]
 
