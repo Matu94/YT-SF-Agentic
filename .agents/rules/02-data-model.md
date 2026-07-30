@@ -105,6 +105,21 @@ erDiagram
         int rolling_7d_comments
     }
 
+    FCT_ROLLING_30D_CHANNEL_METRICS {
+        string channel_sk FK
+        date date_id FK
+        int rolling_30d_subscriber_growth
+        int rolling_30d_views
+    }
+
+    FCT_ROLLING_30D_VIDEO_METRICS {
+        string video_id FK
+        date date_id FK
+        int rolling_30d_views
+        int rolling_30d_likes
+        int rolling_30d_comments
+    }
+
     %% Presentation Layer (OBT Views for Streamlit)
     RPT_VIDEO_PERFORMANCE_DAILY {
         string video_id
@@ -162,6 +177,28 @@ erDiagram
         int rolling_7d_views
     }
 
+    RPT_VIDEO_PERFORMANCE_ROLLING_30D {
+        string video_id
+        string video_title
+        string channel_title
+        string organization
+        string team_studio
+        date metric_date
+        int rolling_30d_views
+        int rolling_30d_likes
+        int rolling_30d_comments
+    }
+
+    RPT_CHANNEL_PERFORMANCE_ROLLING_30D {
+        string channel_id
+        string channel_title
+        string organization
+        string team_studio
+        date metric_date
+        int rolling_30d_subscriber_growth
+        int rolling_30d_views
+    }
+
     %% Relationships
     SEED_CHANNELS_HIERARCHY ||--o{ DIM_CHANNEL : "provides organizational hierarchy"
     STG_YOUTUBE_CHANNEL_STATS ||--o| DIM_CHANNEL : "provides evolving metadata"
@@ -177,6 +214,8 @@ erDiagram
     
     FCT_DAILY_CHANNEL_METRICS ||--o{ FCT_ROLLING_7D_CHANNEL_METRICS : "aggregates"
     FCT_DAILY_VIDEO_METRICS ||--o{ FCT_ROLLING_7D_VIDEO_METRICS : "aggregates"
+    FCT_DAILY_CHANNEL_METRICS ||--o{ FCT_ROLLING_30D_CHANNEL_METRICS : "aggregates"
+    FCT_DAILY_VIDEO_METRICS ||--o{ FCT_ROLLING_30D_VIDEO_METRICS : "aggregates"
 
     DIM_VIDEO ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
     DIM_CHANNEL ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
@@ -191,6 +230,13 @@ erDiagram
 
     DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_7D : "denormalized into"
     FCT_ROLLING_7D_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_7D : "denormalized into"
+
+    DIM_VIDEO ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_30D : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_30D : "denormalized into"
+    FCT_ROLLING_30D_VIDEO_METRICS ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_30D : "denormalized into"
+
+    DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_30D : "denormalized into"
+    FCT_ROLLING_30D_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_30D : "denormalized into"
 ```
 
 ## 2. Table Definitions & Grain (Mart Layer)
@@ -231,6 +277,14 @@ For the final presentation layer, we strictly follow Kimball principles.
     *   **Primary Key:** Composite of `video_id` + `date_id`.
     *   **Grain:** One row per video, per day. Stores the trailing 7-day aggregated metrics (e.g., rolling sum of views, likes, comments).
 
+*   **`fct_rolling_30d_channel_metrics`**
+    *   **Primary Key:** Composite of `channel_sk` + `date_id` (or `channel_id` + `date_id`).
+    *   **Grain:** One row per active channel, per day. Stores the trailing 30-day aggregated metrics (e.g., rolling sum of subscriber growth and views).
+
+*   **`fct_rolling_30d_video_metrics`**
+    *   **Primary Key:** Composite of `video_id` + `date_id`.
+    *   **Grain:** One row per video, per day. Stores the trailing 30-day aggregated metrics (e.g., rolling sum of views, likes, comments).
+
 ### Reporting / Presentation Layer (OBT Views)
 
 To simplify downstream analytical consumption and ensure optimal performance for Streamlit applications, we deploy denormalized reporting views (One Big Table format).
@@ -252,6 +306,14 @@ To simplify downstream analytical consumption and ensure optimal performance for
 *   **`rpt_channel_performance_rolling_7d`**
     *   **Grain:** One row per channel, per day.
     *   **Description:** Fully denormalized view for rolling 7-day channel metrics.
+
+*   **`rpt_video_performance_rolling_30d`**
+    *   **Grain:** One row per video, per day.
+    *   **Description:** Fully denormalized view for rolling 30-day video metrics.
+
+*   **`rpt_channel_performance_rolling_30d`**
+    *   **Grain:** One row per channel, per day.
+    *   **Description:** Fully denormalized view for rolling 30-day channel metrics.
 
 ## 3. Source-to-Target Mapping
 

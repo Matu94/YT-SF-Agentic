@@ -42,3 +42,23 @@ models:
       - name: metric_date
         tests:
           - not_null
+
+  - name: rpt_video_performance_rolling_30d
+    description: "Fully denormalized view of rolling 30-day video performance."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_channel_performance_rolling_30d
+    description: "Fully denormalized view of rolling 30-day channel performance."
+    columns:
+      - name: channel_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
