@@ -6,6 +6,7 @@ WITH latest_metrics AS (
     SELECT *
     FROM {{ ref('fct_daily_video_metrics') }}
     WHERE date_id = (SELECT MAX(date_id) FROM {{ ref('fct_daily_video_metrics') }})
+      AND total_comments IS NOT NULL
 )
 SELECT
     f.video_id,
@@ -30,5 +31,5 @@ JOIN {{ ref('dim_channel') }} d
     -- SCD Type 2 resolution: map the metric to the correct historical dimension state
     AND f.date_id >= DATE(d.valid_from)
     AND f.date_id < COALESCE(DATE(d.valid_to), '9999-12-31'::DATE)
-ORDER BY f.total_comments DESC
+ORDER BY f.total_comments DESC NULLS LAST
 LIMIT 50
