@@ -199,6 +199,33 @@ erDiagram
         int rolling_30d_views
     }
 
+    RPT_TOP_VIDEO_BY_VIEWS {
+        string video_id
+        string video_title
+        string channel_title
+        string organization
+        date metric_date
+        int total_views
+    }
+
+    RPT_TOP_VIDEO_BY_LIKES {
+        string video_id
+        string video_title
+        string channel_title
+        string organization
+        date metric_date
+        int total_likes
+    }
+
+    RPT_TOP_VIDEO_BY_COMMENTS {
+        string video_id
+        string video_title
+        string channel_title
+        string organization
+        date metric_date
+        int total_comments
+    }
+
     %% Relationships
     SEED_CHANNELS_HIERARCHY ||--o{ DIM_CHANNEL : "provides organizational hierarchy"
     STG_YOUTUBE_CHANNEL_STATS ||--o| DIM_CHANNEL : "provides evolving metadata"
@@ -237,6 +264,18 @@ erDiagram
 
     DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_30D : "denormalized into"
     FCT_ROLLING_30D_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_30D : "denormalized into"
+
+    DIM_VIDEO ||--o{ RPT_TOP_VIDEO_BY_VIEWS : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_TOP_VIDEO_BY_VIEWS : "denormalized into"
+    FCT_DAILY_VIDEO_METRICS ||--o{ RPT_TOP_VIDEO_BY_VIEWS : "denormalized into"
+
+    DIM_VIDEO ||--o{ RPT_TOP_VIDEO_BY_LIKES : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_TOP_VIDEO_BY_LIKES : "denormalized into"
+    FCT_DAILY_VIDEO_METRICS ||--o{ RPT_TOP_VIDEO_BY_LIKES : "denormalized into"
+
+    DIM_VIDEO ||--o{ RPT_TOP_VIDEO_BY_COMMENTS : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_TOP_VIDEO_BY_COMMENTS : "denormalized into"
+    FCT_DAILY_VIDEO_METRICS ||--o{ RPT_TOP_VIDEO_BY_COMMENTS : "denormalized into"
 ```
 
 ## 2. Table Definitions & Grain (Mart Layer)
@@ -314,6 +353,18 @@ To simplify downstream analytical consumption and ensure optimal performance for
 *   **`rpt_channel_performance_rolling_30d`**
     *   **Grain:** One row per channel, per day.
     *   **Description:** Fully denormalized view for rolling 30-day channel metrics.
+
+*   **`rpt_top_video_by_views`**
+    *   **Grain:** Top 50 global videos, by views.
+    *   **Description:** Fully denormalized view pre-calculating and sorting the top performing videos up to the current date by total views.
+
+*   **`rpt_top_video_by_likes`**
+    *   **Grain:** Top 50 global videos, by likes.
+    *   **Description:** Fully denormalized view pre-calculating and sorting the top performing videos up to the current date by total likes.
+
+*   **`rpt_top_video_by_comments`**
+    *   **Grain:** Top 50 global videos, by comments.
+    *   **Description:** Fully denormalized view pre-calculating and sorting the top performing videos up to the current date by total comments.
 
 ## 3. Source-to-Target Mapping
 

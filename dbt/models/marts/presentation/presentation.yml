@@ -62,3 +62,33 @@ models:
       - name: metric_date
         tests:
           - not_null
+
+  - name: rpt_top_video_by_views
+    description: "Fully denormalized view showing the top 50 videos of all time by total views."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_top_video_by_likes
+    description: "Fully denormalized view showing the top 50 videos of all time by total likes."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_top_video_by_comments
+    description: "Fully denormalized view showing the top 50 videos of all time by total comments."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null

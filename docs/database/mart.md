@@ -35,6 +35,14 @@ The `MART` schema is the presentation layer serving downstream data consumers (s
     *   **Source**: `MART.FCT_DAILY_VIDEO_METRICS`.
     *   **Grain**: One row per video per day.
     *   **Metrics**: Trailing 7-day rolling views (`rolling_7d_views`), rolling likes (`rolling_7d_likes`), and rolling comments (`rolling_7d_comments`).
+*   **`MART.FCT_ROLLING_30D_CHANNEL_METRICS` (Periodic Snapshot Fact Table)**
+    *   **Source**: `MART.FCT_DAILY_CHANNEL_METRICS`.
+    *   **Grain**: One row per channel per day.
+    *   **Metrics**: Trailing 30-day rolling subscriber growth (`rolling_30d_subscriber_growth`) and trailing 30-day rolling views (`rolling_30d_views`).
+*   **`MART.FCT_ROLLING_30D_VIDEO_METRICS` (Periodic Snapshot Fact Table)**
+    *   **Source**: `MART.FCT_DAILY_VIDEO_METRICS`.
+    *   **Grain**: One row per video per day.
+    *   **Metrics**: Trailing 30-day rolling views (`rolling_30d_views`), rolling likes (`rolling_30d_likes`), and rolling comments (`rolling_30d_comments`).
 
 ### 1.3 Presentation Views (OBT)
 *   **`MART.RPT_VIDEO_PERFORMANCE_DAILY` (View)**
@@ -53,6 +61,26 @@ The `MART` schema is the presentation layer serving downstream data consumers (s
     *   **Source**: `MART.FCT_ROLLING_7D_CHANNEL_METRICS`, `MART.DIM_CHANNEL`.
     *   **Grain**: One row per channel per day.
     *   **Purpose**: Denormalized view for rolling 7-day channel performance analytics.
+*   **`MART.RPT_VIDEO_PERFORMANCE_ROLLING_30D` (View)**
+    *   **Source**: `MART.FCT_ROLLING_30D_VIDEO_METRICS`, `MART.DIM_VIDEO`, `MART.DIM_CHANNEL`.
+    *   **Grain**: One row per video per day.
+    *   **Purpose**: Denormalized view for rolling 30-day video performance analytics.
+*   **`MART.RPT_CHANNEL_PERFORMANCE_ROLLING_30D` (View)**
+    *   **Source**: `MART.FCT_ROLLING_30D_CHANNEL_METRICS`, `MART.DIM_CHANNEL`.
+    *   **Grain**: One row per channel per day.
+    *   **Purpose**: Denormalized view for rolling 30-day channel performance analytics.
+*   **`MART.RPT_TOP_VIDEO_BY_VIEWS` (View)**
+    *   **Source**: `MART.FCT_DAILY_VIDEO_METRICS`, `MART.DIM_VIDEO`, `MART.DIM_CHANNEL`.
+    *   **Grain**: Top 50 global videos, by views.
+    *   **Purpose**: Fully denormalized view pre-calculating and sorting the top 50 performing videos of all time by total views.
+*   **`MART.RPT_TOP_VIDEO_BY_LIKES` (View)**
+    *   **Source**: `MART.FCT_DAILY_VIDEO_METRICS`, `MART.DIM_VIDEO`, `MART.DIM_CHANNEL`.
+    *   **Grain**: Top 50 global videos, by likes.
+    *   **Purpose**: Fully denormalized view pre-calculating and sorting the top 50 performing videos of all time by total likes.
+*   **`MART.RPT_TOP_VIDEO_BY_COMMENTS` (View)**
+    *   **Source**: `MART.FCT_DAILY_VIDEO_METRICS`, `MART.DIM_VIDEO`, `MART.DIM_CHANNEL`.
+    *   **Grain**: Top 50 global videos, by comments.
+    *   **Purpose**: Fully denormalized view pre-calculating and sorting the top 50 performing videos of all time by total comments.
 
 ### 1.4 Streamlit Components
 *   **`MART.STREAMLIT_STAGE` (Stage)**
@@ -84,6 +112,8 @@ erDiagram
 
     FCT_DAILY_CHANNEL_METRICS ||--o{ FCT_ROLLING_7D_CHANNEL_METRICS : "aggregates"
     FCT_DAILY_VIDEO_METRICS ||--o{ FCT_ROLLING_7D_VIDEO_METRICS : "aggregates"
+    FCT_DAILY_CHANNEL_METRICS ||--o{ FCT_ROLLING_30D_CHANNEL_METRICS : "aggregates"
+    FCT_DAILY_VIDEO_METRICS ||--o{ FCT_ROLLING_30D_VIDEO_METRICS : "aggregates"
     
     DIM_VIDEO ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
     DIM_CHANNEL ||--o{ RPT_VIDEO_PERFORMANCE_DAILY : "denormalized into"
@@ -98,6 +128,25 @@ erDiagram
 
     DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_7D : "denormalized into"
     FCT_ROLLING_7D_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_7D : "denormalized into"
+
+    DIM_VIDEO ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_30D : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_30D : "denormalized into"
+    FCT_ROLLING_30D_VIDEO_METRICS ||--o{ RPT_VIDEO_PERFORMANCE_ROLLING_30D : "denormalized into"
+
+    DIM_CHANNEL ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_30D : "denormalized into"
+    FCT_ROLLING_30D_CHANNEL_METRICS ||--o{ RPT_CHANNEL_PERFORMANCE_ROLLING_30D : "denormalized into"
+
+    DIM_VIDEO ||--o{ RPT_TOP_VIDEO_BY_VIEWS : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_TOP_VIDEO_BY_VIEWS : "denormalized into"
+    FCT_DAILY_VIDEO_METRICS ||--o{ RPT_TOP_VIDEO_BY_VIEWS : "denormalized into"
+
+    DIM_VIDEO ||--o{ RPT_TOP_VIDEO_BY_LIKES : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_TOP_VIDEO_BY_LIKES : "denormalized into"
+    FCT_DAILY_VIDEO_METRICS ||--o{ RPT_TOP_VIDEO_BY_LIKES : "denormalized into"
+
+    DIM_VIDEO ||--o{ RPT_TOP_VIDEO_BY_COMMENTS : "denormalized into"
+    DIM_CHANNEL ||--o{ RPT_TOP_VIDEO_BY_COMMENTS : "denormalized into"
+    FCT_DAILY_VIDEO_METRICS ||--o{ RPT_TOP_VIDEO_BY_COMMENTS : "denormalized into"
 ```
 
 1. **dbt runs** compile the dimensions first (to ensure entity lookups are populated), followed by the facts.

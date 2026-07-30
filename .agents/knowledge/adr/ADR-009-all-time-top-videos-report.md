@@ -1,7 +1,7 @@
 # ADR 009: All-Time Top Videos Reporting Layer
 
 ## Status
-Proposed
+Implemented
 
 ## Context
 We have a requirement to build a presentation layer reporting capability to surface the "All-Time Top" performing videos. Specifically, we need to track:

@@ -1,7 +1,7 @@
 # ADR 008: Rolling 30-Day (Monthly) Reporting Layer & Aggregations
 
 ## Status
-Proposed
+Implemented
 
 ## Context
 Our current data model tracks daily performance metrics (`fct_daily_video_metrics`, `fct_daily_channel_metrics`) and rolling 7-day weekly metrics (`fct_rolling_7d_video_metrics`, `fct_rolling_7d_channel_metrics`) at the video and channel levels. 
