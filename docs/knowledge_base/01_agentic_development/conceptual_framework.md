@@ -3,7 +3,7 @@
 In this project, we aren't just "writing code with AI"—we are practicing **Agentic Development**. This document explains the core concepts that make this repository "AI-ready."
 
 ## 1. Why do we need Personas?
-An LLM is a generalist. If you ask it to "fix the code," it might suggest a quick hack that breaks your architecture. By using **Personas** (like `Data Architect` or `Data Engineer`), we:
+An LLM is a generalist. If you ask it to "fix the code," it might suggest a quick hack that breaks your architecture. By using **Personas** (like `Data Architect`, `Data Engineer`, or `Data Analyst`), we:
 *   **Restrict the "Search Space"**: Each persona only looks at specific rules and tools.
 *   **Set the Tone**: A `Data Architect` will focus on the "Why" and "Scalability," while a `Data Engineer` will focus on "Idempotency" and "Syntax."
 *   **Prevent Hallucination**: Personas help the AI stay in its lane.

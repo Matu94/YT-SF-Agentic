@@ -55,6 +55,8 @@ This repository is built using an **Agentic AI Lifecycle**. Every line of code a
 *   **Data Engineer**: Precision builder of dbt models and SQL logic.
 *   **DevOps Engineer**: Master of automation and the GitOps pipeline.
 *   **Product Manager**: Bridge between business vision and engineering requirements.
+*   **BI Developer**: Designer of interactive dark-mode dashboards for content performance exploration.
+*   **Senior Business Analyst & Data Analyst**: Domain expert for cross-view metric reconciliation, data integrity auditing, and business insight generation.
 
 ---
 
