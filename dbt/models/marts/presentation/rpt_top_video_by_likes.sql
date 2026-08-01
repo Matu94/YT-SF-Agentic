@@ -4,9 +4,15 @@
 
 WITH latest_metrics AS (
     SELECT *
-    FROM {{ ref('fct_daily_video_metrics') }}
-    WHERE date_id = (SELECT MAX(date_id) FROM {{ ref('fct_daily_video_metrics') }} WHERE date_id <= DATEADD(day, -1, CURRENT_DATE()))
-      AND total_likes IS NOT NULL
+    FROM (
+        SELECT 
+            *,
+            ROW_NUMBER() OVER(PARTITION BY video_id ORDER BY date_id DESC) as rn
+        FROM {{ ref('fct_daily_video_metrics') }}
+        WHERE date_id <= DATEADD(day, -1, CURRENT_DATE())
+          AND total_likes IS NOT NULL
+    ) sub
+    WHERE rn = 1
 )
 SELECT
     f.video_id,
