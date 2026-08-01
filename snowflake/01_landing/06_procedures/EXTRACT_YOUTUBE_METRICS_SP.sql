@@ -69,7 +69,9 @@ def main(session):
             'UCt2uo4f6EtHnBjicvUkOz_w', 
             'UCVoGCDIv8h3OkzZYySWK6lw', 
             'UCoZMTeYtBas2Fn2pbIsq-Pw', 
-            'UCkXZcdClprjcI4gWeFuB7Qw'
+            'UCkXZcdClprjcI4gWeFuB7Qw',
+            'UC8BRuUwMn6_ObKHR0XwqgcA',
+            'UCh6iuFfjjNrZMZVaqdwxCzA'
         ]
         
         # Call YouTube API and Insert into LANDING table
