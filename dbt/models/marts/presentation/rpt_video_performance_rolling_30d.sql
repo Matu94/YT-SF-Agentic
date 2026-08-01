@@ -15,3 +15,4 @@ SELECT
 FROM {{ ref('fct_rolling_30d_video_metrics') }} f
 JOIN {{ ref('dim_video') }} v ON f.video_id = v.video_id
 JOIN {{ ref('dim_channel') }} c ON v.channel_id = c.channel_id
+WHERE f.date_id <= DATEADD(day, -1, CURRENT_DATE())

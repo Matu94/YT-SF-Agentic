@@ -5,7 +5,7 @@
 WITH latest_metrics AS (
     SELECT *
     FROM {{ ref('fct_daily_video_metrics') }}
-    WHERE date_id = (SELECT MAX(date_id) FROM {{ ref('fct_daily_video_metrics') }})
+    WHERE date_id = (SELECT MAX(date_id) FROM {{ ref('fct_daily_video_metrics') }} WHERE date_id <= DATEADD(day, -1, CURRENT_DATE()))
       AND total_views IS NOT NULL
 )
 SELECT

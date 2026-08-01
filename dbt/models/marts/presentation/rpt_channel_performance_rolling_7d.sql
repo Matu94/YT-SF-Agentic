@@ -12,3 +12,4 @@ SELECT
     f.rolling_7d_views
 FROM {{ ref('fct_rolling_7d_channel_metrics') }} f
 JOIN {{ ref('dim_channel') }} c ON f.channel_sk = c.channel_sk
+WHERE f.date_id <= DATEADD(day, -1, CURRENT_DATE())
