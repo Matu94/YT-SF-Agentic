@@ -1,9 +1,14 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
 .env
 changed_files.txt
 .snowflake_last_deploy_commit
-venv/
-.deployment/__pycache__/
 .snowflake/
+
 
 
 # --- macOS ---
