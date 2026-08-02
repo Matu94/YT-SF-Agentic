@@ -23,12 +23,30 @@ def load_monthly_video_data():
 st.title("YouTube Metrics: Video Statistics")
 st.markdown("Analyze video-level performance, filter by hierarchy, and explore top-performing content.")
 
-metric_grain = st.radio("Select Metric Grain", ["Daily", "Weekly", "Monthly"], horizontal=True)
+options = [
+    "Daily - Yesterday Snapshot", 
+    "Daily - Past 7 Days Trend", 
+    "Daily - Past 30 Days Trend", 
+    "Rolling 7-Day Trend", 
+    "Rolling 30-Day Trend"
+]
+metric_grain = st.radio("Select Metric Grain", options, horizontal=True)
+
+with st.expander("ℹ️ Understanding Metric Calculations"):
+    st.markdown("""
+    **Daily Metrics**:
+    - **Daily Delta Views**: The discrete number of views gained on a single specific calendar day.
+    - $\Delta \text{Views} = \text{Total Views}_{\text{today}} - \text{Total Views}_{\text{yesterday}}$
+    
+    **Rolling Metrics**:
+    - **Rolling Views**: The cumulative sum of daily views over the trailing $N$ days (7 or 30). Evaluated daily.
+    - $\text{Rolling Views}(t) = \sum_{i=t-N+1}^t \Delta\text{Views}_i$
+    """)
 
 try:
-    if metric_grain == "Daily":
+    if metric_grain.startswith("Daily"):
         df = load_video_data()
-    elif metric_grain == "Weekly":
+    elif metric_grain == "Rolling 7-Day Trend":
         df = load_weekly_video_data()
     else:
         df = load_monthly_video_data()
@@ -47,12 +65,16 @@ latest_date = df['METRIC_DATE'].max()
 # Keep a full history df for line charts if needed
 df_full = df.copy()
 
-if metric_grain == "Daily":
-    st.info(f"📅 Displaying metrics for the latest available date: **{latest_date.strftime('%Y-%m-%d')}**")
-elif metric_grain == "Weekly":
-    st.info(f"📅 Displaying 7-day rolling metrics up to the latest available date: **{latest_date.strftime('%Y-%m-%d')}**")
+if metric_grain == "Daily - Yesterday Snapshot":
+    st.info(f"📅 Displaying discrete snapshot metrics for the latest available date: **{latest_date.strftime('%Y-%m-%d')}**")
+elif metric_grain == "Daily - Past 7 Days Trend":
+    st.info(f"📅 Displaying discrete daily view gains over the past 7 days up to **{latest_date.strftime('%Y-%m-%d')}**")
+elif metric_grain == "Daily - Past 30 Days Trend":
+    st.info(f"📅 Displaying discrete daily view gains over the past 30 days up to **{latest_date.strftime('%Y-%m-%d')}**")
+elif metric_grain == "Rolling 7-Day Trend":
+    st.info(f"📅 Displaying 7-day rolling metrics up to **{latest_date.strftime('%Y-%m-%d')}**")
 else:
-    st.info(f"📅 Displaying 30-day rolling metrics up to the latest available date: **{latest_date.strftime('%Y-%m-%d')}**")
+    st.info(f"📅 Displaying 30-day rolling metrics up to **{latest_date.strftime('%Y-%m-%d')}**")
 
 # --- Sidebar Filters ---
 st.sidebar.header("Hierarchy Filters")
@@ -106,9 +128,9 @@ if df_full_filtered.empty:
 # For calculations that only make sense on the latest date (like total current views or daily sum)
 df_latest_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
 
-if metric_grain == "Daily":
+if metric_grain == "Daily - Yesterday Snapshot":
     st.subheader("Aggregated Views per Channel")
-    st.markdown("Shows the total sum of daily views for the selected channels and video types.")
+    st.markdown("Shows the total sum of daily views for the selected channels and video types on the snapshot date.")
 
     channel_agg = df_latest_filtered.groupby('CHANNEL_TITLE', as_index=False).agg({
         'DAILY_VIEWS': 'sum',
@@ -130,7 +152,35 @@ if metric_grain == "Daily":
 
     st.altair_chart(chart, use_container_width=True)
 
-elif metric_grain == "Weekly":
+elif metric_grain in ["Daily - Past 7 Days Trend", "Daily - Past 30 Days Trend"]:
+    days_to_sub = 6 if metric_grain == "Daily - Past 7 Days Trend" else 29
+    start_date = latest_date - pd.Timedelta(days=days_to_sub)
+    
+    st.subheader(f"Discrete Daily Views Trend ({days_to_sub + 1} Days)")
+    st.markdown(f"Displays the day-by-day discrete view gains over the past {days_to_sub + 1} days.")
+    
+    df_trend_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] >= start_date]
+    
+    trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
+        'DAILY_VIEWS': 'sum'
+    })
+    
+    line_chart = alt.Chart(trend_data).mark_line(point=True).encode(
+        x=alt.X('METRIC_DATE:T', title='Date'),
+        y=alt.Y('DAILY_VIEWS:Q', title='Daily Views'),
+        color=alt.Color('CHANNEL_TITLE:N', title='Channel'),
+        tooltip=[
+            alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
+            alt.Tooltip('METRIC_DATE:T', title='Date', format='%Y-%m-%d'),
+            alt.Tooltip('DAILY_VIEWS:Q', title='Daily Views', format=',')
+        ]
+    ).properties(
+        height=450
+    ).interactive()
+
+    st.altair_chart(line_chart, use_container_width=True)
+
+elif metric_grain == "Rolling 7-Day Trend":
     st.subheader("Rolling 7-Day Views Trend")
     st.markdown("Displays the 7-day rolling sum of views over the past 7 days for the selected channels.")
     
@@ -188,8 +238,16 @@ st.divider()
 st.subheader("Top Performing Videos")
 st.markdown("Detailed breakdown of the highest-viewed individual videos based on your selection.")
 
-if metric_grain == "Daily":
-    top_videos = df_latest_filtered.groupby(['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE', 'VIDEO_TYPE', 'PUBLISHED_AT'], as_index=False).agg({
+if metric_grain.startswith("Daily"):
+    # For daily trend or snapshot, sum up the daily views over the requested timeframe
+    if metric_grain == "Daily - Yesterday Snapshot":
+        df_target = df_latest_filtered
+    else:
+        days_to_sub = 6 if metric_grain == "Daily - Past 7 Days Trend" else 29
+        start_date = latest_date - pd.Timedelta(days=days_to_sub)
+        df_target = df_full_filtered[df_full_filtered['METRIC_DATE'] >= start_date]
+        
+    top_videos = df_target.groupby(['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE', 'VIDEO_TYPE', 'PUBLISHED_AT'], as_index=False).agg({
         'DAILY_VIEWS': 'sum',
         'TOTAL_VIEWS': 'max'
     }).sort_values(by='DAILY_VIEWS', ascending=False).head(100)
@@ -207,7 +265,7 @@ if metric_grain == "Daily":
         'TOTAL_VIEWS': 'Lifetime Views'
     })[['Video Title', 'Watch Link', 'Channel', 'Type', 'Published Date', 'Period Views', 'Lifetime Views']]
 
-elif metric_grain == "Weekly":
+elif metric_grain == "Rolling 7-Day Trend":
     cols_to_group = ['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE']
     if 'VIDEO_TYPE' in df_latest_filtered.columns:
         cols_to_group.append('VIDEO_TYPE')

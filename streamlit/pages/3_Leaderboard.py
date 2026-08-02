@@ -20,6 +20,10 @@ def load_top_likes():
 def load_top_comments():
     return session.sql("SELECT * FROM MART.RPT_TOP_VIDEO_BY_COMMENTS").to_pandas()
 
+@st.cache_data(ttl=3600)
+def load_channel_performance():
+    return session.sql("SELECT * FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY").to_pandas()
+
 st.title("🏆 Top Videos Leaderboard")
 st.markdown("Discover the most engaging content across the network. Find out what drives views, likes, and conversations.")
 
@@ -27,14 +31,18 @@ try:
     df_views = load_top_views()
     df_likes = load_top_likes()
     df_comments = load_top_comments()
+    df_channel = load_channel_performance()
 except Exception as e:
     st.error(f"Failed to load data from MART. Error: {e}")
     st.stop()
 
+if not df_channel.empty:
+    df_channel['METRIC_DATE'] = pd.to_datetime(df_channel['METRIC_DATE'])
+
 # Combine data to create unified filters
 all_orgs = set()
 all_channels = set()
-for df in [df_views, df_likes, df_comments]:
+for df in [df_views, df_likes, df_comments, df_channel]:
     if not df.empty:
         all_orgs.update(df['ORGANIZATION'].dropna().unique())
         all_channels.update(df['CHANNEL_TITLE'].dropna().unique())
@@ -49,7 +57,7 @@ selected_orgs = st.sidebar.multiselect("Organizations", options=all_orgs, help="
 
 filtered_channels = set()
 if selected_orgs:
-    for df in [df_views, df_likes, df_comments]:
+    for df in [df_views, df_likes, df_comments, df_channel]:
         if not df.empty:
             filtered_channels.update(df[df['ORGANIZATION'].isin(selected_orgs)]['CHANNEL_TITLE'].dropna().unique())
 else:
@@ -71,6 +79,22 @@ def apply_filters(df):
 df_views_filtered = apply_filters(df_views)
 df_likes_filtered = apply_filters(df_likes)
 df_comments_filtered = apply_filters(df_comments)
+df_channel_filtered = apply_filters(df_channel)
+
+# --- Network KPIs ---
+if not df_channel_filtered.empty:
+    latest_date_channel = df_channel_filtered['METRIC_DATE'].max()
+    latest_channel_data = df_channel_filtered[df_channel_filtered['METRIC_DATE'] == latest_date_channel]
+    
+    total_subs = latest_channel_data['TOTAL_SUBSCRIBERS'].sum()
+    total_views = latest_channel_data['TOTAL_VIEWS'].sum()
+    total_videos = latest_channel_data['TOTAL_VIDEOS'].sum()
+    
+    st.subheader("Network Overview")
+    kpi1, kpi2, kpi3 = st.columns(3)
+    kpi1.metric("👥 Total Subscribers", f"{int(total_subs):,}")
+    kpi2.metric("👀 Total Views", f"{int(total_views):,}")
+    kpi3.metric("📹 Total Videos", f"{int(total_videos):,}")
 
 st.divider()
 

@@ -328,7 +328,7 @@ For the final presentation layer, we strictly follow Kimball principles.
 
 To simplify downstream analytical consumption and ensure optimal performance for Streamlit applications, we deploy denormalized reporting views (One Big Table format).
 
-*   **Constraint Rule:** All presentation layer views must strictly enforce an upper-bound filter of `metric_date <= DATEADD(day, -1, CURRENT_DATE())` (or `=` for daily snapshots) to guarantee they only expose data up to "yesterday". This prevents manual intra-day pipeline runs from leaking incomplete "today" data into the dashboards, which would misalign the rolling windows and leaderboard `MAX(date_id)` calculations.
+*   **Constraint Rule:** All presentation layer views must strictly enforce an upper-bound filter of `metric_date <= DATEADD(day, -1, CURRENT_DATE())` to guarantee they only expose historical daily data up to "yesterday". This prevents manual intra-day pipeline runs from leaking incomplete "today" data into the dashboards, which would misalign the rolling windows and leaderboard `MAX(date_id)` calculations.
 
 *   **`rpt_video_performance_daily`**
     *   **Grain:** One row per video, per day.

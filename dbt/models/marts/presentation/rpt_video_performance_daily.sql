@@ -28,4 +28,4 @@ JOIN {{ ref('dim_channel') }} d
     -- SCD Type 2 resolution: map the metric to the correct historical dimension state
     AND f.date_id >= DATE(d.valid_from)
     AND f.date_id < COALESCE(DATE(d.valid_to), '9999-12-31'::DATE)
-WHERE f.date_id = DATEADD(day, -1, CURRENT_DATE())
+WHERE f.date_id <= DATEADD(day, -1, CURRENT_DATE())
