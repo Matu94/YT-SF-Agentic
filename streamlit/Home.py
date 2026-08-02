@@ -1,10 +1,11 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.dirname(__file__))
 
 import streamlit as st
 import pandas as pd
-from streamlit.utils.data_loader import load_data, get_current_user_name
+from utils.data_loader import load_data, get_current_user_name
+
 
 # Set page config for a clean look
 st.set_page_config(page_title="YT Metrics - Home", layout="wide", initial_sidebar_state="expanded")

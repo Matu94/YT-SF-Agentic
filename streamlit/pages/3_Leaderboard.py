@@ -1,11 +1,12 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import streamlit as st
 import altair as alt
 import pandas as pd
-from streamlit.utils.data_loader import load_data
+from utils.data_loader import load_data
+
 
 st.set_page_config(page_title="YT Metrics - Leaderboards", layout="wide", initial_sidebar_state="collapsed")
 
