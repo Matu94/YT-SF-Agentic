@@ -1,22 +1,16 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import streamlit as st
 import pandas as pd
-from snowflake.snowpark.context import get_active_session
+from streamlit.utils.data_loader import load_data, get_current_user_name
 
 # Set page config for a clean look
 st.set_page_config(page_title="YT Metrics - Home", layout="wide", initial_sidebar_state="expanded")
 
-# Connect to Snowflake using active session
-session = get_active_session()
-session.use_warehouse('YT_SF_REPORTING_WH')
-
-# Cache data loading
-@st.cache_data(ttl=3600)
-def load_channel_data():
-    df = session.sql("SELECT * FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY").to_pandas()
-    return df
-
 try:
-    df = load_channel_data()
+    df = load_data("RPT_CHANNEL_PERFORMANCE_DAILY")
 except Exception as e:
     st.error(f"Failed to load data from MART. Error: {e}")
     st.stop()
@@ -26,12 +20,12 @@ if not df.empty:
     df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
 
 # Welcome user
-try:
-    current_user_row = session.sql("SELECT CURRENT_USER()").collect()
-    current_user = current_user_row[0][0]
+current_user = get_current_user_name()
+if current_user:
     st.title(f"Welcome, {current_user}! 👋")
-except:
-    st.title(f"Welcome! 👋")
+else:
+    st.title("Welcome! 👋")
+
 
 st.markdown("Explore deep insights into your YouTube channel and video performance.")
 

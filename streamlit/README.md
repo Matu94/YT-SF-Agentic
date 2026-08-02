@@ -4,45 +4,48 @@ This directory contains the Python source code and environment configuration for
 
 ## 🏗️ Architecture & Data Sourcing
 
-Following Kimball dimensional modeling principles, the application **only queries presentation objects in the `MART` layer**. It never queries `RAW` or `LANDING` directly.
+Following Kimball dimensional modeling principles and **ADR-010**, the application **only queries presentation objects in the `MART` layer**.
 
-- **`MART.RPT_CHANNEL_PERFORMANCE_DAILY`**: Source for channel-level metrics, subscriber growth, and channel hierarchy.
-- **`MART.RPT_VIDEO_PERFORMANCE_DAILY`**: Source for video-level metrics (views, likes, comments, video classification type).
+Data loading is fully abstracted via `streamlit/utils/data_loader.py`:
+- **Dual Sourcing Mode**:
+  1. **Streamlit in Snowflake (SiS)**: Automatically detects active Snowflake session (`get_active_session()`) and queries live views in Snowflake `MART`.
+  2. **Streamlit Community Cloud / Local Static Mode**: Falls back to reading exported Parquet files directly from **AWS S3** (`s3://<bucket_name>/mart/<view_name>.parquet`) or local dev exports without needing Snowflake credentials or compute.
+
+- **Presentation Views Used**:
+  - `MART.RPT_CHANNEL_PERFORMANCE_DAILY`
+  - `MART.RPT_VIDEO_PERFORMANCE_DAILY`
+  - `MART.RPT_VIDEO_PERFORMANCE_ROLLING_7D`
+  - `MART.RPT_VIDEO_PERFORMANCE_ROLLING_30D`
+  - `MART.RPT_TOP_VIDEO_BY_VIEWS`
+  - `MART.RPT_TOP_VIDEO_BY_LIKES`
+  - `MART.RPT_TOP_VIDEO_BY_COMMENTS`
 
 ---
 
 ## 📱 Page Structure
 
 ### 1. `Home.py` — Welcome Landing Page
-- **User Authentication Context**: Dynamically retrieves the active user's Snowflake identity (`SELECT CURRENT_USER()`) to present a personalized welcome message.
-- **System Status**: Displays a health indicator with the latest available metric date in the data warehouse.
+- **User Authentication Context**: Dynamically retrieves active Snowflake user identity if available in SiS mode, or defaults to a clean public welcome.
+- **System Status**: Displays a health indicator with the latest available metric date.
 - **Platform KPIs**: Displays top-level metrics (`st.metric`) for total tracked channels, total subscribers, and cumulative views across all tracked entities for the latest available date.
 - **Channel Directory**: Renders an expandable (`st.expander`) directory listing all channels grouped hierarchically by **Organization** and **Team/Studio**.
 
-### 2. `pages/1_Daily_Views.py` — Daily Channel Views Dashboard
-- **Hierarchy Filters**: Single-select dropdown filters for Organization, Studio, and Channel.
-- **Performance Charting**: Altair bar chart displaying daily view performance per channel.
+### 2. `pages/1_Channel_Info.py` — Channel Information Dashboard
+- **Channel Selection**: Single-select dropdown for inspecting current organization, studio, content type, subscribers, views, and videos.
 
 ### 3. `pages/2_Video_Statistics.py` — Video Statistics Dashboard
-- **Metric Grain Toggle**: UI toggle for switching between *Daily* and *Weekly* metrics (Weekly currently framed as a placeholder).
-- **Date Filtering**: Automatically filters to the latest `METRIC_DATE` to present single-day performance.
-- **Cascading Multi-Select Filters**: Independent multi-select filters for:
-  - **Organizations**: Filter channels across multiple networks.
-  - **Teams (Studios)**: Cascades dynamically based on selected Organizations.
-  - **Channels**: Cascades dynamically based on selected Teams.
-- **Content Format Filter**: Multi-select filter for `VIDEO_TYPE` (`video`, `short`, `live`).
-- **Aggregated Channel Chart**: Altair bar chart showing views per channel with rich tooltip metrics (Channel Name, Period Views, and `VIDEO_COUNT` indicating how many videos contributed to those views).
-- **Top Videos Table**: Data table displaying the top 100 performing videos for the selected day, featuring direct YouTube watch links rendered via `st.column_config.LinkColumn`.
+- **Metric Grain Toggle**: UI toggle for switching between Daily, Rolling 7-day, and Rolling 30-day metrics.
+- **Cascading Multi-Select Filters**: Independent multi-select filters for Organizations, Teams (Studios), Channels, and Video Types.
+- **Aggregated Channel Chart**: Altair charts for discrete and rolling trends.
+- **Top Videos Table**: Data table displaying top performing videos with YouTube watch links.
+
+### 4. `pages/3_Leaderboard.py` — Leaderboards Dashboard
+- **Video & Channel Rankings**: Displays Top 3 medal KPIs, Top 10 Altair bar charts, and Top 50 progress data grids for views, likes, comments, subscribers, and video count.
 
 ---
 
 ## ⚙️ Dependencies & Deployment
 
-Dependencies are defined in `environment.yml`:
-- `python=3.11`
-- `streamlit`
-- `snowflake-snowpark-python`
-- `altair`
-- `pandas`
+- **Streamlit in Snowflake (SiS)**: Uses `environment.yml` (snowflake, streamlit, pandas, altair).
+- **Streamlit Community Cloud**: Uses `requirements.txt` (streamlit, pandas, altair, pyarrow, fastparquet, s3fs).
 
-Deployment to Snowflake Native Streamlit is automated via DDL script `snowflake/04_mart/08_streamlit/01_youtube_metrics_dashboard.sql` which points to `MART.STREAMLIT_STAGE`.

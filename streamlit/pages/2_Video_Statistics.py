@@ -1,24 +1,13 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import streamlit as st
 import altair as alt
 import pandas as pd
-from snowflake.snowpark.context import get_active_session
+from streamlit.utils.data_loader import load_data
 
 st.set_page_config(page_title="YT Metrics - Video Stats", layout="wide", initial_sidebar_state="expanded")
-
-session = get_active_session()
-session.use_warehouse('YT_SF_REPORTING_WH')
-
-@st.cache_data(ttl=3600)
-def load_video_data():
-    return session.sql("SELECT * FROM MART.RPT_VIDEO_PERFORMANCE_DAILY").to_pandas()
-
-@st.cache_data(ttl=3600)
-def load_weekly_video_data():
-    return session.sql("SELECT * FROM MART.RPT_VIDEO_PERFORMANCE_ROLLING_7D").to_pandas()
-
-@st.cache_data(ttl=3600)
-def load_monthly_video_data():
-    return session.sql("SELECT * FROM MART.RPT_VIDEO_PERFORMANCE_ROLLING_30D").to_pandas()
 
 st.title("YouTube Metrics: Video Statistics")
 st.markdown("Analyze video-level performance, filter by hierarchy, and explore top-performing content.")
@@ -45,14 +34,15 @@ with st.expander("ℹ️ Understanding Metric Calculations"):
 
 try:
     if metric_grain.startswith("Daily"):
-        df = load_video_data()
+        df = load_data("RPT_VIDEO_PERFORMANCE_DAILY")
     elif metric_grain == "Rolling 7-Day Trend":
-        df = load_weekly_video_data()
+        df = load_data("RPT_VIDEO_PERFORMANCE_ROLLING_7D")
     else:
-        df = load_monthly_video_data()
+        df = load_data("RPT_VIDEO_PERFORMANCE_ROLLING_30D")
 except Exception as e:
     st.error(f"Failed to load data from MART. Error: {e}")
     st.stop()
+
 
 if df.empty:
     st.warning("No data available.")

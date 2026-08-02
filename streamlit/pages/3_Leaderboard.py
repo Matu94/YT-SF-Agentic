@@ -1,40 +1,26 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import streamlit as st
 import altair as alt
 import pandas as pd
-from snowflake.snowpark.context import get_active_session
+from streamlit.utils.data_loader import load_data
 
 st.set_page_config(page_title="YT Metrics - Leaderboards", layout="wide", initial_sidebar_state="collapsed")
-
-session = get_active_session()
-session.use_warehouse('YT_SF_REPORTING_WH')
-
-@st.cache_data(ttl=3600)
-def load_top_views():
-    return session.sql("SELECT * FROM MART.RPT_TOP_VIDEO_BY_VIEWS").to_pandas()
-
-@st.cache_data(ttl=3600)
-def load_top_likes():
-    return session.sql("SELECT * FROM MART.RPT_TOP_VIDEO_BY_LIKES").to_pandas()
-
-@st.cache_data(ttl=3600)
-def load_top_comments():
-    return session.sql("SELECT * FROM MART.RPT_TOP_VIDEO_BY_COMMENTS").to_pandas()
-
-@st.cache_data(ttl=3600)
-def load_channel_performance():
-    return session.sql("SELECT * FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY").to_pandas()
 
 st.title("Leaderboards")
 st.markdown("Discover the most engaging content and top-performing channels across the network.")
 
 try:
-    df_views = load_top_views()
-    df_likes = load_top_likes()
-    df_comments = load_top_comments()
-    df_channel = load_channel_performance()
+    df_views = load_data("RPT_TOP_VIDEO_BY_VIEWS")
+    df_likes = load_data("RPT_TOP_VIDEO_BY_LIKES")
+    df_comments = load_data("RPT_TOP_VIDEO_BY_COMMENTS")
+    df_channel = load_data("RPT_CHANNEL_PERFORMANCE_DAILY")
 except Exception as e:
     st.error(f"Failed to load data from MART. Error: {e}")
     st.stop()
+
 
 if not df_channel.empty:
     df_channel['METRIC_DATE'] = pd.to_datetime(df_channel['METRIC_DATE'])

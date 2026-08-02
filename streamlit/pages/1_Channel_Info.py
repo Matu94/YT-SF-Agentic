@@ -1,25 +1,22 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
 import streamlit as st
 import pandas as pd
-from snowflake.snowpark.context import get_active_session
+from streamlit.utils.data_loader import load_data
 
 st.set_page_config(page_title="YT Metrics - Channel Info", layout="wide", initial_sidebar_state="expanded")
-
-session = get_active_session()
-session.use_warehouse('YT_SF_REPORTING_WH')
-
-@st.cache_data(ttl=3600)
-def load_data():
-    df = session.sql("SELECT * FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY").to_pandas()
-    return df
 
 st.title("Channel Information")
 st.markdown("Detailed breakdown of current statistics for a selected channel.")
 
 try:
-    df = load_data()
+    df = load_data("RPT_CHANNEL_PERFORMANCE_DAILY")
 except Exception as e:
     st.error(f"Failed to load data. Error: {e}")
     st.stop()
+
 
 if df.empty:
     st.warning("No data available.")
