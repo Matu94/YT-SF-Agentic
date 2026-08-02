@@ -24,7 +24,7 @@ def load_top_comments():
 def load_channel_performance():
     return session.sql("SELECT * FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY").to_pandas()
 
-st.title("🏆 Leaderboards")
+st.title("Leaderboards")
 st.markdown("Discover the most engaging content and top-performing channels across the network.")
 
 try:
@@ -50,16 +50,16 @@ if not df_channel.empty:
     
     st.subheader("Network Overview")
     kpi1, kpi2, kpi3 = st.columns(3)
-    kpi1.metric("👥 Total Subscribers", f"{int(total_subs):,}")
-    kpi2.metric("👀 Total Views", f"{int(total_views):,}")
-    kpi3.metric("📹 Total Videos", f"{int(total_videos):,}")
+    kpi1.metric("Total Subscribers", f"{int(total_subs):,}")
+    kpi2.metric("Total Views", f"{int(total_views):,}")
+    kpi3.metric("Total Videos", f"{int(total_videos):,}")
 
 st.divider()
 
 # --- Leaderboard Type Selection ---
 leaderboard_type = st.radio(
     "Select Leaderboard Type", 
-    ["📹 Video Leaderboards", "📺 Channel Leaderboards"], 
+    ["Video Leaderboards", "Channel Leaderboards"], 
     horizontal=True,
     label_visibility="collapsed"
 )
@@ -221,9 +221,9 @@ def render_channel_leaderboard_tab(df_latest, metric_col, metric_label, tab_icon
 
 # --- Display Content Based on Selection ---
 
-if leaderboard_type == "📹 Video Leaderboards":
-    st.subheader("📹 Video Leaderboards")
-    v_tab1, v_tab2, v_tab3 = st.tabs(["👀 Most Viewed", "👍 Most Liked", "💬 Most Commented"])
+if leaderboard_type == "Video Leaderboards":
+    st.subheader("Video Leaderboards")
+    v_tab1, v_tab2, v_tab3 = st.tabs(["Most Viewed", "Most Liked", "Most Commented"])
 
     with v_tab1:
         render_video_leaderboard_tab(df_views, 'TOTAL_VIEWS', 'Total Views', '👀')
@@ -235,8 +235,8 @@ if leaderboard_type == "📹 Video Leaderboards":
         render_video_leaderboard_tab(df_comments, 'TOTAL_COMMENTS', 'Total Comments', '💬')
 
 else:
-    st.subheader("📺 Channel Leaderboards")
-    c_tab1, c_tab2, c_tab3 = st.tabs(["👥 Most Subscribers", "👀 Most Views", "📹 Most Videos"])
+    st.subheader("Channel Leaderboards")
+    c_tab1, c_tab2, c_tab3 = st.tabs(["Most Subscribers", "Most Views", "Most Videos"])
 
     if not df_channel.empty:
         # Pass only the latest date for channel ranking to prevent historical duplicates
