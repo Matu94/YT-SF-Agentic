@@ -80,7 +80,8 @@ else:
 st.sidebar.header("Hierarchy Filters")
 
 # 1. Organizations
-all_orgs = df_full['ORGANIZATION'].dropna().unique().tolist()
+df_latest_for_filters = df_full[df_full['METRIC_DATE'] == latest_date]
+all_orgs = df_latest_for_filters['ORGANIZATION'].dropna().unique().tolist()
 all_orgs.sort()
 selected_orgs = st.sidebar.multiselect("Organizations", options=all_orgs, help="Leave empty to select all.")
 
@@ -90,7 +91,8 @@ else:
     df_full_filtered = df_full.copy()
 
 # 2. Teams (Studios)
-all_teams = df_full_filtered['TEAM_STUDIO'].dropna().unique().tolist()
+df_latest_teams = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
+all_teams = df_latest_teams['TEAM_STUDIO'].dropna().unique().tolist()
 all_teams.sort()
 selected_teams = st.sidebar.multiselect("Teams (Studios)", options=all_teams, help="Filtered by selected Organizations. Leave empty to select all.")
 
@@ -98,7 +100,8 @@ if selected_teams:
     df_full_filtered = df_full_filtered[df_full_filtered['TEAM_STUDIO'].isin(selected_teams)]
 
 # 3. Channels
-all_channels = df_full_filtered['CHANNEL_TITLE'].dropna().unique().tolist()
+df_latest_channels = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
+all_channels = df_latest_channels['CHANNEL_TITLE'].dropna().unique().tolist()
 all_channels.sort()
 selected_channels = st.sidebar.multiselect("Channels", options=all_channels, help="Filtered by selected Teams. Leave empty to select all.")
 
@@ -108,7 +111,8 @@ if selected_channels:
 # 4. Video Type Filter (Conditional based on presence in data)
 if 'VIDEO_TYPE' in df_full.columns:
     st.sidebar.header("Content Filters")
-    all_video_types = df_full['VIDEO_TYPE'].dropna().unique().tolist()
+    df_latest_types = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
+    all_video_types = df_latest_types['VIDEO_TYPE'].dropna().unique().tolist()
     all_video_types.sort()
     
     selected_video_types = st.sidebar.multiselect("Video Types", options=all_video_types, default=all_video_types)
