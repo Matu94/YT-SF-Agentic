@@ -65,7 +65,7 @@ st.divider()
 # 3. Channel Directory using Expander
 st.subheader("Available Channels Directory")
 
-organizations = df['ORGANIZATION'].dropna().unique().tolist()
+organizations = df_latest['ORGANIZATION'].dropna().unique().tolist()
 organizations.sort()
 
 for org in organizations:

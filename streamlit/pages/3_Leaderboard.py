@@ -24,8 +24,8 @@ def load_top_comments():
 def load_channel_performance():
     return session.sql("SELECT * FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY").to_pandas()
 
-st.title("🏆 Top Videos Leaderboard")
-st.markdown("Discover the most engaging content across the network. Find out what drives views, likes, and conversations.")
+st.title("🏆 Leaderboards")
+st.markdown("Discover the most engaging content and top-performing channels across the network.")
 
 try:
     df_views = load_top_views()
@@ -98,9 +98,9 @@ if not df_channel_filtered.empty:
 
 st.divider()
 
-tab1, tab2, tab3 = st.tabs(["👀 Most Viewed", "👍 Most Liked", "💬 Most Commented"])
+# --- Leaderboard Rendering Logic ---
 
-def render_leaderboard_tab(df, metric_col, metric_label, tab_icon):
+def render_video_leaderboard_tab(df, metric_col, metric_label, tab_icon):
     if df.empty:
         st.warning("No data found for the selected filters.")
         return
@@ -186,11 +186,108 @@ def render_leaderboard_tab(df, metric_col, metric_label, tab_icon):
         }
     )
 
-with tab1:
-    render_leaderboard_tab(df_views_filtered, 'TOTAL_VIEWS', 'Total Views', '👀')
+def render_channel_leaderboard_tab(df, metric_col, metric_label, tab_icon):
+    if df.empty:
+        st.warning("No data found for the selected filters.")
+        return
 
-with tab2:
-    render_leaderboard_tab(df_likes_filtered, 'TOTAL_LIKES', 'Total Likes', '👍')
+    # Filter to latest date so we don't count all historical records
+    latest_date = df['METRIC_DATE'].max()
+    df_latest = df[df['METRIC_DATE'] == latest_date]
 
-with tab3:
-    render_leaderboard_tab(df_comments_filtered, 'TOTAL_COMMENTS', 'Total Comments', '💬')
+    if df_latest.empty:
+        st.warning("No recent data found.")
+        return
+
+    # Top 3 KPIs
+    top_3 = df_latest.nlargest(3, metric_col)
+    
+    col1, col2, col3 = st.columns(3)
+    kpi_cols = [col1, col2, col3]
+    medals = ["🥇", "🥈", "🥉"]
+    
+    for i in range(min(3, len(top_3))):
+        row = top_3.iloc[i]
+        with kpi_cols[i]:
+            st.metric(
+                label=f"{medals[i]} {row['CHANNEL_TITLE']}",
+                value=f"{int(row[metric_col]):,}"
+            )
+
+    st.divider()
+    
+    st.subheader(f"Top Channels by {metric_label}")
+    # Horizontal Bar Chart for Top 10
+    top_10 = df_latest.nlargest(10, metric_col).copy()
+    
+    chart = alt.Chart(top_10).mark_bar().encode(
+        x=alt.X(f'{metric_col}:Q', title=metric_label),
+        y=alt.Y('CHANNEL_TITLE:N', sort='-x', title='Channel'),
+        color=alt.Color('CHANNEL_TITLE:N', title='Channel', legend=None),
+        tooltip=[
+            alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
+            alt.Tooltip(f'{metric_col}:Q', title=metric_label, format=',')
+        ]
+    ).properties(
+        height=400
+    ).interactive()
+
+    st.altair_chart(chart, use_container_width=True)
+    
+    st.divider()
+    
+    st.subheader(f"Full Channel Ranking")
+    display_cols = ['CHANNEL_TITLE', 'ORGANIZATION', 'METRIC_DATE', metric_col]
+    rename_dict = {
+        'CHANNEL_TITLE': 'Channel',
+        'ORGANIZATION': 'Organization',
+        'METRIC_DATE': 'Report Date',
+        metric_col: metric_label
+    }
+    
+    display_df = df_latest.sort_values(metric_col, ascending=False)[display_cols].rename(columns=rename_dict)
+    
+    if 'Report Date' in display_df.columns:
+        display_df['Report Date'] = pd.to_datetime(display_df['Report Date']).dt.strftime('%Y-%m-%d')
+    
+    st.dataframe(
+        display_df,
+        hide_index=True,
+        use_container_width=True,
+        column_config={
+            metric_label: st.column_config.ProgressColumn(
+                metric_label,
+                help=f"Channel ranking by {metric_label.lower()}",
+                format="%d",
+                min_value=0,
+                max_value=int(df_latest[metric_col].max()) if not df_latest.empty else 100,
+            )
+        }
+    )
+
+# --- View Rendering ---
+
+st.header("📹 Video Leaderboards")
+v_tab1, v_tab2, v_tab3 = st.tabs(["👀 Most Viewed", "👍 Most Liked", "💬 Most Commented"])
+
+with v_tab1:
+    render_video_leaderboard_tab(df_views_filtered, 'TOTAL_VIEWS', 'Total Views', '👀')
+
+with v_tab2:
+    render_video_leaderboard_tab(df_likes_filtered, 'TOTAL_LIKES', 'Total Likes', '👍')
+
+with v_tab3:
+    render_video_leaderboard_tab(df_comments_filtered, 'TOTAL_COMMENTS', 'Total Comments', '💬')
+
+st.divider()
+st.header("📺 Channel Leaderboards")
+c_tab1, c_tab2, c_tab3 = st.tabs(["👥 Most Subscribers", "👀 Most Views", "📹 Most Videos"])
+
+with c_tab1:
+    render_channel_leaderboard_tab(df_channel_filtered, 'TOTAL_SUBSCRIBERS', 'Total Subscribers', '👥')
+
+with c_tab2:
+    render_channel_leaderboard_tab(df_channel_filtered, 'TOTAL_VIEWS', 'Total Views', '👀')
+
+with c_tab3:
+    render_channel_leaderboard_tab(df_channel_filtered, 'TOTAL_VIDEOS', 'Total Videos', '📹')
