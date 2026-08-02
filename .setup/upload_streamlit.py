@@ -78,15 +78,15 @@ def main():
             print(f"Error: Stage '{full_stage}' does not exist. Please run DDL deployment first.")
             sys.exit(1)
             
-        # Files to upload and their relative folders in the stage
-        files_to_upload = {
-            "streamlit/Home.py": "",
-            "streamlit/environment.yml": "",
-            "streamlit/pages/1_Channel_Info.py": "pages",
-            "streamlit/pages/1_Daily_Views.py": "pages",
-            "streamlit/pages/2_Video_Statistics.py": "pages",
-            "streamlit/pages/3_Leaderboard.py": "pages"
-        }
+        # Dynamically scan all files in streamlit/ to upload preserving folder structure
+        streamlit_dir = Path("streamlit")
+        files_to_upload = {}
+        for path in streamlit_dir.rglob("*"):
+            if path.is_file() and not path.name.startswith(".") and "__pycache__" not in path.parts:
+                rel_dir = path.relative_to(streamlit_dir).parent
+                stage_subdir = "" if str(rel_dir) == "." else str(rel_dir)
+                files_to_upload[str(path)] = stage_subdir
+
         
         print(f"Uploading files to stage @{full_stage}...")
         for local_path, stage_subdir in files_to_upload.items():
