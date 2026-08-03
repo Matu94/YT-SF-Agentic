@@ -20,15 +20,23 @@ except Exception as e:
 if not df.empty:
     df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
 
-# Welcome user
+# Welcome user & Developer Info
 current_user = get_current_user_name()
 if current_user:
     st.title(f"Welcome, {current_user}! 👋")
 else:
     st.title("Welcome! 👋")
 
+st.markdown(
+    "Explore deep insights into your YouTube channel and video performance.  \n"
+    "💬 **Created by Matu** — Connect on [LinkedIn](https://www.linkedin.com/in/matu94/) • [GitHub](https://github.com/Matu94)"
+)
 
-st.markdown("Explore deep insights into your YouTube channel and video performance.")
+# Sidebar Developer Links
+st.sidebar.markdown("---")
+st.sidebar.caption("👨‍💻 **Developer Contact**")
+st.sidebar.markdown("[💼 LinkedIn Profile](https://www.linkedin.com/in/matu94/)")
+st.sidebar.markdown("[🐙 GitHub Profile](https://github.com/Matu94)")
 
 st.divider()
 

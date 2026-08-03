@@ -25,7 +25,7 @@ Data loading is fully abstracted via `streamlit/utils/data_loader.py`:
 ## 📱 Page Structure
 
 ### 1. `Home.py` — Welcome Landing Page
-- **User Authentication Context**: Dynamically retrieves active Snowflake user identity if available in SiS mode, or defaults to a clean public welcome.
+- **User Authentication & Developer Profile**: Dynamically retrieves active Snowflake user identity if available in SiS mode, or defaults to a clean public welcome. Integrates developer contact links (LinkedIn & GitHub) in the header subtext and sidebar.
 - **System Status**: Displays a health indicator with the latest available metric date.
 - **Platform KPIs**: Displays top-level metrics (`st.metric`) for total tracked channels, total subscribers, and cumulative views across all tracked entities for the latest available date.
 - **Channel Directory**: Renders an expandable (`st.expander`) directory listing all channels grouped hierarchically by **Organization** and **Team/Studio**.
