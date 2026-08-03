@@ -29,14 +29,14 @@ else:
 
 st.markdown(
     "Explore deep insights into your YouTube channel and video performance.  \n"
-    "💬 **Created by Matu** — Connect on [LinkedIn](https://www.linkedin.com/in/matu94/) • [GitHub](https://github.com/Matu94)"
+    "**Created by Matu** — Connect on [LinkedIn](https://www.linkedin.com/in/matu94/) • [GitHub](https://github.com/Matu94)"
 )
 
 # Sidebar Developer Links
 st.sidebar.markdown("---")
-st.sidebar.caption("👨‍💻 **Developer Contact**")
-st.sidebar.markdown("[💼 LinkedIn Profile](https://www.linkedin.com/in/matu94/)")
-st.sidebar.markdown("[🐙 GitHub Profile](https://github.com/Matu94)")
+st.sidebar.caption("**Developer Contact**")
+st.sidebar.markdown("[LinkedIn Profile](https://www.linkedin.com/in/matu94/)")
+st.sidebar.markdown("[GitHub Profile](https://github.com/Matu94)")
 
 st.divider()
 
