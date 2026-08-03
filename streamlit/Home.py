@@ -35,8 +35,8 @@ st.markdown(
 # Sidebar Developer Links
 st.sidebar.markdown("---")
 st.sidebar.caption("**Developer Contact**")
-st.sidebar.markdown("[LinkedIn Profile](https://www.linkedin.com/in/matu94/)")
-st.sidebar.markdown("[GitHub Profile](https://github.com/Matu94)")
+st.sidebar.markdown("[LinkedIn](https://www.linkedin.com/in/matu94/)")
+st.sidebar.markdown("[GitHub](https://github.com/Matu94)")
 
 st.divider()
 
