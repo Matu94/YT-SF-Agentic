@@ -123,6 +123,10 @@ if df_full_filtered.empty:
 # For calculations that only make sense on the latest date (like total current views or daily sum)
 df_latest_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
 
+# Calculate baseline dates for channels to prevent "onboarding spikes" in trend aggregations
+baseline_dates = df_full.groupby('CHANNEL_TITLE', as_index=False)['METRIC_DATE'].min()
+baseline_dates.rename(columns={'METRIC_DATE': 'BASELINE_DATE'}, inplace=True)
+
 if metric_grain == "Daily - Yesterday Snapshot":
     st.subheader("Aggregated Views per Channel")
     st.markdown("Shows the total sum of daily views for the selected channels and video types on the snapshot date.")
@@ -156,6 +160,10 @@ elif metric_grain in ["Daily - Past 7 Days Trend", "Daily - Past 30 Days Trend"]
     
     df_trend_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] >= start_date]
     
+    # Filter out baseline dates
+    df_trend_filtered = df_trend_filtered.merge(baseline_dates, on='CHANNEL_TITLE')
+    df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['BASELINE_DATE']]
+    
     trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
         'DAILY_VIEWS': 'sum'
     })
@@ -182,6 +190,10 @@ elif metric_grain == "Rolling 7-Day Trend":
     seven_days_ago = latest_date - pd.Timedelta(days=6)
     df_trend_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] >= seven_days_ago]
     
+    # Filter out baseline dates
+    df_trend_filtered = df_trend_filtered.merge(baseline_dates, on='CHANNEL_TITLE')
+    df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['BASELINE_DATE']]
+    
     trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
         'ROLLING_7D_VIEWS': 'sum'
     })
@@ -207,6 +219,10 @@ else:
     
     thirty_days_ago = latest_date - pd.Timedelta(days=29)
     df_trend_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] >= thirty_days_ago]
+    
+    # Filter out baseline dates
+    df_trend_filtered = df_trend_filtered.merge(baseline_dates, on='CHANNEL_TITLE')
+    df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['BASELINE_DATE']]
     
     trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
         'ROLLING_30D_VIEWS': 'sum'
@@ -241,6 +257,10 @@ if metric_grain.startswith("Daily"):
         days_to_sub = 6 if metric_grain == "Daily - Past 7 Days Trend" else 29
         start_date = latest_date - pd.Timedelta(days=days_to_sub)
         df_target = df_full_filtered[df_full_filtered['METRIC_DATE'] >= start_date]
+        
+        # Filter out baseline dates to prevent skewing the period views
+        df_target = df_target.merge(baseline_dates, on='CHANNEL_TITLE')
+        df_target = df_target[df_target['METRIC_DATE'] > df_target['BASELINE_DATE']]
         
     top_videos = df_target.groupby(['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE', 'VIDEO_TYPE', 'PUBLISHED_AT'], as_index=False).agg({
         'DAILY_VIEWS': 'sum',
