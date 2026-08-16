@@ -3,5 +3,6 @@ pandas
 altair
 pyarrow
 fastparquet
+boto3
 s3fs
 fsspec

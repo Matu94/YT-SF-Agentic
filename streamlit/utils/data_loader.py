@@ -43,21 +43,35 @@ def load_data(table_name: str) -> pd.DataFrame:
 
     # 3. Read from S3 bucket (Streamlit Community Cloud)
     bucket_name = _get_config("S3_BUCKET_NAME", "yt-sf-metrics-data-prod")
-    s3_path = f"s3://{bucket_name}/mart/{table_name.lower()}.parquet"
-
-    storage_options = {}
     aws_key = _get_config("AWS_ACCESS_KEY_ID")
     aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")
     aws_region = _get_config("AWS_DEFAULT_REGION", "eu-north-1")
+    s3_key = f"mart/{table_name.lower()}.parquet"
 
-    if aws_key and aws_secret:
-        storage_options = {
-            "key": aws_key,
-            "secret": aws_secret,
-            "client_kwargs": {"region_name": aws_region}
-        }
+    # Strategy A: Use boto3 directly to fetch binary stream into BytesIO (eliminates fsspec dependency)
+    try:
+        import boto3
+        import io
 
-    return pd.read_parquet(s3_path, storage_options=storage_options if storage_options else None)
+        client_kwargs = {"region_name": aws_region}
+        if aws_key and aws_secret:
+            client_kwargs["aws_access_key_id"] = aws_key
+            client_kwargs["aws_secret_access_key"] = aws_secret
+
+        s3_client = boto3.client("s3", **client_kwargs)
+        obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
+        return pd.read_parquet(io.BytesIO(obj["Body"].read()))
+    except Exception as e:
+        # If boto3 is not installed or raises an error, fallback to s3fs / fsspec
+        storage_options = {}
+        if aws_key and aws_secret:
+            storage_options = {
+                "key": aws_key,
+                "secret": aws_secret,
+                "client_kwargs": {"region_name": aws_region}
+            }
+        s3_path = f"s3://{bucket_name}/{s3_key}"
+        return pd.read_parquet(s3_path, storage_options=storage_options if storage_options else None)
 
 
 def get_current_user_name() -> str | None:
