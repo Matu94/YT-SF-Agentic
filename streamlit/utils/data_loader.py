@@ -34,12 +34,15 @@ def load_data(table_name: str) -> pd.DataFrame:
         return pd.read_parquet(local_path)
 
     def _get_config(key: str, default: str | None = None) -> str | None:
+        val = None
         try:
             if key in st.secrets:
-                return str(st.secrets[key])
+                val = str(st.secrets[key])
         except Exception:
             pass
-        return os.getenv(key, default)
+        if val is None:
+            val = os.getenv(key, default)
+        return val.strip() if val is not None else None
 
     # 3. Read from S3 bucket (Streamlit Community Cloud)
     bucket_name = _get_config("S3_BUCKET_NAME", "yt-sf-metrics-data-prod")
