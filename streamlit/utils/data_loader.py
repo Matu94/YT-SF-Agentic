@@ -59,10 +59,16 @@ def load_data(table_name: str) -> pd.DataFrame:
             client_kwargs["aws_secret_access_key"] = aws_secret
 
         s3_client = boto3.client("s3", **client_kwargs)
-        obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
-        return pd.read_parquet(io.BytesIO(obj["Body"].read()))
-    except Exception as e:
-        # If boto3 is not installed or raises an error, fallback to s3fs / fsspec
+        try:
+            obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
+            return pd.read_parquet(io.BytesIO(obj["Body"].read()))
+        except Exception as s3_err:
+            raise RuntimeError(
+                f"Failed to fetch '{s3_key}' from S3 bucket '{bucket_name}' (region: {aws_region}). "
+                f"Details: {s3_err}"
+            ) from s3_err
+    except ImportError:
+        # Fallback to pandas s3:// only if boto3 is completely absent
         storage_options = {}
         if aws_key and aws_secret:
             storage_options = {
