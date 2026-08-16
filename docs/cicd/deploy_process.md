@@ -49,7 +49,13 @@ While the `deploy.py` engine remains the primary tool for **automated, idempoten
 *   **Direct Execution**: Executing code directly from Git (e.g., `EXECUTE IMMEDIATE FROM @YT_SF_AGENTIC_REPO/...`) for transient tasks or rapid prototyping.
 *   **UI Synchronization**: Powering Streamlit applications natively from Git branches, ensuring the visualization layer is always aligned with the version-controlled code.
 
-## 6. Automated Safety Nets: Table Backup & Restore
+## 6. Static Data Export Pipeline (Streamlit Decoupling)
+To isolate analytical compute costs from public-facing dashboard traffic (**ADR-010**), the deployment architecture includes a daily data exfiltration pipeline:
+1. **GitHub Action (`export_parquet_s3.yml`)**: Executes daily at 05:00 UTC.
+2. **Python Exporter (`export_to_s3.py`)**: Interrogates 9 Snowflake presentation views (`MART.RPT_*`).
+3. **AWS S3 Gateway**: Transforms SQL results into heavily optimized Parquet binaries and statically publishes them to `s3://yt-sf-metrics-data-prod/mart/` allowing Streamlit Community Cloud to serve the data without executing warehouse compute queries.
+
+## 7. Automated Safety Nets: Table Backup & Restore
 To prevent accidental data loss during destructive DDL operations (like `CREATE OR REPLACE TABLE`), the `deploy.py` engine implements an automated backup and restore mechanism for table files (located in `*_tables/` directories):
 
 1.  **Pre-Execution Backup**: The engine parses the SQL file to identify the schema and table name. If the table already exists, it is cloned into the `TECH_BKP` schema with a unique timestamp (e.g., `TECH_BKP.STAGING_VIDEO_STATS_20260506_180000`).

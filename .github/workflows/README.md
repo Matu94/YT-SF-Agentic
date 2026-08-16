@@ -27,3 +27,16 @@ This directory configures the GitHub Actions workflows responsible for orchestra
 1. Requires the user to have submitted a `release_v<VER>.csv` file mapping the approved paths inside the `.release` directory on the `dev` branch.
 2. Checks out the specific artifacts listed explicitly on the CSV mapping to tightly enforce explicit versioning.
 3. Auto-commits the packaged state under a new `release/*` branch natively spanning from `dev` or `prod`. This branch can then be historically reviewed and subsequently merged into the main `prod` trunk.
+
+### 3. Export Streamlit Data to S3 (`export_parquet_s3.yml`)
+**Purpose**: Decouples Snowflake compute from Streamlit Community Cloud hosting (per **ADR-010**) by extracting and statically exporting presentation views into AWS S3.
+
+**Triggers**:
+- Automatically on a cron schedule (`0 5 * * *` / daily at 05:00 UTC).
+- Manual execution via `workflow_dispatch`.
+
+**Behavior**:
+1. Maps dynamic environments to identify whether to export from `DEV` or `PROD` databases.
+2. Injects securely hosted Snowflake Private Keys and AWS S3 credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
+3. Executes `.deployment/export_to_s3.py` which dynamically converts 9 Snowflake presentation views (`RPT_*`) into optimized Parquet formats and uploads them to the S3 bucket (`s3://yt-sf-metrics-data-prod/mart/`).
+
