@@ -1,6 +1,6 @@
 # 🚀 YouTube Metrics Pipeline
 
-![Status](https://img.shields.io/badge/Status-In%20Development-yellow) ![Snowflake](https://img.shields.io/badge/Built%20on-Snowflake-blue) ![dbt](https://img.shields.io/badge/Logic-dbt-orange) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
+![Status](https://img.shields.io/badge/Status-In%20Development-yellow) ![Snowflake](https://img.shields.io/badge/Built%20on-Snowflake-blue?logo=snowflake&logoColor=white) ![dbt](https://img.shields.io/badge/Logic-dbt-orange?logo=dbt&logoColor=white) ![AWS S3](https://img.shields.io/badge/Storage-Amazon%20S3-FF9900?logo=amazons3&logoColor=white) ![Streamlit](https://img.shields.io/badge/Presentation-Streamlit-FF4B4B?logo=streamlit&logoColor=white) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
 
 An automated, end-to-end data platform built to extract, transform, and visualize YouTube channel performance. This project isn't just about data; it's a showcase of **Agentic AI Development**—a seamless synergy between human architectural vision and AI-driven implementation.
 
@@ -73,6 +73,8 @@ This project serves as a "Living Masterclass." Explore our domain-specific guide
 *   🧡 **[dbt Essentials](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/03_dbt/dbt_essentials.md)**: Materializations, SCD Type 2, and Lineage.
 *   ⚙️ **[GitOps Principles](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/04_cicd/gitops_principles.md)**: SHA256 Idempotency and Environmental Isolation.
 *   🤖 **[AI Quota Strategy](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/01_agentic_development/ai_quotas_and_efficiency.md)**: Context caching, token budget optimization, and LLM orchestration.
+*   📊 **[Streamlit Community Cloud](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/07_presentation_layer/streamlit_cloud.md)**: Dual-mode presentation layer abstraction.
+*   ☁️ **[AWS S3 & IAM](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/08_cloud_infrastructure/aws_s3_iam.md)**: Serverless static data hosting, IAM security, and least-privilege policies.
 
 ---
 
