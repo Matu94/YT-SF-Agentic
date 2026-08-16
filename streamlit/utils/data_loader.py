@@ -33,14 +33,22 @@ def load_data(table_name: str) -> pd.DataFrame:
     if os.path.exists(local_path):
         return pd.read_parquet(local_path)
 
+    def _get_config(key: str, default: str | None = None) -> str | None:
+        try:
+            if key in st.secrets:
+                return str(st.secrets[key])
+        except Exception:
+            pass
+        return os.getenv(key, default)
+
     # 3. Read from S3 bucket (Streamlit Community Cloud)
-    bucket_name = os.getenv("S3_BUCKET_NAME", "yt-sf-metrics-data-prod")
+    bucket_name = _get_config("S3_BUCKET_NAME", "yt-sf-metrics-data-prod")
     s3_path = f"s3://{bucket_name}/mart/{table_name.lower()}.parquet"
 
     storage_options = {}
-    aws_key = os.getenv("AWS_ACCESS_KEY_ID")
-    aws_secret = os.getenv("AWS_SECRET_ACCESS_KEY")
-    aws_region = os.getenv("AWS_DEFAULT_REGION", "eu-central-1")
+    aws_key = _get_config("AWS_ACCESS_KEY_ID")
+    aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")
+    aws_region = _get_config("AWS_DEFAULT_REGION", "eu-north-1")
 
     if aws_key and aws_secret:
         storage_options = {
