@@ -67,6 +67,8 @@ elif metric_grain == "Rolling 7-Day Trend":
 else:
     st.info(f"📅 Displaying 30-day rolling metrics up to **{latest_date.strftime('%Y-%m-%d')}**")
 
+st.success("💡 **Tip:** We've pre-selected the **top 5 performing channels** by views. Use the **Hierarchy Filters** in the sidebar to explore and compare other channels!")
+
 # --- Sidebar Filters ---
 st.sidebar.header("Hierarchy Filters")
 
