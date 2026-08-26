@@ -94,7 +94,20 @@ if selected_teams:
 df_latest_channels = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
 all_channels = df_latest_channels['CHANNEL_TITLE'].dropna().unique().tolist()
 all_channels.sort()
-selected_channels = st.sidebar.multiselect("Channels", options=all_channels, help="Filtered by selected Teams. Leave empty to select all.")
+
+if metric_grain.startswith("Daily"):
+    sort_metric = 'DAILY_VIEWS'
+elif metric_grain == "Rolling 7-Day Trend":
+    sort_metric = 'ROLLING_7D_VIEWS'
+else:
+    sort_metric = 'ROLLING_30D_VIEWS'
+
+if not df_latest_channels.empty and sort_metric in df_latest_channels.columns:
+    top_5_channels = df_latest_channels.groupby('CHANNEL_TITLE')[sort_metric].sum().nlargest(5).index.tolist()
+else:
+    top_5_channels = all_channels[:5]
+
+selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_5_channels, help="Filtered by selected Teams. Leave empty to select all.")
 
 if selected_channels:
     df_full_filtered = df_full_filtered[df_full_filtered['CHANNEL_TITLE'].isin(selected_channels)]
