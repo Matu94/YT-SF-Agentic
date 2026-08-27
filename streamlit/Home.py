@@ -32,6 +32,18 @@ st.markdown(
     "**Created by Matu** — Connect on [LinkedIn](https://www.linkedin.com/in/matu94/) • [GitHub](https://github.com/Matu94)"
 )
 
+st.markdown("### 📊 What you can find here")
+col_nav1, col_nav2, col_nav3 = st.columns(3)
+with col_nav1:
+    st.page_link("pages/1_Video_Statistics.py", label="Video Statistics", icon="📈")
+    st.caption("Deep dive into video performance, views, and engagement metrics.")
+with col_nav2:
+    st.page_link("pages/2_Leaderboard.py", label="Leaderboard", icon="🏆")
+    st.caption("Discover top performing videos and global channel rankings.")
+with col_nav3:
+    st.page_link("pages/3_Channel_Info.py", label="Channel Info", icon="ℹ️")
+    st.caption("View detailed statistics, metadata, and trends for specific channels.")
+
 # Sidebar Developer Links
 st.sidebar.markdown("---")
 st.sidebar.caption("**Developer Contact**")
