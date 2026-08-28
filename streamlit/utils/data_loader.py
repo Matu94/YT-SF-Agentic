@@ -51,36 +51,23 @@ def load_data(table_name: str) -> pd.DataFrame:
     aws_region = _get_config("AWS_DEFAULT_REGION", "eu-north-1")
     s3_key = f"mart/{table_name.lower()}.parquet"
 
-    # Strategy A: Use boto3 directly to fetch binary stream into BytesIO (eliminates fsspec dependency)
+    # Read via pandas native s3:// support to avoid loading entire file into memory as bytes
+    storage_options = {}
+    if aws_key and aws_secret:
+        storage_options = {
+            "key": aws_key,
+            "secret": aws_secret,
+            "client_kwargs": {"region_name": aws_region}
+        }
+    s3_path = f"s3://{bucket_name}/{s3_key}"
+    
     try:
-        import boto3
-        import io
-
-        client_kwargs = {"region_name": aws_region}
-        if aws_key and aws_secret:
-            client_kwargs["aws_access_key_id"] = aws_key
-            client_kwargs["aws_secret_access_key"] = aws_secret
-
-        s3_client = boto3.client("s3", **client_kwargs)
-        try:
-            obj = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
-            return pd.read_parquet(io.BytesIO(obj["Body"].read()))
-        except Exception as s3_err:
-            raise RuntimeError(
-                f"Failed to fetch '{s3_key}' from S3 bucket '{bucket_name}' (region: {aws_region}). "
-                f"Details: {s3_err}"
-            ) from s3_err
-    except ImportError:
-        # Fallback to pandas s3:// only if boto3 is completely absent
-        storage_options = {}
-        if aws_key and aws_secret:
-            storage_options = {
-                "key": aws_key,
-                "secret": aws_secret,
-                "client_kwargs": {"region_name": aws_region}
-            }
-        s3_path = f"s3://{bucket_name}/{s3_key}"
         return pd.read_parquet(s3_path, storage_options=storage_options if storage_options else None)
+    except Exception as e:
+        raise RuntimeError(
+            f"Failed to fetch '{s3_path}' from S3 (region: {aws_region}). "
+            f"Details: {e}"
+        ) from e
 
 
 def get_current_user_name() -> str | None:

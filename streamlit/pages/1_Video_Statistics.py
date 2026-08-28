@@ -54,7 +54,7 @@ df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
 latest_date = df['METRIC_DATE'].max()
 
 # Keep a full history df for line charts if needed
-df_full = df.copy()
+df_full = df
 
 if metric_grain == "Daily - Yesterday Snapshot":
     st.info(f"📅 Displaying discrete snapshot metrics for the latest available date: **{latest_date.strftime('%Y-%m-%d')}**")
@@ -81,7 +81,7 @@ selected_orgs = st.sidebar.multiselect("Organizations", options=all_orgs, help="
 if selected_orgs:
     df_full_filtered = df_full[df_full['ORGANIZATION'].isin(selected_orgs)]
 else:
-    df_full_filtered = df_full.copy()
+    df_full_filtered = df_full
 
 # 2. Teams (Studios)
 df_latest_teams = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
