@@ -23,7 +23,11 @@ def load_data(table_name: str) -> pd.DataFrame:
             session.use_warehouse('YT_SF_REPORTING_WH')
         except Exception:
             pass  # Warehouse configuration may be managed by session role/policy
-        df = session.sql(f"SELECT * FROM MART.{table_name}").to_pandas()
+        query = f"SELECT * FROM MART.{table_name}"
+        if "VIDEO_PERFORMANCE" in table_name:
+            query += " WHERE METRIC_DATE >= DATEADD(day, -40, CURRENT_DATE())"
+        
+        df = session.sql(query).to_pandas()
         if 'METRIC_DATE' in df.columns:
             df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
         return df
@@ -37,6 +41,10 @@ def load_data(table_name: str) -> pd.DataFrame:
         df = pd.read_parquet(local_path)
         if 'METRIC_DATE' in df.columns:
             df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
+            if "VIDEO_PERFORMANCE" in table_name:
+                max_date = df['METRIC_DATE'].max()
+                df = df[df['METRIC_DATE'] >= (max_date - pd.Timedelta(days=40))]
+                df = df.reset_index(drop=True).copy()
         return df
 
     def _get_config(key: str, default: str | None = None) -> str | None:
@@ -71,6 +79,10 @@ def load_data(table_name: str) -> pd.DataFrame:
         df = pd.read_parquet(s3_path, storage_options=storage_options if storage_options else None)
         if 'METRIC_DATE' in df.columns:
             df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
+            if "VIDEO_PERFORMANCE" in table_name:
+                max_date = df['METRIC_DATE'].max()
+                df = df[df['METRIC_DATE'] >= (max_date - pd.Timedelta(days=40))]
+                df = df.reset_index(drop=True).copy()
         return df
     except Exception as e:
         raise RuntimeError(

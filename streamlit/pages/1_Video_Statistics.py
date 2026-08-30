@@ -144,18 +144,11 @@ df_latest_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_
 
 # Calculate baseline dates for channels to prevent "onboarding spikes" in trend aggregations
 @st.cache_data
-def compute_baseline_map(tbl_name):
-    temp_df = load_data(tbl_name)
+def compute_baseline_map():
+    temp_df = load_data("RPT_CHANNEL_PERFORMANCE_DAILY")
     return temp_df.groupby('CHANNEL_TITLE')['METRIC_DATE'].min()
 
-if metric_grain.startswith("Daily"):
-    tbl = "RPT_VIDEO_PERFORMANCE_DAILY"
-elif metric_grain == "Rolling 7-Day Trend":
-    tbl = "RPT_VIDEO_PERFORMANCE_ROLLING_7D"
-else:
-    tbl = "RPT_VIDEO_PERFORMANCE_ROLLING_30D"
-
-baseline_map = compute_baseline_map(tbl)
+baseline_map = compute_baseline_map()
 
 if metric_grain == "Daily - Yesterday Snapshot":
     st.subheader("Aggregated Views per Channel")
