@@ -38,7 +38,11 @@ def load_data(table_name: str) -> pd.DataFrame:
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     local_path = os.path.join(project_root, "data", "export", f"{table_name.lower()}.parquet")
     if os.path.exists(local_path):
-        df = pd.read_parquet(local_path)
+        df = pd.read_parquet(
+            local_path,
+            engine="pyarrow",
+            dtype_backend="pyarrow"
+        )
         if 'METRIC_DATE' in df.columns:
             df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
             if "VIDEO_PERFORMANCE" in table_name:
@@ -76,7 +80,12 @@ def load_data(table_name: str) -> pd.DataFrame:
     s3_path = f"s3://{bucket_name}/{s3_key}"
     
     try:
-        df = pd.read_parquet(s3_path, storage_options=storage_options if storage_options else None)
+        df = pd.read_parquet(
+            s3_path, 
+            storage_options=storage_options if storage_options else None,
+            engine="pyarrow",
+            dtype_backend="pyarrow"
+        )
         if 'METRIC_DATE' in df.columns:
             df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
             if "VIDEO_PERFORMANCE" in table_name:
