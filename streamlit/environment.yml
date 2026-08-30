@@ -6,3 +6,7 @@ dependencies:
   - snowflake-snowpark-python
   - pandas
   - altair
+  - pyarrow
+  - fastparquet
+  - fsspec
+  - s3fs
