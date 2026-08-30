@@ -48,9 +48,7 @@ except Exception as e:
 if df.empty:
     st.warning("No data available.")
     st.stop()
-
-df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
-
+# METRIC_DATE is pre-parsed inside load_data
 latest_date = df['METRIC_DATE'].max()
 
 # Keep a full history df for line charts if needed
@@ -87,7 +85,9 @@ else:
 df_latest_teams = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
 all_teams = df_latest_teams['TEAM_STUDIO'].dropna().unique().tolist()
 all_teams.sort()
-selected_teams = st.sidebar.multiselect("Teams (Studios)", options=all_teams, help="Filtered by selected Organizations. Leave empty to select all.")
+# Generate a key based on upstream options to reset session state if options change
+team_key = f"teams_{hash(tuple(all_teams))}"
+selected_teams = st.sidebar.multiselect("Teams (Studios)", options=all_teams, key=team_key, help="Filtered by selected Organizations. Leave empty to select all.")
 
 if selected_teams:
     df_full_filtered = df_full_filtered[df_full_filtered['TEAM_STUDIO'].isin(selected_teams)]
@@ -109,7 +109,8 @@ if not df_latest_channels.empty and sort_metric in df_latest_channels.columns:
 else:
     top_5_channels = all_channels[:5]
 
-selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_5_channels, help="Filtered by selected Teams. Leave empty to clear all data.")
+channel_key = f"channels_{hash(tuple(all_channels))}"
+selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_5_channels, key=channel_key, help="Filtered by selected Teams. Leave empty to clear all data.")
 
 if selected_channels:
     df_full_filtered = df_full_filtered[df_full_filtered['CHANNEL_TITLE'].isin(selected_channels)]
@@ -123,7 +124,8 @@ if 'VIDEO_TYPE' in df_full.columns:
     all_video_types = df_latest_types['VIDEO_TYPE'].dropna().unique().tolist()
     all_video_types.sort()
     
-    selected_video_types = st.sidebar.multiselect("Video Types", options=all_video_types, default=all_video_types)
+    type_key = f"video_types_{hash(tuple(all_video_types))}"
+    selected_video_types = st.sidebar.multiselect("Video Types", options=all_video_types, default=all_video_types, key=type_key)
     
     if selected_video_types:
         df_full_filtered = df_full_filtered[df_full_filtered['VIDEO_TYPE'].isin(selected_video_types)]
@@ -141,7 +143,19 @@ if df_full_filtered.empty:
 df_latest_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
 
 # Calculate baseline dates for channels to prevent "onboarding spikes" in trend aggregations
-baseline_map = df_full.groupby('CHANNEL_TITLE')['METRIC_DATE'].min()
+@st.cache_data
+def compute_baseline_map(tbl_name):
+    temp_df = load_data(tbl_name)
+    return temp_df.groupby('CHANNEL_TITLE')['METRIC_DATE'].min()
+
+if metric_grain.startswith("Daily"):
+    tbl = "RPT_VIDEO_PERFORMANCE_DAILY"
+elif metric_grain == "Rolling 7-Day Trend":
+    tbl = "RPT_VIDEO_PERFORMANCE_ROLLING_7D"
+else:
+    tbl = "RPT_VIDEO_PERFORMANCE_ROLLING_30D"
+
+baseline_map = compute_baseline_map(tbl)
 
 if metric_grain == "Daily - Yesterday Snapshot":
     st.subheader("Aggregated Views per Channel")

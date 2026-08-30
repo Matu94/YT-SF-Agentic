@@ -23,7 +23,10 @@ def load_data(table_name: str) -> pd.DataFrame:
             session.use_warehouse('YT_SF_REPORTING_WH')
         except Exception:
             pass  # Warehouse configuration may be managed by session role/policy
-        return session.sql(f"SELECT * FROM MART.{table_name}").to_pandas()
+        df = session.sql(f"SELECT * FROM MART.{table_name}").to_pandas()
+        if 'METRIC_DATE' in df.columns:
+            df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
+        return df
     except Exception:
         pass  # Not executing inside a Snowflake-hosted Streamlit container
 
@@ -31,7 +34,10 @@ def load_data(table_name: str) -> pd.DataFrame:
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     local_path = os.path.join(project_root, "data", "export", f"{table_name.lower()}.parquet")
     if os.path.exists(local_path):
-        return pd.read_parquet(local_path)
+        df = pd.read_parquet(local_path)
+        if 'METRIC_DATE' in df.columns:
+            df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
+        return df
 
     def _get_config(key: str, default: str | None = None) -> str | None:
         val = None
@@ -62,7 +68,10 @@ def load_data(table_name: str) -> pd.DataFrame:
     s3_path = f"s3://{bucket_name}/{s3_key}"
     
     try:
-        return pd.read_parquet(s3_path, storage_options=storage_options if storage_options else None)
+        df = pd.read_parquet(s3_path, storage_options=storage_options if storage_options else None)
+        if 'METRIC_DATE' in df.columns:
+            df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
+        return df
     except Exception as e:
         raise RuntimeError(
             f"Failed to fetch '{s3_path}' from S3 (region: {aws_region}). "

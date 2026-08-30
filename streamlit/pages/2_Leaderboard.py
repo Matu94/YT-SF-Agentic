@@ -24,7 +24,7 @@ except Exception as e:
 
 
 if not df_channel.empty:
-    df_channel['METRIC_DATE'] = pd.to_datetime(df_channel['METRIC_DATE'])
+    pass # METRIC_DATE is pre-parsed inside load_data
 
 # --- Network KPIs ---
 if not df_channel.empty:

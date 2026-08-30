@@ -23,7 +23,7 @@ if df.empty:
     st.warning("No data available.")
     st.stop()
     
-df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
+# METRIC_DATE is pre-parsed inside load_data
 
 # --- Sidebar Filter ---
 st.sidebar.header("Select Channel")
