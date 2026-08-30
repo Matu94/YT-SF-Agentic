@@ -109,10 +109,12 @@ if not df_latest_channels.empty and sort_metric in df_latest_channels.columns:
 else:
     top_5_channels = all_channels[:5]
 
-selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_5_channels, help="Filtered by selected Teams. Leave empty to select all.")
+selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_5_channels, help="Filtered by selected Teams. Leave empty to clear all data.")
 
 if selected_channels:
     df_full_filtered = df_full_filtered[df_full_filtered['CHANNEL_TITLE'].isin(selected_channels)]
+else:
+    df_full_filtered = df_full_filtered.iloc[0:0]
 
 # 4. Video Type Filter (Conditional based on presence in data)
 if 'VIDEO_TYPE' in df_full.columns:
