@@ -18,7 +18,7 @@ except Exception as e:
 
 # Ensure METRIC_DATE is datetime
 if not df.empty:
-    # METRIC_DATE is pre-parsed inside load_data
+    pass # METRIC_DATE is pre-parsed inside load_data
 
 # Welcome user & Developer Info
 current_user = get_current_user_name()
