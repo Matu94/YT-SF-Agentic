@@ -112,3 +112,71 @@ def get_current_user_name() -> str | None:
         return current_user_row[0][0]
     except Exception:
         return None
+
+@st.cache_data(ttl=3600)
+def load_filtered_video_data(table_name: str, selected_channels: list, days_back: int = 40) -> pd.DataFrame:
+    """
+    Loads large video tables using Pushdown Predicates (DuckDB / SQL) 
+    so only the selected channels are fetched into Memory.
+    """
+    if not selected_channels:
+        return pd.DataFrame()
+        
+    table_name = table_name.upper()
+    
+    # 1. Snowflake SiS
+    try:
+        from snowflake.snowpark.context import get_active_session
+        session = get_active_session()
+        try:
+            session.use_warehouse('YT_SF_REPORTING_WH')
+        except Exception:
+            pass
+        channels_sql = ", ".join([f"'{c.replace(chr(39), chr(39)+chr(39))}'" for c in selected_channels])
+        query = f"SELECT * FROM MART.{table_name} WHERE CHANNEL_TITLE IN ({channels_sql}) AND METRIC_DATE >= DATEADD(day, -{days_back}, CURRENT_DATE())"
+        df = session.sql(query).to_pandas()
+        if 'METRIC_DATE' in df.columns: 
+            df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
+        return df
+    except Exception:
+        pass
+
+    # For Local and S3, use DuckDB
+    import duckdb
+    con = duckdb.connect(database=':memory:')
+    
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    local_path = os.path.join(project_root, "data", "export", f"{table_name.lower()}.parquet")
+    
+    if os.path.exists(local_path):
+        target_path = local_path
+    else:
+        # 3. Read from S3 via DuckDB httpfs
+        con.execute("INSTALL httpfs; LOAD httpfs;")
+        bucket_name = _get_config("S3_BUCKET_NAME", "yt-sf-metrics-data-prod")
+        aws_key = _get_config("AWS_ACCESS_KEY_ID")
+        aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")
+        aws_region = _get_config("AWS_DEFAULT_REGION", "eu-north-1")
+        target_path = f"s3://{bucket_name}/mart/{table_name.lower()}.parquet"
+        
+        if aws_key and aws_secret:
+            con.execute(f"SET s3_region='{aws_region}';")
+            con.execute(f"SET s3_access_key_id='{aws_key}';")
+            con.execute(f"SET s3_secret_access_key='{aws_secret}';")
+            
+    # Escape quotes in channel names for SQL
+    channels_str = ", ".join([f"'{c.replace(chr(39), chr(39)+chr(39))}'" for c in selected_channels])
+    
+    query = f"""
+        SELECT * 
+        FROM read_parquet('{target_path}')
+        WHERE CHANNEL_TITLE IN ({channels_str})
+          AND METRIC_DATE >= CURRENT_DATE() - INTERVAL {days_back} DAY
+    """
+    try:
+        df = con.execute(query).df()
+        if 'METRIC_DATE' in df.columns:
+            df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
+        return df
+    except Exception as e:
+        raise RuntimeError(f"DuckDB failed to fetch '{target_path}'. Details: {e}") from e

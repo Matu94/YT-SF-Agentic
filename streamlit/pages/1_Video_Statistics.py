@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import streamlit as st
 import altair as alt
 import pandas as pd
-from utils.data_loader import load_data
+from utils.data_loader import load_data, load_filtered_video_data
 
 
 st.set_page_config(page_title="YT Metrics - Video Stats", layout="wide", initial_sidebar_state="expanded")
@@ -34,25 +34,17 @@ with st.expander("ℹ️ Understanding Metric Calculations"):
     """)
 
 try:
-    if metric_grain.startswith("Daily"):
-        df = load_data("RPT_VIDEO_PERFORMANCE_DAILY")
-    elif metric_grain == "Rolling 7-Day Trend":
-        df = load_data("RPT_VIDEO_PERFORMANCE_ROLLING_7D")
-    else:
-        df = load_data("RPT_VIDEO_PERFORMANCE_ROLLING_30D")
+    # 1. Load the tiny channel table strictly to build the Sidebar Hierarchy Filters
+    df_channel_meta = load_data("RPT_CHANNEL_PERFORMANCE_DAILY")
 except Exception as e:
-    st.error(f"Failed to load data from MART. Error: {e}")
+    st.error(f"Failed to load channel metadata. Error: {e}")
     st.stop()
 
-
-if df.empty:
-    st.warning("No data available.")
+if df_channel_meta.empty:
+    st.warning("No channel metadata available.")
     st.stop()
-# METRIC_DATE is pre-parsed inside load_data
-latest_date = df['METRIC_DATE'].max()
 
-# Keep a full history df for line charts if needed
-df_full = df
+latest_date = df_channel_meta['METRIC_DATE'].max()
 
 if metric_grain == "Daily - Yesterday Snapshot":
     st.info(f"📅 Displaying discrete snapshot metrics for the latest available date: **{latest_date.strftime('%Y-%m-%d')}**")
@@ -67,58 +59,62 @@ else:
 
 st.success("💡 **Tip:** We've pre-selected the **top 5 performing channels** by views. Use the **Hierarchy Filters** in the sidebar to explore and compare other channels!")
 
-# --- Sidebar Filters ---
+# --- Sidebar Filters (Driven by df_channel_meta) ---
 st.sidebar.header("Hierarchy Filters")
+df_channel_latest = df_channel_meta[df_channel_meta['METRIC_DATE'] == latest_date]
 
 # 1. Organizations
-df_latest_for_filters = df_full[df_full['METRIC_DATE'] == latest_date]
-all_orgs = df_latest_for_filters['ORGANIZATION'].dropna().unique().tolist()
+all_orgs = df_channel_latest['ORGANIZATION'].dropna().unique().tolist()
 all_orgs.sort()
 selected_orgs = st.sidebar.multiselect("Organizations", options=all_orgs, help="Leave empty to select all.")
 
 if selected_orgs:
-    df_full_filtered = df_full[df_full['ORGANIZATION'].isin(selected_orgs)]
+    df_channel_filtered = df_channel_latest[df_channel_latest['ORGANIZATION'].isin(selected_orgs)]
 else:
-    df_full_filtered = df_full
+    df_channel_filtered = df_channel_latest
 
 # 2. Teams (Studios)
-df_latest_teams = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
-all_teams = df_latest_teams['TEAM_STUDIO'].dropna().unique().tolist()
+all_teams = df_channel_filtered['TEAM_STUDIO'].dropna().unique().tolist()
 all_teams.sort()
-# Generate a key based on upstream options to reset session state if options change
 team_key = f"teams_{hash(tuple(all_teams))}"
 selected_teams = st.sidebar.multiselect("Teams (Studios)", options=all_teams, key=team_key, help="Filtered by selected Organizations. Leave empty to select all.")
 
 if selected_teams:
-    df_full_filtered = df_full_filtered[df_full_filtered['TEAM_STUDIO'].isin(selected_teams)]
+    df_channel_filtered = df_channel_filtered[df_channel_filtered['TEAM_STUDIO'].isin(selected_teams)]
 
 # 3. Channels
-df_latest_channels = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
-all_channels = df_latest_channels['CHANNEL_TITLE'].dropna().unique().tolist()
+all_channels = df_channel_filtered['CHANNEL_TITLE'].dropna().unique().tolist()
 all_channels.sort()
 
-if metric_grain.startswith("Daily"):
-    sort_metric = 'DAILY_VIEWS'
-elif metric_grain == "Rolling 7-Day Trend":
-    sort_metric = 'ROLLING_7D_VIEWS'
-else:
-    sort_metric = 'ROLLING_30D_VIEWS'
-
-if not df_latest_channels.empty and sort_metric in df_latest_channels.columns:
-    top_5_channels = df_latest_channels.groupby('CHANNEL_TITLE')[sort_metric].sum().nlargest(5).index.tolist()
+# Pre-select Top 5 channels by views
+if not df_channel_filtered.empty and 'DAILY_VIEWS' in df_channel_filtered.columns:
+    top_5_channels = df_channel_filtered.groupby('CHANNEL_TITLE')['DAILY_VIEWS'].sum().nlargest(5).index.tolist()
 else:
     top_5_channels = all_channels[:5]
 
 channel_key = f"channels_{hash(tuple(all_channels))}"
 selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_5_channels, key=channel_key, help="Filtered by selected Teams. Leave empty to clear all data.")
 
+# --- Lazy Load Video Data via DuckDB Pushdown ---
 if selected_channels:
-    df_full_filtered = df_full_filtered[df_full_filtered['CHANNEL_TITLE'].isin(selected_channels)]
+    if metric_grain.startswith("Daily"):
+        tbl = "RPT_VIDEO_PERFORMANCE_DAILY"
+    elif metric_grain == "Rolling 7-Day Trend":
+        tbl = "RPT_VIDEO_PERFORMANCE_ROLLING_7D"
+    else:
+        tbl = "RPT_VIDEO_PERFORMANCE_ROLLING_30D"
+        
+    try:
+        # PUSHDOWN PREDICATE: only download the exact channels requested
+        df_full_filtered = load_filtered_video_data(tbl, selected_channels, days_back=40)
+    except Exception as e:
+        st.error(f"Failed to load video metrics for selected channels. Error: {e}")
+        st.stop()
 else:
-    df_full_filtered = df_full_filtered.iloc[0:0]
+    df_full_filtered = pd.DataFrame()
 
-# 4. Video Type Filter (Conditional based on presence in data)
-if 'VIDEO_TYPE' in df_full.columns:
+# 4. Video Type Filter (Conditional based on fetched video data)
+if not df_full_filtered.empty and 'VIDEO_TYPE' in df_full_filtered.columns:
     st.sidebar.header("Content Filters")
     df_latest_types = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
     all_video_types = df_latest_types['VIDEO_TYPE'].dropna().unique().tolist()
@@ -130,7 +126,7 @@ if 'VIDEO_TYPE' in df_full.columns:
     if selected_video_types:
         df_full_filtered = df_full_filtered[df_full_filtered['VIDEO_TYPE'].isin(selected_video_types)]
     else:
-        df_full_filtered = df_full_filtered.iloc[0:0] 
+        df_full_filtered = df_full_filtered.iloc[0:0]
 
 # --- Main Content ---
 st.divider()
