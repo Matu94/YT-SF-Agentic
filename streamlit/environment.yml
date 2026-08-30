@@ -10,3 +10,4 @@ dependencies:
   - fastparquet
   - fsspec
   - s3fs
+  - duckdb
