@@ -118,7 +118,11 @@ def main():
             print(f"  -> Extracting {view}...")
             
             # Fetch data using Snowflake connector
-            cur.execute(f"SELECT * FROM MART.{view}")
+            query = f"SELECT * FROM MART.{view}"
+            if "VIDEO_PERFORMANCE" in view:
+                query += " WHERE METRIC_DATE >= DATEADD(day, -40, CURRENT_DATE())"
+            
+            cur.execute(query)
             df = cur.fetch_pandas_all()
             
             if df.empty:
