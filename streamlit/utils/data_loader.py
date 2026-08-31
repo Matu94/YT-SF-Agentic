@@ -178,10 +178,9 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
         # Enforce memory limits to prevent DuckDB from spiking RAM on S3 downloads
         con.execute("SET memory_limit='256MB';")
         
-        # Output as PyArrow Table, then map to Arrow-backed Pandas DataFrame
-        # This preserves the memory compression (no Python objects) for text columns
-        arrow_tbl = con.execute(query).fetch_arrow_table()
-        df = arrow_tbl.to_pandas(types_mapper=pd.ArrowDtype)
+        # Output as standard Pandas DataFrame to avoid PyArrow zero-copy Segmentation Faults
+        # when the DuckDB connection closes and Streamlit caches the result.
+        df = con.execute(query).df()
         
         if 'METRIC_DATE' in df.columns:
             df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
