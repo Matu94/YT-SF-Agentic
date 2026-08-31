@@ -180,7 +180,7 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
         
         # Output as PyArrow Table, then map to Arrow-backed Pandas DataFrame
         # This preserves the memory compression (no Python objects) for text columns
-        arrow_tbl = con.execute(query).arrow()
+        arrow_tbl = con.execute(query).fetch_arrow_table()
         df = arrow_tbl.to_pandas(types_mapper=pd.ArrowDtype)
         
         if 'METRIC_DATE' in df.columns:
