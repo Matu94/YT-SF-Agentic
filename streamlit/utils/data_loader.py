@@ -13,7 +13,7 @@ def _get_config(key: str, default: str | None = None) -> str | None:
         val = os.getenv(key, default)
     return val.strip() if val is not None else None
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, max_entries=10)
 def load_data(table_name: str) -> pd.DataFrame:
     """
     Unified Data Loader for Streamlit.
@@ -114,7 +114,7 @@ def get_current_user_name() -> str | None:
     except Exception:
         return None
 
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=3600, max_entries=5)
 def load_filtered_video_data(table_name: str, selected_channels: list, days_back: int = 40) -> pd.DataFrame:
     """
     Loads large video tables using Pushdown Predicates (DuckDB / SQL) 
@@ -175,7 +175,14 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
           AND METRIC_DATE >= CURRENT_DATE() - INTERVAL {days_back} DAY
     """
     try:
-        df = con.execute(query).df()
+        # Enforce memory limits to prevent DuckDB from spiking RAM on S3 downloads
+        con.execute("SET memory_limit='256MB';")
+        
+        # Output as PyArrow Table, then map to Arrow-backed Pandas DataFrame
+        # This preserves the memory compression (no Python objects) for text columns
+        arrow_tbl = con.execute(query).arrow()
+        df = arrow_tbl.to_pandas(types_mapper=pd.ArrowDtype)
+        
         if 'METRIC_DATE' in df.columns:
             df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
         return df

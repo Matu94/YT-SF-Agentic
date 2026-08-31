@@ -24,12 +24,12 @@ WITH raw_data AS (
     FROM {{ source('raw_youtube', 'v_youtube_parsed_videos') }}
     
     {% if is_incremental() %}
-    -- Select new data plus the most recent existing day to enable LAG calculations
+    -- Select new data plus a 3-day history buffer to enable LAG calculations for the lookback window
     WHERE GREATEST(
         DATEADD(day, -1, CAST(extracted_at AS DATE)), 
         CAST(CONVERT_TIMEZONE('Europe/Budapest', published_at) AS DATE)
     ) >= (
-        SELECT COALESCE(max(metric_date), '1970-01-01'::DATE) FROM {{ this }}
+        SELECT DATEADD(day, -3, COALESCE(max(metric_date), '1970-01-01'::DATE)) FROM {{ this }}
     )
     {% endif %}
 ),
@@ -120,6 +120,6 @@ calculated_metrics AS (
 SELECT *
 FROM calculated_metrics
 {% if is_incremental() %}
--- Only merge the truly new rows into the target table
-WHERE metric_date > (SELECT COALESCE(max(metric_date), '1970-01-01'::DATE) FROM {{ this }})
+-- 2-day lookback window: re-merge recent days to ensure newly published videos haven't artificially pushed the high-water mark past yesterday's metrics
+WHERE metric_date > (SELECT DATEADD(day, -2, COALESCE(max(metric_date), '1970-01-01'::DATE)) FROM {{ this }})
 {% endif %}
