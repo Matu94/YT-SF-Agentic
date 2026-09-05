@@ -1,0 +1,125 @@
+{{ config(
+    materialized='incremental',
+    unique_key=['video_id', 'metric_date'],
+    incremental_strategy='merge',
+    on_schema_change='append_new_columns'
+) }}
+
+WITH raw_data AS (
+    SELECT
+        video_id,
+        channel_id,
+        video_title,
+        published_at,
+        duration_iso8601,
+        live_broadcast_content,
+        total_views,
+        total_likes,
+        total_comments,
+        GREATEST(
+            DATEADD(day, -1, CAST(extracted_at AS DATE)), 
+            CAST(CONVERT_TIMEZONE('Europe/Budapest', published_at) AS DATE)
+        ) AS metric_date,
+        extracted_at
+    FROM {{ source('raw_youtube', 'v_youtube_parsed_videos') }}
+    
+    {% if is_incremental() %}
+    -- Select new data plus a 3-day history buffer to enable LAG calculations for the lookback window
+    WHERE GREATEST(
+        DATEADD(day, -1, CAST(extracted_at AS DATE)), 
+        CAST(CONVERT_TIMEZONE('Europe/Budapest', published_at) AS DATE)
+    ) >= (
+        SELECT DATEADD(day, -3, COALESCE(max(metric_date), '1970-01-01'::DATE)) FROM {{ this }}
+    )
+    {% endif %}
+),
+
+deduplicated_raw AS (
+    SELECT
+        video_id,
+        channel_id,
+        video_title,
+        published_at,
+        duration_iso8601,
+        live_broadcast_content,
+        total_views,
+        total_likes,
+        total_comments,
+        metric_date
+    FROM (
+        SELECT
+            video_id,
+            channel_id,
+            video_title,
+            published_at,
+            duration_iso8601,
+            live_broadcast_content,
+            total_views,
+            total_likes,
+            total_comments,
+            metric_date,
+            ROW_NUMBER() OVER (
+                PARTITION BY video_id, metric_date
+                ORDER BY extracted_at DESC
+            ) AS rn
+        FROM raw_data
+    )
+    WHERE rn = 1
+),
+
+calculated_metrics AS (
+    SELECT
+        video_id,
+        channel_id,
+        video_title,
+        published_at,
+        duration_iso8601,
+        live_broadcast_content,
+        total_views,
+        total_likes,
+        total_comments,
+        metric_date,
+        
+        -- Calculate daily growth metrics using LAG over the video's history
+        COALESCE(
+            total_views - LAG(total_views, 1) OVER (
+                PARTITION BY video_id 
+                ORDER BY metric_date ASC
+            ),
+            CASE 
+                WHEN CAST(published_at AS DATE) >= DATEADD(day, -3, metric_date) THEN total_views
+                ELSE 0 
+            END
+        ) AS daily_views,
+        
+        COALESCE(
+            total_likes - LAG(total_likes, 1) OVER (
+                PARTITION BY video_id 
+                ORDER BY metric_date ASC
+            ),
+            CASE 
+                WHEN CAST(published_at AS DATE) >= DATEADD(day, -3, metric_date) THEN total_likes
+                ELSE 0 
+            END
+        ) AS daily_likes,
+        
+        COALESCE(
+            total_comments - LAG(total_comments, 1) OVER (
+                PARTITION BY video_id 
+                ORDER BY metric_date ASC
+            ),
+            CASE 
+                WHEN CAST(published_at AS DATE) >= DATEADD(day, -3, metric_date) THEN total_comments
+                ELSE 0 
+            END
+        ) AS daily_comments
+
+    FROM deduplicated_raw
+)
+
+SELECT *
+FROM calculated_metrics
+{% if is_incremental() %}
+-- 2-day lookback window: re-merge recent days to ensure newly published videos haven't artificially pushed the high-water mark past yesterday's metrics
+WHERE metric_date > (SELECT DATEADD(day, -2, COALESCE(max(metric_date), '1970-01-01'::DATE)) FROM {{ this }})
+{% endif %}

@@ -1,0 +1,54 @@
+version: 2
+
+models:
+  - name: stg_youtube_channel_stats
+    description: "Incremental staging model for YouTube channel statistics with daily growth deltas."
+    columns:
+      - name: channel_id
+        description: "Primary key for the channel"
+        tests:
+          - not_null
+      - name: metric_date
+        description: "Date of extraction"
+        tests:
+          - not_null
+      - name: channel_title
+        description: "Channel title"
+      - name: total_subscribers
+        description: "Cumulative subscriber count"
+      - name: daily_subscriber_growth
+        description: "Calculated subscriber growth from the previous day"
+      - name: total_views
+        description: "Cumulative total views"
+      - name: daily_views
+        description: "Calculated views from the previous day"
+      - name: total_videos
+        description: "Cumulative video count"
+
+  - name: stg_youtube_video_stats
+    description: "Incremental staging model for YouTube video statistics with daily growth deltas."
+    columns:
+      - name: video_id
+        description: "Primary key for the video"
+        tests:
+          - not_null
+      - name: metric_date
+        description: "Date of extraction"
+        tests:
+          - not_null
+      - name: channel_id
+        description: "Foreign key for the channel"
+        tests:
+          - not_null
+      - name: total_views
+        description: "Cumulative view count"
+      - name: daily_views
+        description: "Calculated views from the previous day"
+      - name: total_likes
+        description: "Cumulative like count"
+      - name: daily_likes
+        description: "Calculated likes from the previous day"
+      - name: total_comments
+        description: "Cumulative comment count"
+      - name: daily_comments
+        description: "Calculated comments from the previous day"

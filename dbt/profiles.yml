@@ -1,0 +1,10 @@
+youtube_metrics:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      role: YT_SF_DEV_TRANSFORM_ROLE
+      warehouse: YT_SF_TRANSFORM_WH
+      database: YT_SF_DEV
+      schema: STAGING
+      threads: 8

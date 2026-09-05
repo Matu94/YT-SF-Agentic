@@ -1,0 +1,94 @@
+version: 2
+
+models:
+  - name: rpt_video_performance_daily
+    description: "Fully denormalized view combining fct_daily_video_metrics with dim_video and dim_channel details."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_channel_performance_daily
+    description: "Fully denormalized view combining fct_daily_channel_metrics with dim_channel metadata."
+    columns:
+      - name: channel_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+      - name: daily_views
+        description: "Calculated views from the previous day"
+
+  - name: rpt_video_performance_rolling_7d
+    description: "Fully denormalized view of rolling 7-day video performance."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_channel_performance_rolling_7d
+    description: "Fully denormalized view of rolling 7-day channel performance."
+    columns:
+      - name: channel_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_video_performance_rolling_30d
+    description: "Fully denormalized view of rolling 30-day video performance."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_channel_performance_rolling_30d
+    description: "Fully denormalized view of rolling 30-day channel performance."
+    columns:
+      - name: channel_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_top_video_by_views
+    description: "Fully denormalized view showing the top 50 videos of all time by total views."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_top_video_by_likes
+    description: "Fully denormalized view showing the top 50 videos of all time by total likes."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null
+
+  - name: rpt_top_video_by_comments
+    description: "Fully denormalized view showing the top 50 videos of all time by total comments."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: metric_date
+        tests:
+          - not_null

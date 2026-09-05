@@ -1,0 +1,94 @@
+version: 2
+
+models:
+  - name: dim_date
+    description: "Calendar dimension spine."
+    columns:
+      - name: date_id
+        tests:
+          - not_null
+          - unique
+
+  - name: dim_channel
+    description: "SCD Type 2 dimension for channel metadata and organizational hierarchy."
+    columns:
+      - name: channel_sk
+        tests:
+          - not_null
+          - unique
+      - name: channel_id
+        tests:
+          - not_null
+
+  - name: dim_video
+    description: "Static metadata for videos, including parsed duration."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+          - unique
+      - name: channel_id
+        tests:
+          - not_null
+
+  - name: fct_daily_channel_metrics
+    description: "Daily aggregate performance and discrete deltas for channels."
+    columns:
+      - name: channel_sk
+        tests:
+          - not_null
+      - name: date_id
+        tests:
+          - not_null
+      - name: daily_views
+        description: "Calculated views from the previous day"
+
+  - name: fct_daily_video_metrics
+    description: "Daily aggregate performance and discrete deltas for videos."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: date_id
+        tests:
+          - not_null
+
+  - name: fct_rolling_7d_video_metrics
+    description: "Rolling 7-day aggregate performance for videos."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: date_id
+        tests:
+          - not_null
+
+  - name: fct_rolling_7d_channel_metrics
+    description: "Rolling 7-day aggregate performance for channels."
+    columns:
+      - name: channel_sk
+        tests:
+          - not_null
+      - name: date_id
+        tests:
+          - not_null
+
+  - name: fct_rolling_30d_video_metrics
+    description: "Rolling 30-day aggregate performance for videos."
+    columns:
+      - name: video_id
+        tests:
+          - not_null
+      - name: date_id
+        tests:
+          - not_null
+
+  - name: fct_rolling_30d_channel_metrics
+    description: "Rolling 30-day aggregate performance for channels."
+    columns:
+      - name: channel_sk
+        tests:
+          - not_null
+      - name: date_id
+        tests:
+          - not_null

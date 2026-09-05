@@ -4,32 +4,42 @@ This document outlines the Snowflake environment's infrastructure, compute resou
 
 ## 1. Storage Infrastructure 
 
-The environment uses a single production database structured into four layers, enforcing a Kimball dimensional modeling approach.
+The environment utilizes two dedicated, identically structured databases enforcing a Kimball dimensional modeling approach to cleanly separate development/testing workloads from production data.
 
-### Database
-* **`YT_SF_PROD`**: The production database housing all YouTube metrics data.
+### Databases
+* **`YT_SF_DEV`**: The development environment used for CI/CD pipelines, feature branch testing, and local dbt development.
+* **`YT_SF_PROD`**: The production database housing all live, validated YouTube metrics data serving end-users.
 
 ### Managed Access Schemas
 All schemas are created `WITH MANAGED ACCESS`. This means object privileges are centrally managed by the schema owner (`YT_SF_ADMIN_ROLE`) rather than the individual user who created the table or view.
  
-* **`LANDING`**: Transient landing area. Used by the Python ingestion script to dump raw JSON payloads directly from the API.
-* **`RAW`**: Persistent historical storage. Retains a complete, untruncated history of all ingested data over time.
-* **`STAGING`**: The transformation layer. Where JSON is flattened, data types are cast, and daily deltas/calculations are performed using dbt.
-* **`MART`**: The presentation layer. Houses the final clean dimensional tables (Star Schema) optimized for Streamlit visualizations.
+* **[`LANDING`](file:///Users/matu/git/YT-SF-Agentic/docs/database/landing.md)**: Transient landing area. Used by the Python ingestion script to dump raw JSON payloads directly from the API.
+* **[`RAW`](file:///Users/matu/git/YT-SF-Agentic/docs/database/raw.md)**: Persistent historical storage. Retains a complete, untruncated history of all ingested data over time.
+* **[`STAGING`](file:///Users/matu/git/YT-SF-Agentic/docs/database/staging.md)**: The transformation layer. Where JSON is flattened, data types are cast, and daily deltas/calculations are performed using dbt.
+* **[`MART`](file:///Users/matu/git/YT-SF-Agentic/docs/database/mart.md)**: The presentation layer. Houses the final clean dimensional tables (Star Schema) optimized for Streamlit visualizations, as well as the stage and Streamlit app objects.
+* **[`TECH`](file:///Users/matu/git/YT-SF-Agentic/docs/database/tech.md)**: The technical tracking schema. Dedicated entirely to CI/CD state management and administrative logs (e.g., tracking applied deployment files).
+* **[`TECH_BKP`](file:///Users/matu/git/YT-SF-Agentic/docs/database/tech_bkp.md)**: The backup schema. Used both for **manual admin snapshots** and **automated pre-migration backups** triggered by the CI/CD pipeline. Before any destructive DDL (e.g., adding a column, recreating a table), the pipeline clones the existing object here, allowing data to be read back and re-ingested if the migration needs to be rolled back.
 
 ## 2. Compute Infrastructure (Virtual Warehouses)
 
 Operations are split across dedicated warehouses to allow for workload isolation without encountering concurrency bottlenecks.
 
-* **`YT_SF_CICD_WH`**: Shared by CI/CD orchestrated deployments and automated data ingestion scripts.
+* **`YT_SF_CICD_WH`**: Dedicated orchestrator warehouse for GitHub Actions to run DDL scripts.
+* **`YT_SF_LOAD_WH`**: Dedicated warehouse for the Python data extraction and landing loads.
 * **`YT_SF_TRANSFORM_WH`**: Used for data transformations using dbt, as well as manual querying and analytical processes.
-* **`YT_SF_ADMIN_WH`**: Dedicated backend warehouse for the administrative/maintenance tasks and environmental debugging.
+* **`YT_SF_REPORTING_WH`**: Dedicated warehouse for BI tools and Streamlit visualizations to prevent querying from impacting ETL workloads.
+* **`YT_SF_ADMIN_WH`**: Dedicated backend warehouse for administrative/maintenance tasks and debugging.
 
 ### Cost Controls (Resource Monitors)
-Both runtime properties and financial bounds are uniformly enforced across all three warehouses to prevent runaway costs:
+Both runtime properties and financial bounds are uniformly enforced across all warehouses to prevent runaway costs:
 * **Size**: `XSMALL` (consuming exactly 1 credit per hour).
 * **Auto-Suspend**: Configured to `60` seconds to minimize billing when idle.
-* **Monthly Quota Cap**: A Resource Monitor (`YT_SF_CICD_RM`, `YT_SF_TRANSFORM_RM`, `YT_SF_ADMIN_RM`) is independently attached to each warehouse, capping spending at **~5 EUR per month** per warehouse (roughly 2-5 Credits depending on enterprise tiering). 
+* **Monthly Quota Cap**: A dedicated Resource Monitor is independently attached to each warehouse, capping spending based on workload intensity to support project growth:
+  * `YT_SF_CICD_RM`: **5 Credits** (~5 EUR/month)
+  * `YT_SF_ADMIN_RM`: **5 Credits** (~5 EUR/month)
+  * `YT_SF_LOAD_RM`: **15 Credits** (~15 EUR/month) to handle increased API data extraction volume
+  * `YT_SF_TRANSFORM_RM`: **15 Credits** (~15 EUR/month) to accommodate expanding dbt transformations
+  * `YT_SF_REPORTING_RM`: **15 Credits** (~15 EUR/month) to support BI and visualization workloads
     * At 80% usage, an alert constraint triggers. 
     * At 100% usage, the warehouses are hard-suspended to prevent further billing.
 
@@ -40,41 +50,89 @@ Both runtime properties and financial bounds are uniformly enforced across all t
 The environment utilizes a modern two-tier Role-Based Access Control hierarchy, leveraging underlying "Object Roles" mapped upwards into broader "Functional Roles".
 
 ### 3.1 Schema Object Roles
-For every schema (`LANDING`, `RAW`, `STAGING`, `MART`), three distinct access profiles reside underneath the hood:
+For every schema (`LANDING`, `RAW`, `STAGING`, `MART`, `TECH`, `TECH_BKP`), three distinct access profiles reside underneath the hood:
 - **`_SR` (Schema Read)**: Grants `USAGE`, `SELECT`, and `READ` on all existing/future objects.
 - **`_SW` (Schema Write)**: Inherits `_SR`, and adds `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, and `WRITE`.
-- **`_SFULL` (Schema Full)**: Inherits `_SW`, and adds `CREATE TABLE/VIEW` capability as well as `OWNERSHIP`.
+- **`_SFULL` (Schema Full)**: Inherits `_SW`, and adds `CREATE TABLE/VIEW/STAGE/TASK/DYNAMIC TABLE/PROCEDURE/FUNCTION` capability. Holds `OWNERSHIP` over standard objects (Tables, Views, Stages, Procedures, Functions, etc). *(Note: Compute objects like Tasks, Dynamic Tables, and Streamlits bypass this and are owned directly by Functional Roles).*
 
 ### 3.2 Functional Roles (Users are assigned here)
 The underlying Schema Object Roles are then distributed to the following Functional profiles based strictly on the principles of least privilege:
 
-1. **`YT_SF_ADMIN_ROLE`** 
-    * ***Purpose:*** System governance and top-level administration. 
-    * ***Grants:*** Mapped to `_SFULL` everywhere. Owns the database, all schemas, and warehouses.
-2. **`YT_SF_CICD_ROLE`**
+1. **`YT_SF_{ENV}_ADMIN_ROLE`** 
+    * ***Purpose:*** System governance and top-level administration for that specific environment.
+    * ***Grants:*** Mapped to `_SFULL` everywhere. Owns the databases, all schemas, and warehouses. Holds the powerful `MANAGE GRANTS` global privilege to control security natively. All other functional roles explicitly roll up into this role.
+2. **`YT_SF_{ENV}_CICD_ROLE`**
     * ***Purpose:*** CI/CD deployment orchestrator.
-    * ***Grants:*** Mapped to `_SFULL` everywhere. This permits tools like GitHub Actions to automate migrations and drop/create assets universally across all layers.
-3. **`YT_SF_LOAD_ROLE`**
+    * ***Grants:*** Mapped to `_SFULL` everywhere. This permits tools like GitHub Actions to automate migrations and drop/create assets universally across all layers for its respective environment. Holds `EXECUTE TASK` globally, and `CREATE SCHEMA` on the database level to support dbt deployments.
+3. **`YT_SF_{ENV}_LOAD_ROLE`** 
     * ***Purpose:*** Python pipeline extraction tasks.
-    * ***Grants:*** Mapped to `_SFULL` on `LANDING` only. This role builds transient tables for API drops, but relies downstream on dbt to pull it into the warehouse history.
-4. **`YT_SF_TRANSFORM_ROLE`**
-    * ***Purpose:*** Data Build Tool (dbt) processing and manual querying.
-    * ***Grants:*** Mapped to `_SFULL` on `RAW`, `STAGING`, and `MART`. Manages merging the staging drops into persistent history and compiling the analytical models.
+    * ***Grants:*** Mapped to `_SFULL` on `LANDING` only, and has direct `CREATE TASK`, `USAGE`, and `MONITOR, OPERATE` on tasks in all schemas. Has global `EXECUTE TASK` and `EXECUTE MANAGED TASK` privileges to run tasks, as well as `USAGE` on both `YT_SF_LOAD_WH` and `YT_SF_TRANSFORM_WH` warehouses.
+4. **`YT_SF_{ENV}_TRANSFORM_ROLE`**
+    * ***Purpose:*** Data Build Tool (dbt) processing, task creation/execution, and manual querying.
+    * ***Grants:*** Mapped to `_SFULL` in all schemas (giving full dbt execution and task creation privileges everywhere). Has global `EXECUTE TASK` and `EXECUTE MANAGED TASK` privileges, and `USAGE` on both `YT_SF_LOAD_WH` and `YT_SF_TRANSFORM_WH` warehouses.
+5. **`YT_SF_{ENV}_REPORTING_ROLE`**
+    * ***Purpose:*** Dedicated role for BI tools and Streamlit applications to query the presentation layer.
+    * ***Grants:*** Mapped to `_SR` (Read-only) strictly in the `MART` schema. Inherits `USAGE` on the `YT_SF_REPORTING_WH`. Has no access to `LANDING`, `RAW`, or `STAGING`.
 
-*Inheritance:* All custom functional roles automatically roll up into the native Snowflake `SYSADMIN` role. This allows Account-level administrators to oversee the architecture natively without borrowing external roles.
+> **`TECH_BKP` Access Policy:**
+> - `ADMIN_ROLE` → `_SFULL`: Full ownership and management.
+> - `CICD_ROLE` → `_SFULL`: Full access required so the deployment pipeline can clone objects into this schema before a destructive migration, insert backup data, and read it back during a rollback within the same pipeline run.
+> - `LOAD_ROLE` → **No access**: The ingestion pipeline is completely blind to this schema.
+> - `TRANSFORM_ROLE` → **No access**: dbt models never reference backup objects.
+
+*Inheritance:* The `LOAD` and `TRANSFORM` functional roles roll up into the environment's `CICD` role, and all three roll up into the environment's `ADMIN` role. The `ADMIN` role then maps into the native Snowflake `SYSADMIN`. This structure ensures the `CICD` role inherits the ownership privileges necessary to drop/recreate compute objects owned by the `LOAD` and `TRANSFORM` roles, and the `ADMIN` role retains full governance.
 
 ### Machine Users & Authentication
 Passwords are intentionally disabled. Authentication relies entirely on Key-Pair (RSA) authentication to ensure robust security for automated processes.
 
-* **`YT_SF_CICD_USER`**: Machine user serving `YT_SF_CICD_ROLE`.
-* **`YT_SF_LOAD_USER`**: Machine user serving `YT_SF_LOAD_ROLE`.
-* **`YT_SF_DBT_USER`**: Service user serving `YT_SF_TRANSFORM_ROLE`.
+* **`YT_SF_CICD_USER`**: Machine user assigned both `YT_SF_PROD_CICD_ROLE` and `YT_SF_DEV_CICD_ROLE` to execute pipelines identically across both environments.
+* **`YT_SF_LOAD_USER`**: Machine user assigned both `YT_SF_PROD_LOAD_ROLE` and `YT_SF_DEV_LOAD_ROLE`.
+* **`YT_SF_DBT_USER`**: Service user assigned both `YT_SF_PROD_TRANSFORM_ROLE` and `YT_SF_DEV_TRANSFORM_ROLE`.
 
 ---
 
-## 4. Initialization Scripts
-To recreate this environment from scratch identically, simply execute the scripts within `.setup/snowflake/` in numerical order using an administrative user (e.g., `ACCOUNTADMIN`):
+## 4. External Network Access (Snowpark)
+
+To allow Snowpark Python Stored Procedures to call the YouTube Data API, Snowflake's External Network Access stack is configured in the `TECH` schema of each environment.
+
+| Object | Name | Location | Purpose |
+|:---|:---|:---|:---|
+| **Network Rule** | `YOUTUBE_API_NETWORK_RULE` | `{ENV}.TECH` | Whitelists outbound HTTPS to `youtube.googleapis.com` |
+| **Secret** | `YOUTUBE_API_KEY_SECRET` | `{ENV}.TECH` | Stores the YouTube Data API v3 key securely |
+| **Integration** | `YT_SF_{ENV}_YOUTUBE_API_INTEGRATION` | Account-level | Binds the Network Rule + Secret, attached to procedures |
+
+**Role Privileges:**
+- `YT_SF_{ENV}_ADMIN_ROLE`: Owns and manages the Network Rule, Secret, and Integration (has `CREATE INTEGRATION` account-level privilege).
+- `YT_SF_{ENV}_LOAD_ROLE`: Has `USAGE` on the Integration and `READ` on the Secret — the minimum required to execute procedures that call the YouTube API.
+- `YT_SF_{ENV}_CICD_ROLE`: Has `USAGE` on the Integration and `READ` on the Secret — required to deploy `CREATE OR REPLACE PROCEDURE` statements that reference the integration.
+
+> ⚠️ **Secret Initialization**: The `YOUTUBE_API_KEY_SECRET` is created with a placeholder value (`YOUR_YOUTUBE_API_KEY_HERE`) in script `04_external_access.sql`. The real API key must be injected manually via the Snowsight UI or CLI before the first pipeline run and must **never** be committed to version control.
+
+---
+
+## 5. Initialization Scripts
+To recreate this environment from scratch identically, execute the scripts within `.setup/snowflake/` in numerical order using an administrative user (e.g., `ACCOUNTADMIN`):
 1. `00_infrastructure_init.sql` *(Execution: ACCOUNTADMIN -> SYSADMIN)*
 2. `01_role_init.sql` *(Execution: SECURITYADMIN)*
 3. `02_grant_init.sql` *(Execution: SECURITYADMIN. NOTE: This executes the Object Role paradigm)*
 4. `03_user_init.sql` *(Execution: SECURITYADMIN)*
+5. `04_external_access.sql` *(Execution: ADMIN_ROLE per environment. NOTE: Replace API key placeholder before running!)*
+6. `05_git_integration.sql` *(Execution: ADMIN_ROLE per environment. NOTE: Replace GITHUB_PAT placeholder before running!)*
+
+---
+
+## 6. Snowflake Native Git Integration & Workspaces
+
+The architecture leverages Snowflake's native Git Integration to provide a seamless bridge between version control and the Snowflake UI.
+
+### 6.1 Git Repository Object
+A `GIT_REPOSITORY` object named `YT_SF_AGENTIC_REPO` is provisioned in the `TECH` schema to link the Snowflake account to this GitHub repository. This allows Snowflake to treat the repository as a specialized external stage.
+
+### 6.2 Key Capabilities
+*   **Direct Execution**: Assets like Snowpark Python scripts or SQL DDL can be executed directly from Git using `EXECUTE IMMEDIATE FROM @repo/branches/dev/path/to/script.sql`.
+*   **Snowflake Workspaces**: Developers can use the Snowflake Workspaces UI to browse, edit, and commit code directly back to the GitHub repository from within the Snowsight interface.
+*   **Streamlit Integration**: Streamlit applications can be deployed directly from a Git branch, ensuring the UI is always in sync with the latest code without manual uploads.
+
+### 6.3 Security Configuration
+*   **API Integration**: An account-level `API INTEGRATION` (e.g., `YT_SF_PROD_GITHUB_API_INTEGRATION`) handles the secure handshake with GitHub using a Personal Access Token (PAT) stored in `GITHUB_TOKEN_SECRET`.
+*   **Access Control**: The `YT_SF_{ENV}_ADMIN_ROLE` holds the `CREATE GIT REPOSITORY` privilege within its respective database to manage these integrations.
