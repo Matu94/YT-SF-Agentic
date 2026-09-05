@@ -86,11 +86,15 @@ if selected_teams:
 all_channels = df_channel_filtered['CHANNEL_TITLE'].dropna().unique().tolist()
 all_channels.sort()
 
-# Pre-select Top 5 channels by yesterday's daily views
-if not df_channel_filtered.empty and 'DAILY_VIEWS' in df_channel_filtered.columns:
-    # Ensure DAILY_VIEWS is numeric to prevent string-based alphabetical sorting anomalies
-    numeric_daily_views = pd.to_numeric(df_channel_filtered['DAILY_VIEWS'], errors='coerce')
-    top_5_channels = df_channel_filtered.assign(DAILY_VIEWS=numeric_daily_views).groupby('CHANNEL_TITLE')['DAILY_VIEWS'].max().nlargest(5).index.tolist()
+# Pre-select Top 5 channels by yesterday's daily views, breaking ties with total views
+if not df_channel_filtered.empty and 'DAILY_VIEWS' in df_channel_filtered.columns and 'TOTAL_VIEWS' in df_channel_filtered.columns:
+    df_temp = df_channel_filtered.copy()
+    df_temp['DAILY_VIEWS'] = pd.to_numeric(df_temp['DAILY_VIEWS'], errors='coerce')
+    df_temp['TOTAL_VIEWS'] = pd.to_numeric(df_temp['TOTAL_VIEWS'], errors='coerce')
+    
+    # Sort by daily views first, then total views for ties (e.g., when many channels have 0 daily views)
+    top_5_channels = df_temp.groupby('CHANNEL_TITLE', as_index=False).agg({'DAILY_VIEWS': 'max', 'TOTAL_VIEWS': 'max'})
+    top_5_channels = top_5_channels.sort_values(by=['DAILY_VIEWS', 'TOTAL_VIEWS'], ascending=[False, False]).head(5)['CHANNEL_TITLE'].tolist()
 else:
     top_5_channels = all_channels[:5]
 
