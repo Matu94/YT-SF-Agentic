@@ -57,7 +57,7 @@ elif metric_grain == "Rolling 7-Day Trend":
 else:
     st.info(f"📅 Displaying 30-day rolling metrics up to **{latest_date.strftime('%Y-%m-%d')}**")
 
-st.success("💡 **Tip:** We've pre-selected the **top 5 channels** based on their **daily view gains yesterday**. Use the **Hierarchy Filters** in the sidebar to explore and compare other channels!")
+st.success("💡 **Tip:** We've pre-selected the **top 5 channels** based on their **total channel-wide daily view gains yesterday**. *(Note: The charts below only aggregate views for recent videos, so their totals will appear lower than the channel's true total daily growth)*. Use the **Hierarchy Filters** in the sidebar to explore and compare other channels!")
 
 # --- Sidebar Filters (Driven by df_channel_meta) ---
 st.sidebar.header("Hierarchy Filters")
@@ -88,7 +88,9 @@ all_channels.sort()
 
 # Pre-select Top 5 channels by yesterday's daily views
 if not df_channel_filtered.empty and 'DAILY_VIEWS' in df_channel_filtered.columns:
-    top_5_channels = df_channel_filtered.groupby('CHANNEL_TITLE')['DAILY_VIEWS'].max().nlargest(5).index.tolist()
+    # Ensure DAILY_VIEWS is numeric to prevent string-based alphabetical sorting anomalies
+    numeric_daily_views = pd.to_numeric(df_channel_filtered['DAILY_VIEWS'], errors='coerce')
+    top_5_channels = df_channel_filtered.assign(DAILY_VIEWS=numeric_daily_views).groupby('CHANNEL_TITLE')['DAILY_VIEWS'].max().nlargest(5).index.tolist()
 else:
     top_5_channels = all_channels[:5]
 
