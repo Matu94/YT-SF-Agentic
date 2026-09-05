@@ -57,7 +57,7 @@ elif metric_grain == "Rolling 7-Day Trend":
 else:
     st.info(f"📅 Displaying 30-day rolling metrics up to **{latest_date.strftime('%Y-%m-%d')}**")
 
-st.success("💡 **Tip:** We've pre-selected the **top 5 performing channels** by views. Use the **Hierarchy Filters** in the sidebar to explore and compare other channels!")
+st.success("💡 **Tip:** We've pre-selected the **top 5 channels** based on their **daily view gains yesterday**. Use the **Hierarchy Filters** in the sidebar to explore and compare other channels!")
 
 # --- Sidebar Filters (Driven by df_channel_meta) ---
 st.sidebar.header("Hierarchy Filters")
@@ -86,17 +86,25 @@ if selected_teams:
 all_channels = df_channel_filtered['CHANNEL_TITLE'].dropna().unique().tolist()
 all_channels.sort()
 
-# Pre-select Top 5 channels by views
+# Pre-select Top 5 channels by yesterday's daily views
 if not df_channel_filtered.empty and 'DAILY_VIEWS' in df_channel_filtered.columns:
-    top_5_channels = df_channel_filtered.groupby('CHANNEL_TITLE')['DAILY_VIEWS'].sum().nlargest(5).index.tolist()
+    top_5_channels = df_channel_filtered.groupby('CHANNEL_TITLE')['DAILY_VIEWS'].max().nlargest(5).index.tolist()
 else:
     top_5_channels = all_channels[:5]
 
 channel_key = f"channels_{hash(tuple(all_channels))}"
 selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_5_channels, key=channel_key, help="Filtered by selected Teams. Leave empty to clear all data.")
 
+if "applied_channels" not in st.session_state:
+    st.session_state.applied_channels = top_5_channels
+
+apply_filters = st.sidebar.button("Apply Filters & Load Data", type="primary", use_container_width=True)
+
+if apply_filters:
+    st.session_state.applied_channels = selected_channels
+
 # --- Lazy Load Video Data via DuckDB Pushdown ---
-if selected_channels:
+if st.session_state.applied_channels:
     if metric_grain.startswith("Daily"):
         tbl = "RPT_VIDEO_PERFORMANCE_DAILY"
     elif metric_grain == "Rolling 7-Day Trend":
@@ -106,7 +114,7 @@ if selected_channels:
         
     try:
         # PUSHDOWN PREDICATE: only download the exact channels requested
-        df_full_filtered = load_filtered_video_data(tbl, selected_channels, days_back=40)
+        df_full_filtered = load_filtered_video_data(tbl, st.session_state.applied_channels, days_back=40)
     except Exception as e:
         st.error(f"Failed to load video metrics for selected channels. Error: {e}")
         st.stop()
