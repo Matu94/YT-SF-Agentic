@@ -187,3 +187,72 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
         return df
     except Exception as e:
         raise RuntimeError(f"DuckDB failed to fetch '{target_path}'. Details: {e}") from e
+
+@st.cache_data(ttl=3600, max_entries=5)
+def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY") -> list:
+    """
+    Fetch the top 5 channels based on the sum of DAILY_VIEWS for the latest available date.
+    Uses pushdown predicates in Snowflake or DuckDB to avoid loading the whole table.
+    """
+    table_name = table_name.upper()
+    
+    # 1. Snowflake SiS
+    try:
+        from snowflake.snowpark.context import get_active_session
+        session = get_active_session()
+        try:
+            session.use_warehouse('YT_SF_REPORTING_WH')
+        except Exception:
+            pass
+        query = f"""
+            SELECT CHANNEL_TITLE
+            FROM MART.{table_name}
+            WHERE METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM MART.{table_name})
+            GROUP BY CHANNEL_TITLE
+            ORDER BY SUM(DAILY_VIEWS) DESC NULLS LAST
+            LIMIT 5
+        """
+        df = session.sql(query).to_pandas()
+        return df['CHANNEL_TITLE'].tolist()
+    except Exception:
+        pass
+
+    # For Local and S3, use DuckDB
+    import duckdb
+    con = duckdb.connect(database=':memory:')
+    
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+    local_path = os.path.join(project_root, "data", "export", f"{table_name.lower()}.parquet")
+    
+    if os.path.exists(local_path):
+        target_path = local_path
+    else:
+        # Read from S3 via DuckDB httpfs
+        con.execute("INSTALL httpfs; LOAD httpfs;")
+        bucket_name = _get_config("S3_BUCKET_NAME", "yt-sf-metrics-data-prod")
+        aws_key = _get_config("AWS_ACCESS_KEY_ID")
+        aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")
+        aws_region = _get_config("AWS_DEFAULT_REGION", "eu-north-1")
+        target_path = f"s3://{bucket_name}/mart/{table_name.lower()}.parquet"
+        
+        if aws_key and aws_secret:
+            con.execute(f"SET s3_region='{aws_region}';")
+            con.execute(f"SET s3_access_key_id='{aws_key}';")
+            con.execute(f"SET s3_secret_access_key='{aws_secret}';")
+            
+    query = f"""
+        SELECT CHANNEL_TITLE
+        FROM read_parquet('{target_path}')
+        WHERE METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM read_parquet('{target_path}'))
+        GROUP BY CHANNEL_TITLE
+        ORDER BY SUM(DAILY_VIEWS) DESC NULLS LAST
+        LIMIT 5
+    """
+    try:
+        con.execute("SET memory_limit='256MB';")
+        df = con.execute(query).df()
+        return df['CHANNEL_TITLE'].tolist()
+    except Exception as e:
+        # Fallback empty list
+        return []
+

@@ -5,8 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import streamlit as st
 import altair as alt
 import pandas as pd
-from utils.data_loader import load_data, load_filtered_video_data
-
+from utils.data_loader import load_data, load_filtered_video_data, get_top_5_channels_from_video
 
 st.set_page_config(page_title="YT Metrics - Video Stats", layout="wide", initial_sidebar_state="expanded")
 
@@ -57,7 +56,7 @@ elif metric_grain == "Rolling 7-Day Trend":
 else:
     st.info(f"📅 Displaying 30-day rolling metrics up to **{latest_date.strftime('%Y-%m-%d')}**")
 
-st.success("💡 **Tip:** We've pre-selected the **top 5 channels** based on their **total channel-wide daily view gains yesterday**. *(Note: The charts below only aggregate views for recent videos, so their totals will appear lower than the channel's true total daily growth)*. Use the **Hierarchy Filters** in the sidebar to explore and compare other channels!")
+st.success("💡 **Tip:** We've pre-selected the **top 5 channels** based on their **total daily video views yesterday**. Use the **Hierarchy Filters** in the sidebar to explore and compare other channels!")
 
 # --- Sidebar Filters (Driven by df_channel_meta) ---
 st.sidebar.header("Hierarchy Filters")
@@ -86,16 +85,13 @@ if selected_teams:
 all_channels = df_channel_filtered['CHANNEL_TITLE'].dropna().unique().tolist()
 all_channels.sort()
 
-# Pre-select Top 5 channels by yesterday's daily views, breaking ties with total views
-if not df_channel_filtered.empty and 'DAILY_VIEWS' in df_channel_filtered.columns and 'TOTAL_VIEWS' in df_channel_filtered.columns:
-    df_temp = df_channel_filtered.copy()
-    df_temp['DAILY_VIEWS'] = pd.to_numeric(df_temp['DAILY_VIEWS'], errors='coerce')
-    df_temp['TOTAL_VIEWS'] = pd.to_numeric(df_temp['TOTAL_VIEWS'], errors='coerce')
-    
-    # Sort by daily views first, then total views for ties (e.g., when many channels have 0 daily views)
-    top_5_channels = df_temp.groupby('CHANNEL_TITLE', as_index=False).agg({'DAILY_VIEWS': 'max', 'TOTAL_VIEWS': 'max'})
-    top_5_channels = top_5_channels.sort_values(by=['DAILY_VIEWS', 'TOTAL_VIEWS'], ascending=[False, False]).head(5)['CHANNEL_TITLE'].tolist()
-else:
+# Pre-select Top 5 channels by yesterday's total video views
+top_5_channels = get_top_5_channels_from_video("RPT_VIDEO_PERFORMANCE_DAILY")
+# Ensure the top 5 are actually in the current filtered list (in case Org/Team filters are active)
+top_5_channels = [c for c in top_5_channels if c in all_channels]
+
+# If we don't have enough, or it failed, just pick from available
+if not top_5_channels:
     top_5_channels = all_channels[:5]
 
 channel_key = f"channels_{hash(tuple(all_channels))}"
