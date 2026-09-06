@@ -41,6 +41,13 @@ Our **`TECH_BKP`** schema leverages Snowflake's **Zero-Copy Cloning**.
 *   **The Concept**: Cloning a table doesn't actually copy the data—it just copies the metadata (pointers). It is instantaneous and costs **zero storage** until the data in the clone is modified.
 *   **Usage**: Our CI/CD pipeline clones tables to `TECH_BKP` before running risky migrations, providing a "safety net" that is both fast and cost-free.
 
+## 7. SCD Type 2 & Reporting Timezone Traps
+In our presentation layer views, we join historical facts (yesterday's data) to our Slowly Changing Dimensions (`dim_channel`). This introduces two critical architectural edge cases:
+
+*   **Session Timezone Misalignment:** The reporting views filter using `WHERE date_id <= DATEADD(day, -1, CURRENT_DATE())`. Because `CURRENT_DATE()` evaluates dynamically based on the querying session's timezone (which defaults to `America/Los_Angeles` if not explicitly set), a user running a report early in the morning in Europe will have `CURRENT_DATE()` evaluate to "yesterday." This causes the view to filter for "the day before yesterday," effectively hiding newly loaded data.
+    *   *Architectural Fix:* Ensure the reporting session enforces `Europe/Budapest` timezone, or hardcode the timezone conversion into the view definitions rather than relying on session variables.
+*   **The Late-Arriving Dimension Trap:** When brand new channels are continually onboarded with full historical loads, their first record in `dim_channel` receives a `valid_from` timestamp of the current load time. Because the reporting views execute an INNER JOIN requiring `f.date_id >= DATE(d.valid_from)`, all historical facts for newly added channels are silently dropped.
+    *   *Architectural Fix:* The initial dimension record for a newly onboarded channel must have its `valid_from` backdated (e.g., to `'1970-01-01'` or the channel's `published_at` date) rather than using `CURRENT_TIMESTAMP()`. This ensures historical facts can map to the initial dimension state.
+
 ---
 *Created by **Principal Data Architect** — Strategic Visionary*
-
