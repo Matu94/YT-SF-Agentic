@@ -18,4 +18,4 @@ JOIN {{ ref('dim_channel') }} c
     ON v.channel_id = c.channel_id
     AND f.date_id >= DATE(c.valid_from)
     AND f.date_id < COALESCE(DATE(c.valid_to), '9999-12-31'::DATE)
-WHERE f.date_id <= DATEADD(day, -1, CURRENT_DATE())
+WHERE f.date_id <= DATEADD(day, -1, CONVERT_TIMEZONE('UTC', 'Europe/Budapest', CURRENT_TIMESTAMP())::DATE)

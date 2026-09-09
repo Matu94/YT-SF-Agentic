@@ -9,7 +9,7 @@ WITH latest_metrics AS (
             *,
             ROW_NUMBER() OVER(PARTITION BY video_id ORDER BY date_id DESC) as rn
         FROM {{ ref('fct_daily_video_metrics') }}
-        WHERE date_id <= DATEADD(day, -1, CURRENT_DATE())
+        WHERE date_id <= DATEADD(day, -1, CONVERT_TIMEZONE('UTC', 'Europe/Budapest', CURRENT_TIMESTAMP())::DATE)
           AND total_comments IS NOT NULL
     ) sub
     WHERE rn = 1
