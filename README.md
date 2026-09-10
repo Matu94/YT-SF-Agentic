@@ -1,6 +1,6 @@
 # 🚀 YouTube Metrics Pipeline
 
-![Status](https://img.shields.io/badge/Status-In%20Development-yellow) ![Snowflake](https://img.shields.io/badge/Built%20on-Snowflake-blue?logo=snowflake&logoColor=white) ![dbt](https://img.shields.io/badge/Logic-dbt-orange?logo=dbt&logoColor=white) ![AWS S3](https://img.shields.io/badge/Storage-Amazon%20S3-FF9900?logo=amazons3&logoColor=white) ![Streamlit](https://img.shields.io/badge/Presentation-Streamlit-FF4B4B?logo=streamlit&logoColor=white) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
+![Status](https://img.shields.io/badge/Status-In%20Development-yellow) ![Snowflake](https://img.shields.io/badge/Built%20on-Snowflake-blue?logo=snowflake&logoColor=white) ![dbt](https://img.shields.io/badge/Logic-dbt-orange?logo=dbt&logoColor=white) ![AWS S3](https://img.shields.io/badge/Storage-Amazon%20S3-FF9900?logo=amazons3&logoColor=white) ![Streamlit](https://img.shields.io/badge/Presentation-Streamlit-FF4B4B?logo=streamlit&logoColor=white) ![DigitalOcean](https://img.shields.io/badge/Hosting-DigitalOcean-0080FF?logo=digitalocean&logoColor=white) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
 
 An automated, end-to-end data platform built to extract, transform, and visualize YouTube channel performance. This project isn't just about data; it's a showcase of **Agentic AI Development**—a seamless synergy between human architectural vision and AI-driven implementation.
 
