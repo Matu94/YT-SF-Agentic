@@ -177,7 +177,7 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
     """
     try:
         # Enforce memory limits to prevent DuckDB from spiking RAM on S3 downloads
-        con.execute("SET memory_limit='128MB';")
+        con.execute("SET memory_limit='1GB';")
         
         # Output as standard Pandas DataFrame to avoid PyArrow zero-copy Segmentation Faults
         # when the DuckDB connection closes and Streamlit caches the result.
@@ -250,7 +250,7 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
         LIMIT 5
     """
     try:
-        con.execute("SET memory_limit='128MB';")
+        con.execute("SET memory_limit='1GB';")
         df = con.execute(query).df()
         return df['CHANNEL_TITLE'].tolist()
     except Exception as e:
