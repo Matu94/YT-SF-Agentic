@@ -9,7 +9,7 @@ Following Kimball dimensional modeling principles and **ADR-010**, the applicati
 Data loading is fully abstracted via `streamlit/utils/data_loader.py`:
 - **Dual Sourcing Mode**:
   1. **Streamlit in Snowflake (SiS)**: Automatically detects active Snowflake session (`get_active_session()`) and queries live views in Snowflake `MART`.
-  2. **Streamlit Community Cloud / Local Static Mode**: Falls back to reading exported Parquet files directly from **AWS S3** (`s3://<bucket_name>/mart/<view_name>.parquet`) or local dev exports without needing Snowflake credentials or compute.
+  2. **DigitalOcean App Platform / Local Static Mode**: Falls back to reading exported Parquet files directly from **AWS S3** (`s3://<bucket_name>/mart/<view_name>.parquet`) or local dev exports without needing Snowflake credentials or compute.
 
 - **Presentation Views Used**:
   - `MART.RPT_CHANNEL_PERFORMANCE_DAILY`
@@ -47,5 +47,5 @@ Data loading is fully abstracted via `streamlit/utils/data_loader.py`:
 ## ⚙️ Dependencies & Deployment
 
 - **Streamlit in Snowflake (SiS)**: Uses `environment.yml` (snowflake, streamlit, pandas, altair).
-- **Streamlit Community Cloud**: Uses `requirements.txt` (streamlit, pandas, altair, pyarrow, fastparquet, s3fs).
+- **DigitalOcean App Platform**: Uses `requirements.txt` (streamlit, pandas, altair, pyarrow, fastparquet, s3fs).
 

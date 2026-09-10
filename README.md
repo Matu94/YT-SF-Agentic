@@ -73,7 +73,7 @@ This project serves as a "Living Masterclass." Explore our domain-specific guide
 *   🧡 **[dbt Essentials](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/03_dbt/dbt_essentials.md)**: Materializations, SCD Type 2, and Lineage.
 *   ⚙️ **[GitOps Principles](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/04_cicd/gitops_principles.md)**: SHA256 Idempotency and Environmental Isolation.
 *   🤖 **[AI Quota Strategy](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/01_agentic_development/ai_quotas_and_efficiency.md)**: Context caching, token budget optimization, and LLM orchestration.
-*   📊 **[Streamlit Community Cloud](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/07_presentation_layer/streamlit_cloud.md)**: Dual-mode presentation layer abstraction.
+*   📊 **[DigitalOcean App Platform](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/07_presentation_layer/streamlit_hosting.md)**: Dual-mode presentation layer abstraction.
 *   ☁️ **[AWS S3 & IAM](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/08_cloud_infrastructure/aws_s3_iam.md)**: Serverless static data hosting, IAM security, and least-privilege policies.
 
 ---

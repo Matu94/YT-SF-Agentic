@@ -42,3 +42,9 @@ Agents work best when they have a "Mental Model" of the repository. We provide t
 
 ---
 *Created by **Antigravity** — Architectural Conscience*
+
+## 7. The Agentic Pivot (Adapting to Physical Limits)
+Agentic systems must be flexible enough to pivot architecture when code optimizations exhaust physical limits.
+*   **The Scenario**: Our presentation layer on Streamlit Community Cloud (1GB RAM limit) hit severe `Out of Memory` crashes.
+*   **The Agentic Process**: We did not immediately spend money. We first attempted aggressive algorithmic optimizations (`max_entries=2`, PyArrow, DuckDB pushdown) in Option C. Only when those physical limits were mathematically proven to be insufficient did we formally adopt a new architecture.
+*   **The Pivot**: We issued `ADR-014`, migrated to DigitalOcean App Platform (2GB RAM), and instantly propagated that context shift across all documentation (`READMEs`, `streamlit_hosting.md`, `deploy_process.md`) to maintain the single source of truth for future agents.

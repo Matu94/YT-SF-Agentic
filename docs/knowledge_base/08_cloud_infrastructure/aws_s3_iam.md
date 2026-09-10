@@ -54,7 +54,7 @@ Security is paramount. We do not use the root AWS account, nor do we hardcode cr
 To maintain zero-trust security:
 
 1.  **GitHub Actions**: The `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are stored in GitHub Repository Secrets. The `export_parquet_s3.yml` workflow injects them into the runtime environment for `pandas.to_parquet` to authenticate the `PutObject` request.
-2.  **Streamlit Community Cloud**: The identical keys are stored in Streamlit's Advanced Secrets management. The `data_loader.py` script reads them via `st.secrets` to authenticate the `GetObject` request when populating the dashboard.
+2.  **DigitalOcean App Platform**: The identical keys are stored in DigitalOcean App Platform Environment Variables. The `data_loader.py` script reads them via `st.secrets` to authenticate the `GetObject` request when populating the dashboard.
 
 ## 4. Cost Efficiency
 S3 storage costs for MBs of Parquet files are effectively $0.00 per month under the AWS Free Tier, and data transfer IN is free. Data transfer OUT (Streamlit pulling from S3) is pennies compared to the cost of spinning up a Snowflake Virtual Warehouse for every user session.

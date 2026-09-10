@@ -29,7 +29,7 @@ This directory configures the GitHub Actions workflows responsible for orchestra
 3. Auto-commits the packaged state under a new `release/*` branch natively spanning from `dev` or `prod`. This branch can then be historically reviewed and subsequently merged into the main `prod` trunk.
 
 ### 3. Export Streamlit Data to S3 (`export_parquet_s3.yml`)
-**Purpose**: Decouples Snowflake compute from Streamlit Community Cloud hosting (per **ADR-010**) by extracting and statically exporting presentation views into AWS S3.
+**Purpose**: Decouples Snowflake compute from DigitalOcean App Platform hosting (per **ADR-010**) by extracting and statically exporting presentation views into AWS S3.
 
 **Triggers**:
 - Automatically on a cron schedule (`0 5 * * *` / daily at 05:00 UTC).

@@ -18,12 +18,12 @@ def _get_config(key: str, default: str | None = None) -> str | None:
 def load_data(table_name: str) -> pd.DataFrame:
     """
     Unified Data Loader for Streamlit.
-    Detects if running inside Snowflake (SiS) or Streamlit Community Cloud (S3/Parquet).
+    Detects if running inside Snowflake (SiS) or DigitalOcean App Platform (S3/Parquet).
     
     Order of Evaluation:
     1. Active Snowflake Session (Streamlit in Snowflake - SiS)
     2. Local Parquet export file (for offline local development)
-    3. AWS S3 Parquet file (Streamlit Community Cloud static mode)
+    3. AWS S3 Parquet file (DigitalOcean App Platform static mode)
     """
     table_name = table_name.upper()
 
@@ -64,7 +64,7 @@ def load_data(table_name: str) -> pd.DataFrame:
         return df
 
 
-    # 3. Read from S3 bucket (Streamlit Community Cloud)
+    # 3. Read from S3 bucket (DigitalOcean App Platform)
     bucket_name = _get_config("S3_BUCKET_NAME", "yt-sf-metrics-data-prod")
     aws_key = _get_config("AWS_ACCESS_KEY_ID")
     aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")

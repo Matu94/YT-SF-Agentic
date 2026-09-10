@@ -75,3 +75,12 @@ Even though the underlying exported `.parquet` files on S3 appeared small (~24 M
 3. **Never mutate cached data at root level**: Parse dates and data types *inside* the `@st.cache_data` loader function so transformations execute once upon load, rather than on every rapid UI interaction.
 4. **Isolate baseline aggregations**: Compute dataset-wide metadata (like channel onboarding dates) from lightweight channel-grain tables (`RPT_CHANNEL_PERFORMANCE_DAILY`) rather than scanning millions of video-grain rows.
 
+
+## 5. Epilogue: The 504 Timeout and DigitalOcean Pivot
+Despite implementing PyArrow, DuckDB pushdown, and aggressive garbage collection (`max_entries=2`, `memory_limit='128MB'`), the strict 1GB physical constraint on Streamlit Community Cloud remained a liability for multi-tenant caching. 
+
+When we migrated to a **2GB RAM container on DigitalOcean App Platform** (See [ADR-014](../../../.agents/knowledge/adr/ADR-014-migrate-streamlit-to-digitalocean.md)), we encountered a new error: `504 Gateway Timeout`.
+
+**The Root Cause:** Our `memory_limit='128MB'` choke (originally added to survive Community Cloud) artificially starved DuckDB on the new 2GB machine. DuckDB was forced to "spill to disk" when scanning the S3 Parquet file over the network. Because container disk I/O is extremely slow, the query took >60 seconds, causing DigitalOcean's load balancer to sever the connection.
+
+**The Final Fix:** Once on DigitalOcean, we removed the artificial choke and increased DuckDB's `memory_limit` to `1GB`. DuckDB was finally able to process the remote HTTP range requests entirely in memory, eliminating both the OOM crashes and the 504 timeouts.
