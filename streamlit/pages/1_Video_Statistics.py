@@ -95,7 +95,7 @@ if not top_3_channels:
     top_3_channels = all_channels[:5]
 
 channel_key = f"channels_{hash(tuple(all_channels))}"
-selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_3_channels, key=channel_key, help="Filtered by selected Teams. Leave empty to clear all data.")
+selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_3_channels, max_selections=5, key=channel_key, help="Filtered by selected Teams. Maximum 5 channels allowed.")
 
 if "applied_channels" not in st.session_state:
     st.session_state.applied_channels = top_3_channels

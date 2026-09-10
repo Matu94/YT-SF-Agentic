@@ -129,15 +129,23 @@ def load_video_trend_agg(table_name: str, selected_channels: list, days_back: in
     if not selected_channels: return pd.DataFrame()
     table_name = table_name.upper()
     metric_col = "DAILY_VIEWS"
-    if "7D" in table_name: metric_col = "ROLLING_7D_VIEWS"
-    elif "30D" in table_name: metric_col = "ROLLING_30D_VIEWS"
+    has_video_type = True
+    if "7D" in table_name: 
+        metric_col = "ROLLING_7D_VIEWS"
+        has_video_type = False
+    elif "30D" in table_name: 
+        metric_col = "ROLLING_30D_VIEWS"
+        has_video_type = False
+        
+    vt_select = ", VIDEO_TYPE" if has_video_type else ""
+    vt_group = ", VIDEO_TYPE" if has_video_type else ""
     
     channels_str = ", ".join([f"'{c.replace(chr(39), chr(39)+chr(39))}'" for c in selected_channels])
     
     try:
         from snowflake.snowpark.context import get_active_session
         session = get_active_session()
-        query = f"SELECT METRIC_DATE, CHANNEL_TITLE, VIDEO_TYPE, SUM({metric_col}) as {metric_col} FROM MART.{table_name} WHERE CHANNEL_TITLE IN ({channels_str}) AND METRIC_DATE >= DATEADD(day, -{days_back}, CURRENT_DATE()) GROUP BY METRIC_DATE, CHANNEL_TITLE, VIDEO_TYPE"
+        query = f"SELECT METRIC_DATE, CHANNEL_TITLE{vt_select}, SUM({metric_col}) as {metric_col} FROM MART.{table_name} WHERE CHANNEL_TITLE IN ({channels_str}) AND METRIC_DATE >= DATEADD(day, -{days_back}, CURRENT_DATE()) GROUP BY METRIC_DATE, CHANNEL_TITLE{vt_group}"
         df = session.sql(query).to_pandas()
         if 'METRIC_DATE' in df.columns: df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
         return df
@@ -167,7 +175,7 @@ def load_video_trend_agg(table_name: str, selected_channels: list, days_back: in
         exact_paths = [f"s3://{bucket_name}/mart/{table_name.lower()}.parquet/CHANNEL_TITLE={urllib.parse.quote(c)}/*.parquet" for c in selected_channels]
         target_path_sql = "[" + ", ".join([f"'{p}'" for p in exact_paths]) + "]"
             
-    query = f"SELECT METRIC_DATE, CHANNEL_TITLE, VIDEO_TYPE, SUM({metric_col}) as {metric_col} FROM read_parquet({target_path_sql}, hive_partitioning=1) WHERE CHANNEL_TITLE IN ({channels_str}) AND METRIC_DATE >= CURRENT_DATE() - INTERVAL {days_back} DAY GROUP BY METRIC_DATE, CHANNEL_TITLE, VIDEO_TYPE"
+    query = f"SELECT METRIC_DATE, CHANNEL_TITLE{vt_select}, SUM({metric_col}) as {metric_col} FROM read_parquet({target_path_sql}, hive_partitioning=1) WHERE CHANNEL_TITLE IN ({channels_str}) AND METRIC_DATE >= CURRENT_DATE() - INTERVAL {days_back} DAY GROUP BY METRIC_DATE, CHANNEL_TITLE{vt_group}"
     df = con.execute(query).df()
     if 'METRIC_DATE' in df.columns: df['METRIC_DATE'] = pd.to_datetime(df['METRIC_DATE'])
     return df
