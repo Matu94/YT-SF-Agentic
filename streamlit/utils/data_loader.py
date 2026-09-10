@@ -1,4 +1,5 @@
 import os
+import gc
 import pandas as pd
 import streamlit as st
 
@@ -13,7 +14,7 @@ def _get_config(key: str, default: str | None = None) -> str | None:
         val = os.getenv(key, default)
     return val.strip() if val is not None else None
 
-@st.cache_data(ttl=3600, max_entries=10)
+@st.cache_data(ttl=3600, max_entries=2)
 def load_data(table_name: str) -> pd.DataFrame:
     """
     Unified Data Loader for Streamlit.
@@ -114,7 +115,7 @@ def get_current_user_name() -> str | None:
     except Exception:
         return None
 
-@st.cache_data(ttl=3600, max_entries=5)
+@st.cache_data(ttl=3600, max_entries=2)
 def load_filtered_video_data(table_name: str, selected_channels: list, days_back: int = 40) -> pd.DataFrame:
     """
     Loads large video tables using Pushdown Predicates (DuckDB / SQL) 
@@ -176,7 +177,7 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
     """
     try:
         # Enforce memory limits to prevent DuckDB from spiking RAM on S3 downloads
-        con.execute("SET memory_limit='256MB';")
+        con.execute("SET memory_limit='128MB';")
         
         # Output as standard Pandas DataFrame to avoid PyArrow zero-copy Segmentation Faults
         # when the DuckDB connection closes and Streamlit caches the result.
@@ -188,7 +189,7 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
     except Exception as e:
         raise RuntimeError(f"DuckDB failed to fetch '{target_path}'. Details: {e}") from e
 
-@st.cache_data(ttl=3600, max_entries=5)
+@st.cache_data(ttl=3600, max_entries=2)
 def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY") -> list:
     """
     Fetch the top 5 channels based on the sum of DAILY_VIEWS for the latest available date.
@@ -249,7 +250,7 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
         LIMIT 5
     """
     try:
-        con.execute("SET memory_limit='256MB';")
+        con.execute("SET memory_limit='128MB';")
         df = con.execute(query).df()
         return df['CHANNEL_TITLE'].tolist()
     except Exception as e:
