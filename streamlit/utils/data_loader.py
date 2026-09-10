@@ -151,11 +151,16 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
     local_path = os.path.join(project_root, "data", "export", f"{table_name.lower()}.parquet")
     
     if os.path.exists(local_path):
-        # If it's a directory, it's partitioned
         if os.path.isdir(local_path):
-            target_path = f"{local_path}/**/*.parquet"
+            import urllib.parse
+            exact_paths = []
+            for c in selected_channels:
+                # Local pyarrow partitions use url encoding for special chars
+                safe_c = urllib.parse.quote(c)
+                exact_paths.append(f"{local_path}/CHANNEL_TITLE={safe_c}/*.parquet")
+            target_path_sql = "[" + ", ".join([f"'{p}'" for p in exact_paths]) + "]"
         else:
-            target_path = local_path
+            target_path_sql = f"'{local_path}'"
     else:
         # 3. Read from S3 via DuckDB httpfs
         con.execute("INSTALL httpfs; LOAD httpfs;")
@@ -164,20 +169,27 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
         aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")
         aws_region = _get_config("AWS_DEFAULT_REGION", "eu-north-1")
         
-        # We assume VIDEO_PERFORMANCE tables are hive-partitioned directories
-        target_path = f"s3://{bucket_name}/mart/{table_name.lower()}.parquet/**/*.parquet"
-        
         if aws_key and aws_secret:
             con.execute(f"SET s3_region='{aws_region}';")
             con.execute(f"SET s3_access_key_id='{aws_key}';")
             con.execute(f"SET s3_secret_access_key='{aws_secret}';")
+            
+        if "VIDEO_PERFORMANCE" in table_name:
+            import urllib.parse
+            exact_paths = []
+            for c in selected_channels:
+                safe_c = urllib.parse.quote(c)
+                exact_paths.append(f"s3://{bucket_name}/mart/{table_name.lower()}.parquet/CHANNEL_TITLE={safe_c}/*.parquet")
+            target_path_sql = "[" + ", ".join([f"'{p}'" for p in exact_paths]) + "]"
+        else:
+            target_path_sql = f"'s3://{bucket_name}/mart/{table_name.lower()}.parquet'"
             
     # Escape quotes in channel names for SQL
     channels_str = ", ".join([f"'{c.replace(chr(39), chr(39)+chr(39))}'" for c in selected_channels])
     
     query = f"""
         SELECT * 
-        FROM read_parquet('{target_path}', hive_partitioning=1)
+        FROM read_parquet({target_path_sql}, hive_partitioning=1)
         WHERE CHANNEL_TITLE IN ({channels_str})
           AND METRIC_DATE >= CURRENT_DATE() - INTERVAL {days_back} DAY
     """
