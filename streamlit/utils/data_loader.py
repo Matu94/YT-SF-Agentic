@@ -115,6 +115,15 @@ def get_current_user_name() -> str | None:
     except Exception:
         return None
 
+@st.cache_resource
+def get_duckdb_connection():
+    import duckdb
+    con = duckdb.connect(database=':memory:')
+    con.execute("INSTALL httpfs; LOAD httpfs;")
+    con.execute("SET enable_http_metadata_cache=true;")
+    con.execute("SET enable_object_cache=true;")
+    return con
+
 @st.cache_data(ttl=3600, max_entries=2)
 def load_filtered_video_data(table_name: str, selected_channels: list, days_back: int = 40) -> pd.DataFrame:
     """
@@ -144,8 +153,7 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
         pass
 
     # For Local and S3, use DuckDB
-    import duckdb
-    con = duckdb.connect(database=':memory:')
+    con = get_duckdb_connection()
     
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     local_path = os.path.join(project_root, "data", "export", f"{table_name.lower()}.parquet")
@@ -163,7 +171,6 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
             target_path_sql = f"'{local_path}'"
     else:
         # 3. Read from S3 via DuckDB httpfs
-        con.execute("INSTALL httpfs; LOAD httpfs;")
         bucket_name = _get_config("S3_BUCKET_NAME", "yt-sf-metrics-data-prod")
         aws_key = _get_config("AWS_ACCESS_KEY_ID")
         aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")
@@ -208,10 +215,10 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
         raise RuntimeError(f"DuckDB failed to fetch '{target_path}'. Details: {e}") from e
 
 @st.cache_data(ttl=3600, max_entries=2)
-def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY") -> list:
+def get_top_n_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY", n: int = 3) -> list:
     """
-    Fetch the top 5 channels based on the sum of DAILY_VIEWS for the latest available date.
-    Uses pushdown predicates in Snowflake or DuckDB to avoid loading the whole table.
+    Fetch the top N channels based on the sum of DAILY_VIEWS for the latest available date.
+    Uses the pre-aggregated channel table for blazing fast global queries.
     """
     table_name = table_name.upper()
     
@@ -228,7 +235,7 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
             FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY
             WHERE METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY)
             ORDER BY DAILY_VIEWS DESC NULLS LAST
-            LIMIT 5
+            LIMIT {n}
         """
         df = session.sql(query).to_pandas()
         return df['CHANNEL_TITLE'].tolist()
@@ -236,8 +243,7 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
         pass
 
     # For Local and S3, use DuckDB
-    import duckdb
-    con = duckdb.connect(database=':memory:')
+    con = get_duckdb_connection()
     
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
     local_path = os.path.join(project_root, "data", "export", "rpt_channel_performance_daily.parquet")
@@ -246,7 +252,6 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
         target_path = local_path
     else:
         # Read from S3 via DuckDB httpfs
-        con.execute("INSTALL httpfs; LOAD httpfs;")
         bucket_name = _get_config("S3_BUCKET_NAME", "yt-sf-metrics-data-prod")
         aws_key = _get_config("AWS_ACCESS_KEY_ID")
         aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")
@@ -263,7 +268,7 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
         FROM read_parquet('{target_path}')
         WHERE METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM read_parquet('{target_path}'))
         ORDER BY DAILY_VIEWS DESC NULLS LAST
-        LIMIT 5
+        LIMIT {n}
     """
     try:
         con.execute("SET memory_limit='1GB';")

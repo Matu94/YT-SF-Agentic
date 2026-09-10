@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import streamlit as st
 import altair as alt
 import pandas as pd
-from utils.data_loader import load_data, load_filtered_video_data, get_top_5_channels_from_video
+from utils.data_loader import load_data, load_filtered_video_data, get_top_n_channels_from_video
 
 st.set_page_config(page_title="YT Metrics - Video Stats", layout="wide", initial_sidebar_state="expanded")
 
@@ -56,7 +56,7 @@ elif metric_grain == "Rolling 7-Day Trend":
 else:
     st.info(f"📅 Displaying 30-day rolling metrics up to **{latest_date.strftime('%Y-%m-%d')}**")
 
-st.success("💡 **Tip:** We've pre-selected the **top 5 channels** based on their **total daily video views yesterday**. Use the **Hierarchy Filters** in the sidebar to explore and compare other channels!")
+st.success("💡 **Tip:** We've pre-selected the **top 3 channels** based on their **total daily video views yesterday**. Use the **Hierarchy Filters** in the sidebar to explore and compare other channels!")
 
 # --- Sidebar Filters (Driven by df_channel_meta) ---
 st.sidebar.header("Hierarchy Filters")
@@ -86,19 +86,19 @@ all_channels = df_channel_filtered['CHANNEL_TITLE'].dropna().unique().tolist()
 all_channels.sort()
 
 # Pre-select Top 5 channels by yesterday's total video views
-top_5_channels = get_top_5_channels_from_video("RPT_VIDEO_PERFORMANCE_DAILY")
+top_3_channels = get_top_n_channels_from_video("RPT_VIDEO_PERFORMANCE_DAILY", n=3)
 # Ensure the top 5 are actually in the current filtered list (in case Org/Team filters are active)
-top_5_channels = [c for c in top_5_channels if c in all_channels]
+top_3_channels = [c for c in top_3_channels if c in all_channels]
 
 # If we don't have enough, or it failed, just pick from available
-if not top_5_channels:
-    top_5_channels = all_channels[:5]
+if not top_3_channels:
+    top_3_channels = all_channels[:5]
 
 channel_key = f"channels_{hash(tuple(all_channels))}"
-selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_5_channels, key=channel_key, help="Filtered by selected Teams. Leave empty to clear all data.")
+selected_channels = st.sidebar.multiselect("Channels", options=all_channels, default=top_3_channels, key=channel_key, help="Filtered by selected Teams. Leave empty to clear all data.")
 
 if "applied_channels" not in st.session_state:
-    st.session_state.applied_channels = top_5_channels
+    st.session_state.applied_channels = top_3_channels
 
 apply_filters = st.sidebar.button("Apply Filters & Load Data", type="primary", use_container_width=True)
 
