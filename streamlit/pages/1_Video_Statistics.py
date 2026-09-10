@@ -5,7 +5,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 import streamlit as st
 import altair as alt
 import pandas as pd
-from utils.data_loader import load_data, load_filtered_video_data, get_top_n_channels_from_video
+from utils.data_loader import load_data, load_video_trend_agg, load_video_snapshot_top, get_top_n_channels_from_video
 
 st.set_page_config(page_title="YT Metrics - Video Stats", layout="wide", initial_sidebar_state="expanded")
 
@@ -115,38 +115,40 @@ if st.session_state.applied_channels:
         tbl = "RPT_VIDEO_PERFORMANCE_ROLLING_30D"
         
     try:
-        # PUSHDOWN PREDICATE: only download the exact channels requested
-        df_full_filtered = load_filtered_video_data(tbl, st.session_state.applied_channels, days_back=40)
+        df_trend_agg = load_video_trend_agg(tbl, st.session_state.applied_channels, days_back=40)
+        df_latest_raw = load_video_snapshot_top(tbl, st.session_state.applied_channels)
     except Exception as e:
         st.error(f"Failed to load video metrics for selected channels. Error: {e}")
         st.stop()
 else:
-    df_full_filtered = pd.DataFrame()
+    df_trend_agg = pd.DataFrame()
+    df_latest_raw = pd.DataFrame()
 
 # 4. Video Type Filter (Conditional based on fetched video data)
-if not df_full_filtered.empty and 'VIDEO_TYPE' in df_full_filtered.columns:
+if not df_latest_raw.empty and 'VIDEO_TYPE' in df_latest_raw.columns:
     st.sidebar.header("Content Filters")
-    df_latest_types = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
-    all_video_types = df_latest_types['VIDEO_TYPE'].dropna().unique().tolist()
+    all_video_types = df_latest_raw['VIDEO_TYPE'].dropna().unique().tolist()
     all_video_types.sort()
     
     type_key = f"video_types_{hash(tuple(all_video_types))}"
     selected_video_types = st.sidebar.multiselect("Video Types", options=all_video_types, default=all_video_types, key=type_key)
     
     if selected_video_types:
-        df_full_filtered = df_full_filtered[df_full_filtered['VIDEO_TYPE'].isin(selected_video_types)]
+        df_trend_agg = df_trend_agg[df_trend_agg['VIDEO_TYPE'].isin(selected_video_types)]
+        df_latest_raw = df_latest_raw[df_latest_raw['VIDEO_TYPE'].isin(selected_video_types)]
     else:
-        df_full_filtered = df_full_filtered.iloc[0:0]
+        df_trend_agg = df_trend_agg.iloc[0:0]
+        df_latest_raw = df_latest_raw.iloc[0:0]
 
 # --- Main Content ---
 st.divider()
 
-if df_full_filtered.empty:
+if df_trend_agg.empty or df_latest_raw.empty:
     st.warning("No data found for the selected filters.")
     st.stop()
 
 # For calculations that only make sense on the latest date (like total current views or daily sum)
-df_latest_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] == latest_date]
+df_latest_filtered = df_latest_raw
 
 # Calculate baseline dates for channels to prevent "onboarding spikes" in trend aggregations
 @st.cache_data
@@ -187,7 +189,7 @@ elif metric_grain in ["Daily - Past 7 Days Trend", "Daily - Past 30 Days Trend"]
     st.subheader(f"Discrete Daily Views Trend ({days_to_sub + 1} Days)")
     st.markdown(f"Displays the day-by-day discrete view gains over the past {days_to_sub + 1} days.")
     
-    df_trend_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] >= start_date]
+    df_trend_filtered = df_trend_agg[df_trend_agg['METRIC_DATE'] >= start_date]
     
     # Filter out baseline dates
     df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['CHANNEL_TITLE'].map(baseline_map)]
@@ -221,7 +223,7 @@ elif metric_grain == "Rolling 7-Day Trend":
     st.markdown("Displays the 7-day rolling sum of views over the past 7 days for the selected channels.")
     
     seven_days_ago = latest_date - pd.Timedelta(days=6)
-    df_trend_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] >= seven_days_ago]
+    df_trend_filtered = df_trend_agg[df_trend_agg['METRIC_DATE'] >= seven_days_ago]
     
     # Filter out baseline dates
     df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['CHANNEL_TITLE'].map(baseline_map)]
@@ -255,7 +257,7 @@ else:
     st.markdown("Displays the 30-day rolling sum of views over the past 30 days for the selected channels.")
     
     thirty_days_ago = latest_date - pd.Timedelta(days=29)
-    df_trend_filtered = df_full_filtered[df_full_filtered['METRIC_DATE'] >= thirty_days_ago]
+    df_trend_filtered = df_trend_agg[df_trend_agg['METRIC_DATE'] >= thirty_days_ago]
     
     # Filter out baseline dates
     df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['CHANNEL_TITLE'].map(baseline_map)]
@@ -297,7 +299,7 @@ if metric_grain.startswith("Daily"):
     else:
         days_to_sub = 6 if metric_grain == "Daily - Past 7 Days Trend" else 29
         start_date = latest_date - pd.Timedelta(days=days_to_sub)
-        df_target = df_full_filtered[df_full_filtered['METRIC_DATE'] >= start_date]
+        df_target = df_latest_raw
         
         # Filter out baseline dates to prevent skewing the period views
         df_target = df_target[df_target['METRIC_DATE'] > df_target['CHANNEL_TITLE'].map(baseline_map)]
