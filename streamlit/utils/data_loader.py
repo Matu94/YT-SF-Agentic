@@ -151,7 +151,11 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
     local_path = os.path.join(project_root, "data", "export", f"{table_name.lower()}.parquet")
     
     if os.path.exists(local_path):
-        target_path = local_path
+        # If it's a directory, it's partitioned
+        if os.path.isdir(local_path):
+            target_path = f"{local_path}/**/*.parquet"
+        else:
+            target_path = local_path
     else:
         # 3. Read from S3 via DuckDB httpfs
         con.execute("INSTALL httpfs; LOAD httpfs;")
@@ -159,7 +163,9 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
         aws_key = _get_config("AWS_ACCESS_KEY_ID")
         aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")
         aws_region = _get_config("AWS_DEFAULT_REGION", "eu-north-1")
-        target_path = f"s3://{bucket_name}/mart/{table_name.lower()}.parquet"
+        
+        # We assume VIDEO_PERFORMANCE tables are hive-partitioned directories
+        target_path = f"s3://{bucket_name}/mart/{table_name.lower()}.parquet/**/*.parquet"
         
         if aws_key and aws_secret:
             con.execute(f"SET s3_region='{aws_region}';")
@@ -171,7 +177,7 @@ def load_filtered_video_data(table_name: str, selected_channels: list, days_back
     
     query = f"""
         SELECT * 
-        FROM read_parquet('{target_path}')
+        FROM read_parquet('{target_path}', hive_partitioning=1)
         WHERE CHANNEL_TITLE IN ({channels_str})
           AND METRIC_DATE >= CURRENT_DATE() - INTERVAL {days_back} DAY
     """
@@ -226,7 +232,10 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
     local_path = os.path.join(project_root, "data", "export", f"{table_name.lower()}.parquet")
     
     if os.path.exists(local_path):
-        target_path = local_path
+        if os.path.isdir(local_path):
+            target_path = f"{local_path}/**/*.parquet"
+        else:
+            target_path = local_path
     else:
         # Read from S3 via DuckDB httpfs
         con.execute("INSTALL httpfs; LOAD httpfs;")
@@ -234,7 +243,7 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
         aws_key = _get_config("AWS_ACCESS_KEY_ID")
         aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")
         aws_region = _get_config("AWS_DEFAULT_REGION", "eu-north-1")
-        target_path = f"s3://{bucket_name}/mart/{table_name.lower()}.parquet"
+        target_path = f"s3://{bucket_name}/mart/{table_name.lower()}.parquet/**/*.parquet"
         
         if aws_key and aws_secret:
             con.execute(f"SET s3_region='{aws_region}';")
@@ -243,8 +252,8 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
             
     query = f"""
         SELECT CHANNEL_TITLE
-        FROM read_parquet('{target_path}')
-        WHERE METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM read_parquet('{target_path}'))
+        FROM read_parquet('{target_path}', hive_partitioning=1)
+        WHERE METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM read_parquet('{target_path}', hive_partitioning=1))
         GROUP BY CHANNEL_TITLE
         ORDER BY SUM(DAILY_VIEWS) DESC NULLS LAST
         LIMIT 5

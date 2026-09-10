@@ -134,14 +134,24 @@ def main():
             
             # Upload directly to S3 via Pandas and s3fs
             s3_path = f"s3://{bucket_name}/mart/{view.lower()}.parquet"
-            print(f"     -> Uploading to {s3_path} ({len(df)} rows)")
-            
-            df.to_parquet(
-                s3_path, 
-                index=False,
-                engine="pyarrow",
-                storage_options=storage_options
-            )
+            if "VIDEO_PERFORMANCE" in view:
+                print(f"     -> Uploading to {s3_path} partitioned by CHANNEL_TITLE ({len(df)} rows)")
+                df.to_parquet(
+                    s3_path, 
+                    index=False,
+                    engine="pyarrow",
+                    partition_cols=["CHANNEL_TITLE"],
+                    storage_options=storage_options,
+                    existing_data_behavior="delete_matching"
+                )
+            else:
+                print(f"     -> Uploading to {s3_path} ({len(df)} rows)")
+                df.to_parquet(
+                    s3_path, 
+                    index=False,
+                    engine="pyarrow",
+                    storage_options=storage_options
+                )
             print("     ✓ Done.")
             
         print("\n✅ All presentation views exported successfully!")
