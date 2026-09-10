@@ -213,10 +213,9 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
             pass
         query = f"""
             SELECT CHANNEL_TITLE
-            FROM MART.{table_name}
-            WHERE METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM MART.{table_name})
-            GROUP BY CHANNEL_TITLE
-            ORDER BY SUM(DAILY_VIEWS) DESC NULLS LAST
+            FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY
+            WHERE METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM MART.RPT_CHANNEL_PERFORMANCE_DAILY)
+            ORDER BY DAILY_VIEWS DESC NULLS LAST
             LIMIT 5
         """
         df = session.sql(query).to_pandas()
@@ -229,13 +228,10 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
     con = duckdb.connect(database=':memory:')
     
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-    local_path = os.path.join(project_root, "data", "export", f"{table_name.lower()}.parquet")
+    local_path = os.path.join(project_root, "data", "export", "rpt_channel_performance_daily.parquet")
     
     if os.path.exists(local_path):
-        if os.path.isdir(local_path):
-            target_path = f"{local_path}/**/*.parquet"
-        else:
-            target_path = local_path
+        target_path = local_path
     else:
         # Read from S3 via DuckDB httpfs
         con.execute("INSTALL httpfs; LOAD httpfs;")
@@ -243,7 +239,7 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
         aws_key = _get_config("AWS_ACCESS_KEY_ID")
         aws_secret = _get_config("AWS_SECRET_ACCESS_KEY")
         aws_region = _get_config("AWS_DEFAULT_REGION", "eu-north-1")
-        target_path = f"s3://{bucket_name}/mart/{table_name.lower()}.parquet/**/*.parquet"
+        target_path = f"s3://{bucket_name}/mart/rpt_channel_performance_daily.parquet"
         
         if aws_key and aws_secret:
             con.execute(f"SET s3_region='{aws_region}';")
@@ -252,10 +248,9 @@ def get_top_5_channels_from_video(table_name: str = "RPT_VIDEO_PERFORMANCE_DAILY
             
     query = f"""
         SELECT CHANNEL_TITLE
-        FROM read_parquet('{target_path}', hive_partitioning=1)
-        WHERE METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM read_parquet('{target_path}', hive_partitioning=1))
-        GROUP BY CHANNEL_TITLE
-        ORDER BY SUM(DAILY_VIEWS) DESC NULLS LAST
+        FROM read_parquet('{target_path}')
+        WHERE METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM read_parquet('{target_path}'))
+        ORDER BY DAILY_VIEWS DESC NULLS LAST
         LIMIT 5
     """
     try:
