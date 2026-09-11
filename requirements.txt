@@ -1,0 +1,8 @@
+streamlit
+pandas
+altair
+pyarrow
+fastparquet
+s3fs
+fsspec
+duckdb

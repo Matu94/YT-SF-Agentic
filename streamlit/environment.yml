@@ -1,0 +1,13 @@
+name: yt_metrics_app
+channels:
+  - snowflake
+dependencies:
+  - streamlit
+  - snowflake-snowpark-python
+  - pandas
+  - altair
+  - pyarrow
+  - fastparquet
+  - fsspec
+  - s3fs
+  - duckdb

@@ -1,0 +1,19 @@
+version: 2
+
+sources:
+  - name: raw_youtube
+    schema: RAW
+    description: "Raw parsed JSON payloads from the YouTube API"
+    tables:
+      - name: v_youtube_parsed_channels
+        description: "Parsed channel metrics containing JSON extracted fields."
+        columns:
+          - name: channel_id
+            tests:
+              - not_null
+      - name: v_youtube_parsed_videos
+        description: "Parsed video metrics containing JSON extracted fields."
+        columns:
+          - name: video_id
+            tests:
+              - not_null

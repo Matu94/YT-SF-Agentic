@@ -1,11 +1,21 @@
-.env
-snowflake_changed_files.txt
-.snowflake_last_deploy_commit
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
 venv/
+.env
+changed_files.txt
+.snowflake_last_deploy_commit
+.snowflake/
+
+
+
 # --- macOS ---
 .DS_Store
 .AppleDouble
 .LSOverride
+
 
 # Icon must end with two \r
 Icon
@@ -53,3 +63,9 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+
+# Ignore dbt artifacts
+target/
+dbt_modules/
+logs/

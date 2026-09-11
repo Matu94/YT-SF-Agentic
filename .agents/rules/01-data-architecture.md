@@ -2,22 +2,26 @@
 
 ## 1. Snowflake Environment Architecture
 **Database and Schema Design:**
-To align with the Phase 1 scope, the foundation will initially rely on a single Production database. Development and Testing environments will be introduced in future phases as the pipeline matures.
+The foundation relies on two core environments: Development (`DEV`) and Production (`PROD`).
 
-*   **Production Environment (Phase 1):**
-    *   Database: `YT_SF_PROD`
+*   **Environments:**
+    *   Databases: `YT_SF_DEV` and `YT_SF_PROD`
     *   Schemas (all configured `WITH MANAGED ACCESS` for centralized privilege control):
-        *   `LANDING` (Layer 1): Transient landing area for the Python extraction script. Stores raw API responses and uses a delete/insert method for 1-2x daily updates.
+        *   `LANDING` (Layer 1): Transient landing area for Snowpark Python Stored Procedures. Stores raw API responses and uses a delete/insert method for 1-2x daily updates.
         *   `RAW` (Layer 2): Persistent historical storage layer. Stores all data including historical loads, updating existing records from the `LANDING` layer.
         *   `STAGING` (Layer 3): Processing layer where required calculations are performed and correct column formats/data types are applied.
         *   `MART` (Layer 4): Presentation layer for different visualizations (e.g., Streamlit). *Note: As the project is currently simple, these visualization models can essentially be lightweight views built directly on top of Layer 3.*
+        *   `TECH` (Infrastructure): CI/CD deployment tracking, External Network Access objects (Secrets, Network Rules).
+        *   `TECH_BKP` (Infrastructure): Backup sandbox for both manual snapshots and automated pre-migration backups. The CI/CD pipeline clones existing objects here before destructive DDL changes (e.g., adding a column, recreating a table), enabling data to be read back and re-ingested during a rollback. `CICD_ROLE` has full access; `LOAD_ROLE` and `TRANSFORM_ROLE` have no access.
 
 **Warehouse & Compute Strategy:**
-To ensure workload isolation and prevent concurrency bottlenecks, compute is split across three dedicated **X-Small (X-SMALL)** Virtual Warehouses with 60-second auto-suspend:
-*   `YT_SF_CICD_WH`: For automated deployments and CI/CD pipelines.
+To ensure workload isolation and prevent concurrency bottlenecks, compute is split across five dedicated **X-Small (X-SMALL)** Virtual Warehouses with 60-second auto-suspend:
+*   `YT_SF_CICD_WH`: For automated deployments and CI/CD orchestration.
+*   `YT_SF_LOAD_WH`: Dedicated compute for Snowflake Tasks running Snowpark Python Stored Procedures to extract API data into Landing.
 *   `YT_SF_TRANSFORM_WH`: For dbt transformations and analytical querying.
+*   `YT_SF_REPORTING_WH`: Dedicated compute for BI tools and Streamlit visualizations to prevent querying from slowing down ETL tasks.
 *   `YT_SF_ADMIN_WH`: For database administration and maintenance.
-*Cost Controls:* Each warehouse is strictly bound by its own Resource Monitor (`YT_SF_CICD_RM`, etc.), capping spend at ~5 EUR per month.
+*Cost Controls:* Each warehouse is strictly bound by its own Resource Monitor (`YT_SF_CICD_RM`, `YT_SF_LOAD_RM`, `YT_SF_TRANSFORM_RM`, `YT_SF_REPORTING_RM`, `YT_SF_ADMIN_RM`), capping spending based on workload requirements (5 Credits/~5 EUR/month for CI/CD & Admin; 15 Credits/~15 EUR/month for Load, Transform, and Reporting to support project growth).
 
 ## 2. Data Modeling Strategy (dbt Layer)
 The pipeline will adopt a Kimball Dimensional Modeling approach (Star Schema) in the presentation layer.
@@ -30,16 +34,21 @@ The pipeline will adopt a Kimball Dimensional Modeling approach (Star Schema) in
     *   **Facts (Metrics):**
         *   `fct_daily_channel_metrics`: Captures channel-level metrics (e.g., total subscribers and calculated daily subscriber growth).
         *   `fct_daily_video_metrics`: Captures video-level engagement (e.g., views, likes, comments).
+        *   `fct_rolling_7d_channel_metrics`: Pre-aggregates trailing 7-day channel performance (`rolling_7d_subscriber_growth`, `rolling_7d_views`).
+        *   `fct_rolling_7d_video_metrics`: Pre-aggregates trailing 7-day video performance (`rolling_7d_views`, `rolling_7d_likes`, `rolling_7d_comments`).
+    *   **Presentation Views (OBT):**
+        *   `rpt_channel_performance_daily` & `rpt_video_performance_daily`: Fully denormalized daily OBT views for Streamlit dashboards.
+        *   `rpt_channel_performance_rolling_7d` & `rpt_video_performance_rolling_7d`: Fully denormalized rolling 7-day OBT views for weekly trend dashboards.
 
 *   **Data Flow & Processing Logic:**
     1.  **Hierarchy Integration:** Organizational mapping (Organization > Team) is maintained via a `channels_hierarchy.csv` seed in dbt.
-    2.  **Landing & Raw:** Python extracts push cumulative API metrics into `LANDING` transient tables. dbt merges this into the persistent `RAW` history.
-    3.  **Staging (The Delta Calculation):** Because the YouTube API provides cumulative lifetime totals, the `STAGING` layer takes on the heavy lifting of calculating daily discrete performance. It will use window functions (e.g., `LAG()`) over the recorded `RAW` history to calculate daily deltas (e.g., `Today - Yesterday = Daily Growth`).
-    4.  **Mart Aggregation:** In the `MART` layer, fact models join the clean `STAGING` metrics against the active SCD `dim_channel` records to feed the Streamlit dashboards efficiently.
+    2.  **Landing & Raw:** Snowflake Tasks execute Python Stored Procedures to pull cumulative API metrics directly into `LANDING` transient tables. dbt then merges this into the persistent `RAW` history. Timezone execution is explicitly configured to `Europe/Budapest` at the account/user level.
+    3.  **Staging (Delta Calculation & Metric Bounding):** Because the YouTube API provides cumulative lifetime totals, the `STAGING` layer calculates daily discrete performance using `LAG()` window functions over `RAW` history. To prevent metrics from mapping prior to a video's actual publication date during intra-day runs, `metric_date` is lower-bounded using `GREATEST(DATEADD(day, -1, CAST(extracted_at AS DATE)), CAST(CONVERT_TIMEZONE('UTC', 'Europe/Budapest', published_at) AS DATE))`.
+    4.  **Mart Aggregation:** In the `MART` layer, fact models and pre-computed rolling 7-day models join clean `STAGING` metrics against SCD `dim_channel` records to feed Streamlit dashboards efficiently without query-time aggregation overhead.
 
 ## 3. Historical Backfill Mechanism
 To safely onboard historical video and channel data as requested in the PRD:
-*   **Separate Extraction Logic:** A dedicated backfill parameter or routine in the Python script will allow targeted retrieval of historical dates, bypassing the daily incremental logic.
+*   **Separate Extraction Logic:** A dedicated backfill parameter or routine in the Snowpark Python Stored Procedure will allow targeted retrieval of historical dates, bypassing the daily incremental logic.
 *   **Target Landing:** Historical data lands in the transient `LANDING` tables but will be tagged with a load-type metadata column (e.g., `_load_type = 'backfill'`). dbt will then merge it into the historical `RAW` tables.
 *   **Idempotent Modeling:** The dbt models (specifically those built incrementally) will enforce idempotency using standard `unique_key` configurations (e.g., `['date', 'channel_id']`). When historical data arrives, dbt's next daily run will perform a seamless MERGE/UPSERT into the target tables, backfilling past dates without disrupting or duplicating the daily load.
 
@@ -58,7 +67,8 @@ All dbt development must enforce strict naming conventions and quality checks:
 *   **Role-Based Access Control (RBAC):** The environment implements a rigorous Snowflake RBAC model separating schema-level Object Roles (`_SR`, `_SW`, `_SFULL`) from broad Functional Roles:
     *   `YT_SF_ADMIN_ROLE`: Top-level governance (maps to SYSADMIN).
     *   `YT_SF_CICD_ROLE`: Pipeline deployment orchestration.
-    *   `YT_SF_LOAD_ROLE`: Granted Write/Full access *only* to the `LANDING` schema for Python ingestion scripts.
+    *   `YT_SF_LOAD_ROLE`: Granted Write/Full access *only* to the `LANDING` schema. It natively owns and executes the Stored Procedures and Tasks.
     *   `YT_SF_TRANSFORM_ROLE`: Granted Write/Full access to `RAW`, `STAGING`, and `MART` for dbt operations.
+    *   `YT_SF_REPORTING_ROLE`: Granted Read access (`_SR`) strictly to the `MART` schema to isolate BI queries.
 *   **Authentication (Key-Pair):** Passwords are intentionally disabled for machine service users (`YT_SF_CICD_USER`, `YT_SF_LOAD_USER`, `YT_SF_DBT_USER`) in favor of RSA Key-Pair authentication.
-*   **No Hardcoded Credentials:** Under no circumstances will any API keys, Snowflake passphrases, or sensitive connection strings be hardcoded into Python source code, dbt profiles, or Streamlit configurations. They must be injected securely via environment variables or secret managers.
+*   **External Network Access & Secrets:** The YouTube API key must **never** be hardcoded. It will be securely stored natively inside a Snowflake `SECRET` object. A Snowflake `NETWORK RULE` and `EXTERNAL ACCESS INTEGRATION` will be bound to this secret, granting the Python Stored Procedure highly governed outbound access to the YouTube API.
