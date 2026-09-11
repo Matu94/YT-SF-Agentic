@@ -115,8 +115,9 @@ if st.session_state.applied_channels:
         tbl = "RPT_VIDEO_PERFORMANCE_ROLLING_30D"
         
     try:
-        df_trend_agg = load_video_trend_agg(tbl, st.session_state.applied_channels, days_back=40)
-        df_latest_raw = load_video_snapshot_top(tbl, st.session_state.applied_channels)
+        with st.spinner("Crunching video metrics from the data lake..."):
+            df_trend_agg = load_video_trend_agg(tbl, st.session_state.applied_channels, days_back=40)
+            df_latest_raw = load_video_snapshot_top(tbl, st.session_state.applied_channels)
     except Exception as e:
         st.error(f"Failed to load video metrics for selected channels. Error: {e}")
         st.stop()
@@ -158,252 +159,277 @@ def compute_baseline_map():
 
 baseline_map = compute_baseline_map()
 
+# --- KPI Summary Cards ---
+total_channels_kpi = df_latest_filtered['CHANNEL_TITLE'].nunique()
+total_videos_kpi = len(df_latest_filtered)
+
 if metric_grain == "Daily - Yesterday Snapshot":
-    st.subheader("Aggregated Views per Channel")
-    st.markdown("Shows the total sum of daily views for the selected channels and video types on the snapshot date.")
-
-    channel_agg = df_latest_filtered.groupby('CHANNEL_TITLE', as_index=False).agg({
-        'DAILY_VIEWS': 'sum',
-        'VIDEO_ID': 'nunique'
-    }).rename(columns={'VIDEO_ID': 'VIDEO_COUNT'})
-
-    chart = alt.Chart(channel_agg).mark_bar().encode(
-        x=alt.X('CHANNEL_TITLE:N', title='Channel', sort='-y'),
-        y=alt.Y('DAILY_VIEWS:Q', title='Period Views (Aggregated)'),
-        color=alt.Color('CHANNEL_TITLE:N', legend=None),
-        tooltip=[
-            alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
-            alt.Tooltip('DAILY_VIEWS:Q', title='Period Views (Aggregated)'),
-            alt.Tooltip('VIDEO_COUNT:Q', title='Video Count')
-        ]
-    ).properties(
-        height=450
-    ).interactive()
-
-    st.altair_chart(chart, use_container_width=True)
-
-elif metric_grain in ["Daily - Past 7 Days Trend", "Daily - Past 30 Days Trend"]:
+    period_views_kpi = df_latest_filtered['DAILY_VIEWS'].sum()
+    kpi_label = "Total Views (Yesterday)"
+elif metric_grain == "Rolling 7-Day Trend":
+    period_views_kpi = df_latest_filtered['ROLLING_7D_VIEWS'].sum()
+    kpi_label = "Total Views (Rolling 7-Day)"
+elif metric_grain == "Rolling 30-Day Trend":
+    period_views_kpi = df_latest_filtered['ROLLING_30D_VIEWS'].sum()
+    kpi_label = "Total Views (Rolling 30-Day)"
+else:
     days_to_sub = 6 if metric_grain == "Daily - Past 7 Days Trend" else 29
     start_date = latest_date - pd.Timedelta(days=days_to_sub)
-    
-    st.subheader(f"Discrete Daily Views Trend ({days_to_sub + 1} Days)")
-    st.markdown(f"Displays the day-by-day discrete view gains over the past {days_to_sub + 1} days.")
-    
-    df_trend_filtered = df_trend_agg[df_trend_agg['METRIC_DATE'] >= start_date]
-    
-    # Filter out baseline dates
-    df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['CHANNEL_TITLE'].map(baseline_map)]
-    
-    trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
-        'DAILY_VIEWS': 'sum'
-    })
-    
-    if trend_data['CHANNEL_TITLE'].nunique() > 10:
-        st.warning("⚠️ **More than 10 channels selected.** Charting aggregate network trend to prevent visual clutter and performance issues.")
-        trend_data = trend_data.groupby('METRIC_DATE', as_index=False).agg({'DAILY_VIEWS': 'sum'})
-        trend_data['CHANNEL_TITLE'] = 'Aggregate Selection'
-    
-    line_chart = alt.Chart(trend_data).mark_line(point=True).encode(
-        x=alt.X('METRIC_DATE:T', title='Date'),
-        y=alt.Y('DAILY_VIEWS:Q', title='Daily Views'),
-        color=alt.Color('CHANNEL_TITLE:N', title='Channel'),
-        tooltip=[
-            alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
-            alt.Tooltip('METRIC_DATE:T', title='Date', format='%Y-%m-%d'),
-            alt.Tooltip('DAILY_VIEWS:Q', title='Daily Views', format=',')
-        ]
-    ).properties(
-        height=450
-    ).interactive()
+    df_trend_filtered_kpi = df_trend_agg[df_trend_agg['METRIC_DATE'] >= start_date]
+    df_trend_filtered_kpi = df_trend_filtered_kpi[df_trend_filtered_kpi['METRIC_DATE'] > df_trend_filtered_kpi['CHANNEL_TITLE'].map(baseline_map)]
+    period_views_kpi = df_trend_filtered_kpi['DAILY_VIEWS'].sum()
+    kpi_label = f"Total Views (Selected {days_to_sub+1} Days)"
 
-    st.altair_chart(line_chart, use_container_width=True)
-
-elif metric_grain == "Rolling 7-Day Trend":
-    st.subheader("Rolling 7-Day Views Trend")
-    st.markdown("Displays the 7-day rolling sum of views over the past 7 days for the selected channels.")
-    
-    seven_days_ago = latest_date - pd.Timedelta(days=6)
-    df_trend_filtered = df_trend_agg[df_trend_agg['METRIC_DATE'] >= seven_days_ago]
-    
-    # Filter out baseline dates
-    df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['CHANNEL_TITLE'].map(baseline_map)]
-    
-    trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
-        'ROLLING_7D_VIEWS': 'sum'
-    })
-    
-    if trend_data['CHANNEL_TITLE'].nunique() > 10:
-        st.warning("⚠️ **More than 10 channels selected.** Charting aggregate network trend to prevent visual clutter and performance issues.")
-        trend_data = trend_data.groupby('METRIC_DATE', as_index=False).agg({'ROLLING_7D_VIEWS': 'sum'})
-        trend_data['CHANNEL_TITLE'] = 'Aggregate Selection'
-    
-    line_chart = alt.Chart(trend_data).mark_line(point=True).encode(
-        x=alt.X('METRIC_DATE:T', title='Date'),
-        y=alt.Y('ROLLING_7D_VIEWS:Q', title='Rolling 7-Day Views'),
-        color=alt.Color('CHANNEL_TITLE:N', title='Channel'),
-        tooltip=[
-            alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
-            alt.Tooltip('METRIC_DATE:T', title='Date', format='%Y-%m-%d'),
-            alt.Tooltip('ROLLING_7D_VIEWS:Q', title='Rolling 7-Day Views', format=',')
-        ]
-    ).properties(
-        height=450
-    ).interactive()
-
-    st.altair_chart(line_chart, use_container_width=True)
-
-else:
-    st.subheader("Rolling 30-Day Views Trend")
-    st.markdown("Displays the 30-day rolling sum of views over the past 30 days for the selected channels.")
-    
-    thirty_days_ago = latest_date - pd.Timedelta(days=29)
-    df_trend_filtered = df_trend_agg[df_trend_agg['METRIC_DATE'] >= thirty_days_ago]
-    
-    # Filter out baseline dates
-    df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['CHANNEL_TITLE'].map(baseline_map)]
-    
-    trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
-        'ROLLING_30D_VIEWS': 'sum'
-    })
-    
-    if trend_data['CHANNEL_TITLE'].nunique() > 10:
-        st.warning("⚠️ **More than 10 channels selected.** Charting aggregate network trend to prevent visual clutter and performance issues.")
-        trend_data = trend_data.groupby('METRIC_DATE', as_index=False).agg({'ROLLING_30D_VIEWS': 'sum'})
-        trend_data['CHANNEL_TITLE'] = 'Aggregate Selection'
-    
-    line_chart = alt.Chart(trend_data).mark_line(point=True).encode(
-        x=alt.X('METRIC_DATE:T', title='Date'),
-        y=alt.Y('ROLLING_30D_VIEWS:Q', title='Rolling 30-Day Views'),
-        color=alt.Color('CHANNEL_TITLE:N', title='Channel'),
-        tooltip=[
-            alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
-            alt.Tooltip('METRIC_DATE:T', title='Date', format='%Y-%m-%d'),
-            alt.Tooltip('ROLLING_30D_VIEWS:Q', title='Rolling 30-Day Views', format=',')
-        ]
-    ).properties(
-        height=450
-    ).interactive()
-
-    st.altair_chart(line_chart, use_container_width=True)
-
+st.subheader("Performance Summary")
+col1, col2, col3 = st.columns(3)
+col1.metric("Channels Selected", f"{total_channels_kpi:,}")
+col2.metric("Total Videos Tracked", f"{total_videos_kpi:,}")
+col3.metric(kpi_label, f"{int(period_views_kpi):,}")
 
 st.divider()
 
-st.subheader("Top Performing Videos")
-st.markdown("Detailed breakdown of the highest-viewed individual videos based on your selection.")
+# --- Tabbed Layout ---
+tab_trend, tab_videos = st.tabs(["📈 Trend Analysis", "🏆 Top Performing Videos"])
 
-if metric_grain.startswith("Daily"):
-    # For daily trend or snapshot, sum up the daily views over the requested timeframe
+with tab_trend:
     if metric_grain == "Daily - Yesterday Snapshot":
-        df_target = df_latest_filtered
-    else:
+        st.subheader("Aggregated Views per Channel")
+        st.markdown("Shows the total sum of daily views for the selected channels and video types on the snapshot date.")
+
+        channel_agg = df_latest_filtered.groupby('CHANNEL_TITLE', as_index=False).agg({
+            'DAILY_VIEWS': 'sum',
+            'VIDEO_ID': 'nunique'
+        }).rename(columns={'VIDEO_ID': 'VIDEO_COUNT'})
+
+        chart = alt.Chart(channel_agg).mark_bar().encode(
+            x=alt.X('CHANNEL_TITLE:N', title='Channel', sort='-y'),
+            y=alt.Y('DAILY_VIEWS:Q', title='Period Views (Aggregated)'),
+            color=alt.Color('CHANNEL_TITLE:N', legend=None),
+            tooltip=[
+                alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
+                alt.Tooltip('DAILY_VIEWS:Q', title='Period Views (Aggregated)'),
+                alt.Tooltip('VIDEO_COUNT:Q', title='Video Count')
+            ]
+        ).properties(
+            height=450
+        ).interactive()
+
+        st.altair_chart(chart, use_container_width=True)
+
+    elif metric_grain in ["Daily - Past 7 Days Trend", "Daily - Past 30 Days Trend"]:
         days_to_sub = 6 if metric_grain == "Daily - Past 7 Days Trend" else 29
         start_date = latest_date - pd.Timedelta(days=days_to_sub)
-        df_target = df_latest_raw
-        
-        # Filter out baseline dates to prevent skewing the period views
-        df_target = df_target[df_target['METRIC_DATE'] > df_target['CHANNEL_TITLE'].map(baseline_map)]
-        
-    top_videos = df_target.groupby(['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE', 'VIDEO_TYPE', 'PUBLISHED_AT'], as_index=False).agg({
-        'DAILY_VIEWS': 'sum',
-        'TOTAL_VIEWS': 'max'
-    }).sort_values(by='DAILY_VIEWS', ascending=False).head(100)
     
-    top_videos['PUBLISHED_AT'] = pd.to_datetime(top_videos['PUBLISHED_AT']).dt.strftime('%Y-%m-%d')
-    top_videos['VIDEO_URL'] = "https://www.youtube.com/watch?v=" + top_videos['VIDEO_ID']
+        st.subheader(f"Discrete Daily Views Trend ({days_to_sub + 1} Days)")
+        st.markdown(f"Displays the day-by-day discrete view gains over the past {days_to_sub + 1} days.")
     
-    display_df = top_videos.rename(columns={
-        'VIDEO_TITLE': 'Video Title',
-        'VIDEO_URL': 'Watch Link',
-        'CHANNEL_TITLE': 'Channel',
-        'VIDEO_TYPE': 'Type',
-        'PUBLISHED_AT': 'Published Date',
-        'DAILY_VIEWS': 'Period Views',
-        'TOTAL_VIEWS': 'Lifetime Views'
-    })[['Video Title', 'Watch Link', 'Channel', 'Type', 'Published Date', 'Period Views', 'Lifetime Views']]
+        df_trend_filtered = df_trend_agg[df_trend_agg['METRIC_DATE'] >= start_date]
+    
+        # Filter out baseline dates
+        df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['CHANNEL_TITLE'].map(baseline_map)]
+    
+        trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
+            'DAILY_VIEWS': 'sum'
+        })
+    
+        if trend_data['CHANNEL_TITLE'].nunique() > 10:
+            st.warning("⚠️ **More than 10 channels selected.** Charting aggregate network trend to prevent visual clutter and performance issues.")
+            trend_data = trend_data.groupby('METRIC_DATE', as_index=False).agg({'DAILY_VIEWS': 'sum'})
+            trend_data['CHANNEL_TITLE'] = 'Aggregate Selection'
+    
+        line_chart = alt.Chart(trend_data).mark_line(point=True).encode(
+            x=alt.X('METRIC_DATE:T', title='Date'),
+            y=alt.Y('DAILY_VIEWS:Q', title='Daily Views'),
+            color=alt.Color('CHANNEL_TITLE:N', title='Channel'),
+            tooltip=[
+                alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
+                alt.Tooltip('METRIC_DATE:T', title='Date', format='%Y-%m-%d'),
+                alt.Tooltip('DAILY_VIEWS:Q', title='Daily Views', format=',')
+            ]
+        ).properties(
+            height=450
+        ).interactive()
 
-elif metric_grain == "Rolling 7-Day Trend":
-    cols_to_group = ['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE']
-    if 'VIDEO_TYPE' in df_latest_filtered.columns:
-        cols_to_group.append('VIDEO_TYPE')
-    if 'PUBLISHED_AT' in df_latest_filtered.columns:
-        cols_to_group.append('PUBLISHED_AT')
-        
-    top_videos = df_latest_filtered.groupby(cols_to_group, as_index=False).agg({
-        'ROLLING_7D_VIEWS': 'max'
-    }).sort_values(by='ROLLING_7D_VIEWS', ascending=False).head(100)
+        st.altair_chart(line_chart, use_container_width=True)
+
+    elif metric_grain == "Rolling 7-Day Trend":
+        st.subheader("Rolling 7-Day Views Trend")
+        st.markdown("Displays the 7-day rolling sum of views over the past 7 days for the selected channels.")
     
-    if 'PUBLISHED_AT' in top_videos.columns:
+        seven_days_ago = latest_date - pd.Timedelta(days=6)
+        df_trend_filtered = df_trend_agg[df_trend_agg['METRIC_DATE'] >= seven_days_ago]
+    
+        # Filter out baseline dates
+        df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['CHANNEL_TITLE'].map(baseline_map)]
+    
+        trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
+            'ROLLING_7D_VIEWS': 'sum'
+        })
+    
+        if trend_data['CHANNEL_TITLE'].nunique() > 10:
+            st.warning("⚠️ **More than 10 channels selected.** Charting aggregate network trend to prevent visual clutter and performance issues.")
+            trend_data = trend_data.groupby('METRIC_DATE', as_index=False).agg({'ROLLING_7D_VIEWS': 'sum'})
+            trend_data['CHANNEL_TITLE'] = 'Aggregate Selection'
+    
+        line_chart = alt.Chart(trend_data).mark_line(point=True).encode(
+            x=alt.X('METRIC_DATE:T', title='Date'),
+            y=alt.Y('ROLLING_7D_VIEWS:Q', title='Rolling 7-Day Views'),
+            color=alt.Color('CHANNEL_TITLE:N', title='Channel'),
+            tooltip=[
+                alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
+                alt.Tooltip('METRIC_DATE:T', title='Date', format='%Y-%m-%d'),
+                alt.Tooltip('ROLLING_7D_VIEWS:Q', title='Rolling 7-Day Views', format=',')
+            ]
+        ).properties(
+            height=450
+        ).interactive()
+
+        st.altair_chart(line_chart, use_container_width=True)
+
+    else:
+        st.subheader("Rolling 30-Day Views Trend")
+        st.markdown("Displays the 30-day rolling sum of views over the past 30 days for the selected channels.")
+    
+        thirty_days_ago = latest_date - pd.Timedelta(days=29)
+        df_trend_filtered = df_trend_agg[df_trend_agg['METRIC_DATE'] >= thirty_days_ago]
+    
+        # Filter out baseline dates
+        df_trend_filtered = df_trend_filtered[df_trend_filtered['METRIC_DATE'] > df_trend_filtered['CHANNEL_TITLE'].map(baseline_map)]
+    
+        trend_data = df_trend_filtered.groupby(['METRIC_DATE', 'CHANNEL_TITLE'], as_index=False).agg({
+            'ROLLING_30D_VIEWS': 'sum'
+        })
+    
+        if trend_data['CHANNEL_TITLE'].nunique() > 10:
+            st.warning("⚠️ **More than 10 channels selected.** Charting aggregate network trend to prevent visual clutter and performance issues.")
+            trend_data = trend_data.groupby('METRIC_DATE', as_index=False).agg({'ROLLING_30D_VIEWS': 'sum'})
+            trend_data['CHANNEL_TITLE'] = 'Aggregate Selection'
+    
+        line_chart = alt.Chart(trend_data).mark_line(point=True).encode(
+            x=alt.X('METRIC_DATE:T', title='Date'),
+            y=alt.Y('ROLLING_30D_VIEWS:Q', title='Rolling 30-Day Views'),
+            color=alt.Color('CHANNEL_TITLE:N', title='Channel'),
+            tooltip=[
+                alt.Tooltip('CHANNEL_TITLE:N', title='Channel'),
+                alt.Tooltip('METRIC_DATE:T', title='Date', format='%Y-%m-%d'),
+                alt.Tooltip('ROLLING_30D_VIEWS:Q', title='Rolling 30-Day Views', format=',')
+            ]
+        ).properties(
+            height=450
+        ).interactive()
+
+        st.altair_chart(line_chart, use_container_width=True)
+
+
+with tab_videos:
+    st.subheader("Top Performing Videos")
+    st.markdown("Detailed breakdown of the highest-viewed individual videos based on your selection.")
+
+    if metric_grain.startswith("Daily"):
+        # Since we push down the aggregations and only load the latest day raw data for Top Videos,
+        # we rank by yesterday's DAILY_VIEWS or Lifetime TOTAL_VIEWS.
+        df_target = df_latest_filtered
+        
+        top_videos = df_target.groupby(['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE', 'VIDEO_TYPE', 'PUBLISHED_AT'], as_index=False).agg({
+            'DAILY_VIEWS': 'max',
+            'TOTAL_VIEWS': 'max'
+        }).sort_values(by='DAILY_VIEWS', ascending=False).head(100)
+    
         top_videos['PUBLISHED_AT'] = pd.to_datetime(top_videos['PUBLISHED_AT']).dt.strftime('%Y-%m-%d')
-        
-    top_videos['VIDEO_URL'] = "https://www.youtube.com/watch?v=" + top_videos['VIDEO_ID']
+        top_videos['VIDEO_URL'] = "https://www.youtube.com/watch?v=" + top_videos['VIDEO_ID']
     
-    rename_dict = {
-        'VIDEO_TITLE': 'Video Title',
-        'VIDEO_URL': 'Watch Link',
-        'CHANNEL_TITLE': 'Channel',
-        'ROLLING_7D_VIEWS': 'Rolling 7-Day Views'
-    }
-    
-    display_cols = ['Video Title', 'Watch Link', 'Channel']
-    
-    if 'VIDEO_TYPE' in top_videos.columns:
-        rename_dict['VIDEO_TYPE'] = 'Type'
-        display_cols.append('Type')
-    if 'PUBLISHED_AT' in top_videos.columns:
-        rename_dict['PUBLISHED_AT'] = 'Published Date'
-        display_cols.append('Published Date')
-        
-    display_cols.append('Rolling 7-Day Views')
-    
-    display_df = top_videos.rename(columns=rename_dict)[display_cols]
+        display_df = top_videos.rename(columns={
+            'VIDEO_TITLE': 'Video Title',
+            'VIDEO_URL': 'Watch Link',
+            'CHANNEL_TITLE': 'Channel',
+            'VIDEO_TYPE': 'Type',
+            'PUBLISHED_AT': 'Published Date',
+            'DAILY_VIEWS': 'Period Views',
+            'TOTAL_VIEWS': 'Lifetime Views'
+        })[['Video Title', 'Watch Link', 'Channel', 'Type', 'Published Date', 'Period Views', 'Lifetime Views']]
 
-else:
-    cols_to_group = ['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE']
-    if 'VIDEO_TYPE' in df_latest_filtered.columns:
-        cols_to_group.append('VIDEO_TYPE')
-    if 'PUBLISHED_AT' in df_latest_filtered.columns:
-        cols_to_group.append('PUBLISHED_AT')
+    elif metric_grain == "Rolling 7-Day Trend":
+        cols_to_group = ['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE']
+        if 'VIDEO_TYPE' in df_latest_filtered.columns:
+            cols_to_group.append('VIDEO_TYPE')
+        if 'PUBLISHED_AT' in df_latest_filtered.columns:
+            cols_to_group.append('PUBLISHED_AT')
         
-    top_videos = df_latest_filtered.groupby(cols_to_group, as_index=False).agg({
-        'ROLLING_30D_VIEWS': 'max'
-    }).sort_values(by='ROLLING_30D_VIEWS', ascending=False).head(100)
+        top_videos = df_latest_filtered.groupby(cols_to_group, as_index=False).agg({
+            'ROLLING_7D_VIEWS': 'max'
+        }).sort_values(by='ROLLING_7D_VIEWS', ascending=False).head(100)
     
-    if 'PUBLISHED_AT' in top_videos.columns:
-        top_videos['PUBLISHED_AT'] = pd.to_datetime(top_videos['PUBLISHED_AT']).dt.strftime('%Y-%m-%d')
+        if 'PUBLISHED_AT' in top_videos.columns:
+            top_videos['PUBLISHED_AT'] = pd.to_datetime(top_videos['PUBLISHED_AT']).dt.strftime('%Y-%m-%d')
         
-    top_videos['VIDEO_URL'] = "https://www.youtube.com/watch?v=" + top_videos['VIDEO_ID']
+        top_videos['VIDEO_URL'] = "https://www.youtube.com/watch?v=" + top_videos['VIDEO_ID']
     
-    rename_dict = {
-        'VIDEO_TITLE': 'Video Title',
-        'VIDEO_URL': 'Watch Link',
-        'CHANNEL_TITLE': 'Channel',
-        'ROLLING_30D_VIEWS': 'Rolling 30-Day Views'
-    }
+        rename_dict = {
+            'VIDEO_TITLE': 'Video Title',
+            'VIDEO_URL': 'Watch Link',
+            'CHANNEL_TITLE': 'Channel',
+            'ROLLING_7D_VIEWS': 'Rolling 7-Day Views'
+        }
     
-    display_cols = ['Video Title', 'Watch Link', 'Channel']
+        display_cols = ['Video Title', 'Watch Link', 'Channel']
     
-    if 'VIDEO_TYPE' in top_videos.columns:
-        rename_dict['VIDEO_TYPE'] = 'Type'
-        display_cols.append('Type')
-    if 'PUBLISHED_AT' in top_videos.columns:
-        rename_dict['PUBLISHED_AT'] = 'Published Date'
-        display_cols.append('Published Date')
+        if 'VIDEO_TYPE' in top_videos.columns:
+            rename_dict['VIDEO_TYPE'] = 'Type'
+            display_cols.append('Type')
+        if 'PUBLISHED_AT' in top_videos.columns:
+            rename_dict['PUBLISHED_AT'] = 'Published Date'
+            display_cols.append('Published Date')
         
-    display_cols.append('Rolling 30-Day Views')
+        display_cols.append('Rolling 7-Day Views')
     
-    display_df = top_videos.rename(columns=rename_dict)[display_cols]
+        display_df = top_videos.rename(columns=rename_dict)[display_cols]
+
+    else:
+        cols_to_group = ['VIDEO_ID', 'VIDEO_TITLE', 'CHANNEL_TITLE']
+        if 'VIDEO_TYPE' in df_latest_filtered.columns:
+            cols_to_group.append('VIDEO_TYPE')
+        if 'PUBLISHED_AT' in df_latest_filtered.columns:
+            cols_to_group.append('PUBLISHED_AT')
+        
+        top_videos = df_latest_filtered.groupby(cols_to_group, as_index=False).agg({
+            'ROLLING_30D_VIEWS': 'max'
+        }).sort_values(by='ROLLING_30D_VIEWS', ascending=False).head(100)
+    
+        if 'PUBLISHED_AT' in top_videos.columns:
+            top_videos['PUBLISHED_AT'] = pd.to_datetime(top_videos['PUBLISHED_AT']).dt.strftime('%Y-%m-%d')
+        
+        top_videos['VIDEO_URL'] = "https://www.youtube.com/watch?v=" + top_videos['VIDEO_ID']
+    
+        rename_dict = {
+            'VIDEO_TITLE': 'Video Title',
+            'VIDEO_URL': 'Watch Link',
+            'CHANNEL_TITLE': 'Channel',
+            'ROLLING_30D_VIEWS': 'Rolling 30-Day Views'
+        }
+    
+        display_cols = ['Video Title', 'Watch Link', 'Channel']
+    
+        if 'VIDEO_TYPE' in top_videos.columns:
+            rename_dict['VIDEO_TYPE'] = 'Type'
+            display_cols.append('Type')
+        if 'PUBLISHED_AT' in top_videos.columns:
+            rename_dict['PUBLISHED_AT'] = 'Published Date'
+            display_cols.append('Published Date')
+        
+        display_cols.append('Rolling 30-Day Views')
+    
+        display_df = top_videos.rename(columns=rename_dict)[display_cols]
 
 
-st.dataframe(
-    display_df, 
-    hide_index=True, 
-    use_container_width=True,
-    column_config={
-        "Watch Link": st.column_config.LinkColumn(
-            "Watch Link",
-            help="Click to open this video on YouTube",
-            display_text="▶️ Open on YouTube"
-        )
-    }
-)
+    st.dataframe(
+        display_df, 
+        hide_index=True, 
+        use_container_width=True,
+        column_config={
+            "Watch Link": st.column_config.LinkColumn(
+                "Watch Link",
+                help="Click to open this video on YouTube",
+                display_text="▶️ Open on YouTube"
+            )
+        }
+    )
