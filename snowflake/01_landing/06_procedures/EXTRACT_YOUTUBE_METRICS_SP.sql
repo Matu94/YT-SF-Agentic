@@ -7,7 +7,7 @@ RETURNS STRING
 LANGUAGE PYTHON
 RUNTIME_VERSION = '3.10'
 PACKAGES = ('snowflake-snowpark-python', 'requests')
-EXTERNAL_ACCESS_INTEGRATIONS = (YT_SF_{{SNOWFLAKE_ENVIRONMENT}}_YOUTUBE_API_INTEGRATION)
+EXTERNAL_ACCESS_INTEGRATIONS = ({{SNOWFLAKE_DATABASE}}_YOUTUBE_API_INTEGRATION)
 SECRETS = ('youtube_api_key' = TECH.YOUTUBE_API_KEY_SECRET)
 HANDLER = 'main'
 EXECUTE AS CALLER
@@ -26,7 +26,7 @@ def main(session):
         session.sql("ALTER SESSION SET TIMEZONE = 'Europe/Budapest'").collect()
 
         # Truncate the transient landing table before each new extraction run
-        session.sql("TRUNCATE TABLE YT_SF_{{SNOWFLAKE_ENVIRONMENT}}.LANDING.YOUTUBE_RAW_DATA").collect()
+        session.sql("TRUNCATE TABLE {{SNOWFLAKE_DATABASE}}.LANDING.YOUTUBE_RAW_DATA").collect()
 
         # Retrieve the API key securely
         api_key = _snowflake.get_generic_secret_string('youtube_api_key')
@@ -87,7 +87,7 @@ def main(session):
             
             # Serialize and insert channel data
             json_str = json.dumps(data).replace("\\", "\\\\").replace("'", "''")
-            query = f"INSERT INTO YT_SF_{{SNOWFLAKE_ENVIRONMENT}}.LANDING.YOUTUBE_RAW_DATA (RAW_JSON) SELECT PARSE_JSON('{json_str}')"
+            query = f"INSERT INTO {{SNOWFLAKE_DATABASE}}.LANDING.YOUTUBE_RAW_DATA (RAW_JSON) SELECT PARSE_JSON('{json_str}')"
             session.sql(query).collect()
             
             # 2. Extract 'uploads' playlist ID
@@ -131,7 +131,7 @@ def main(session):
                 
                 # Serialize and insert video data
                 v_json_str = json.dumps(v_data).replace("\\", "\\\\").replace("'", "''")
-                v_query = f"INSERT INTO YT_SF_{{SNOWFLAKE_ENVIRONMENT}}.LANDING.YOUTUBE_RAW_DATA (RAW_JSON) SELECT PARSE_JSON('{v_json_str}')"
+                v_query = f"INSERT INTO {{SNOWFLAKE_DATABASE}}.LANDING.YOUTUBE_RAW_DATA (RAW_JSON) SELECT PARSE_JSON('{v_json_str}')"
                 session.sql(v_query).collect()
         
         return "SUCCESS: YouTube extraction procedure initialized successfully."
