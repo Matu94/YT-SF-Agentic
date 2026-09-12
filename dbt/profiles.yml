@@ -8,3 +8,10 @@ youtube_metrics:
       database: YT_SF_DEV
       schema: STAGING
       threads: 8
+    prod:
+      type: snowflake
+      role: YT_SF_PROD_TRANSFORM_ROLE
+      warehouse: YT_SF_TRANSFORM_WH
+      database: YT_SF_PROD
+      schema: STAGING
+      threads: 8
