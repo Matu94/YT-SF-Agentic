@@ -51,7 +51,7 @@ While the `deploy.py` engine remains the primary tool for **automated, idempoten
 
 ## 6. Static Data Export Pipeline (Streamlit Decoupling)
 To isolate analytical compute costs from public-facing dashboard traffic (**ADR-010**), the deployment architecture includes a daily data exfiltration pipeline:
-1. **GitHub Action (`export_parquet_s3.yml`)**: Executes daily at 05:00 UTC.
+1. **GitHub Action (`export_parquet_s3.yml`)**: Executes daily at 03:30 Budapest time (01:30 UTC), automatically restricted to the `prod` branch and reading from `YT_SF_PROD`. Also supports manual on-demand execution from `dev` to export development data.
 2. **Python Exporter (`export_to_s3.py`)**: Interrogates 9 Snowflake presentation views (`MART.RPT_*`).
 3. **AWS S3 Gateway**: Transforms SQL results into heavily optimized Parquet binaries and statically publishes them to `s3://yt-sf-metrics-data-prod/mart/` allowing DigitalOcean App Platform to serve the data without executing warehouse compute queries.
 

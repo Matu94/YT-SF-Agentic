@@ -1,9 +1,8 @@
 # =============================================================================
 # Create Release Branch
 # =============================================================================
-# Manually creates a release branch from main/prod containing only the SQL
-# files listed in the release CSV. Files are ordered by folder (01_schemas,
-# 02_file_formats, etc.) for correct deployment order.
+# Manually creates a release branch from prod containing all files listed in
+# the release CSV (SQL DDL, dbt configs/models, Streamlit code, etc.).
 # =============================================================================
 
 name: Create release branch
@@ -79,21 +78,22 @@ jobs:
           rows = list(reader)
           if rows and rows[0] and rows[0][0].lower() == "file_path":
               rows = rows[1:]
-          files = [r[0].strip() for r in rows if r and r[0].strip().endswith(".sql")]
+          files = [r[0].strip() for r in rows if r and r[0].strip()]
 
           if not files:
-              print("Error: No SQL files in release CSV")
+              print("Error: No files found in release CSV")
               sys.exit(1)
 
           files.sort(key=lambda p: p)
 
           for f in files:
+              print(f"Checking out: {f}")
               subprocess.run(["git", "checkout", "origin/dev", "--", f], check=True)
 
           subprocess.run(["git", "checkout", "origin/dev", "--", f".release/{file_name}"], check=True)
           PYTHON
 
-          git add snowflake/ .release/
+          git add -A
           git status
 
           if git diff --staged --quiet; then
@@ -101,7 +101,7 @@ jobs:
             exit 0
           fi
 
-          git commit -m "Release $VERSION_DOT: SQL files from dev"
+          git commit -m "Release $VERSION_DOT: files from dev"
           git push -u origin "$RELEASE_BRANCH"
 
           echo "Created branch $RELEASE_BRANCH"
