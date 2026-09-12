@@ -1,0 +1,11 @@
+file_path
+dbt/env.yml
+dbt/profiles.yml
+snowflake/01_landing/04_streams/YOUTUBE_RAW_DATA_STREAM.sql
+snowflake/01_landing/06_procedures/EXTRACT_YOUTUBE_METRICS_SP.sql
+snowflake/02_raw/05_tasks/LOAD_YOUTUBE_RAW_DATA_TASK.sql
+streamlit/pages/1_Video_Statistics.py
+.github/workflows/create-release-branch.yml
+.github/workflows/export_parquet_s3.yml
+.github/workflows/README.md
+docs/cicd/deploy_process.md
