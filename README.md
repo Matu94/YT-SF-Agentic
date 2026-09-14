@@ -1,6 +1,8 @@
 # 🚀 YouTube Metrics Pipeline
 
-![Status](https://img.shields.io/badge/Status-In%20Development-yellow) ![Snowflake](https://img.shields.io/badge/Built%20on-Snowflake-blue?logo=snowflake&logoColor=white) ![dbt](https://img.shields.io/badge/Logic-dbt-orange?logo=dbt&logoColor=white) ![AWS S3](https://img.shields.io/badge/Storage-Amazon%20S3-FF9900?logo=amazons3&logoColor=white) ![Streamlit](https://img.shields.io/badge/Presentation-Streamlit-FF4B4B?logo=streamlit&logoColor=white) ![DigitalOcean](https://img.shields.io/badge/Hosting-DigitalOcean-0080FF?logo=digitalocean&logoColor=white) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Milestone%201%20Live-brightgreen) ![Snowflake](https://img.shields.io/badge/Built%20on-Snowflake-blue?logo=snowflake&logoColor=white) ![dbt](https://img.shields.io/badge/Logic-dbt-orange?logo=dbt&logoColor=white) ![AWS S3](https://img.shields.io/badge/Storage-Amazon%20S3-FF9900?logo=amazons3&logoColor=white) ![Streamlit](https://img.shields.io/badge/Presentation-Streamlit-FF4B4B?logo=streamlit&logoColor=white) ![DigitalOcean](https://img.shields.io/badge/Hosting-DigitalOcean-0080FF?logo=digitalocean&logoColor=white) ![Cloudflare](https://img.shields.io/badge/Edge%20%26%20Security-Cloudflare-F38020?logo=cloudflare&logoColor=white) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
+
+> 🌐 **Live Public Dashboard:** [https://ytmetrics.matudata.com](https://ytmetrics.matudata.com)
 
 An automated, end-to-end data platform built to extract, transform, and visualize YouTube channel performance. This project isn't just about data; it's a showcase of **Agentic AI Development**—a seamless synergy between human architectural vision and AI-driven implementation.
 
@@ -31,20 +33,24 @@ graph LR
         dbt["dbt (Integrated/Cloud)"] --> S
     end
 
-    subgraph "Presentation"
+    subgraph "Presentation & Edge"
         S3[(AWS S3)]
-        ST[Streamlit App]
+        ST[Streamlit App (DigitalOcean)]
+        CF[Cloudflare Edge & DNS]
+        User[Public Users]
     end
 
     M -- "export_to_s3.py" --> S3
     S3 --> ST
+    ST <--> CF
+    CF <--> User
 ```
 
 ### The Stack
 *   **Extraction**: Snowflake Native **Snowpark (Python)** Stored Procedures calling the YouTube API via External Network Access.
 *   **Orchestration**: Snowflake **Tasks** for daily 1-2x refresh cycles.
 *   **Transformation**: **dbt** (Data Build Tool) implementing Kimball Dimensional Modeling (Star Schema). We utilize the **Snowflake-integrated environment** (dbt Cloud) for centralized management and execution.
-*   **Presentation**: Dual-mode **Streamlit** dashboard pulling statically exported Parquet data from **AWS S3** to decouple analytical compute from web traffic (`ADR-010`).
+*   **Presentation**: Dual-mode **Streamlit** dashboard pulling statically exported Parquet data from **AWS S3** (`ADR-010`), hosted in a container on **DigitalOcean App Platform** (`ADR-014`), and shielded globally by **Cloudflare** with a custom domain at **[ytmetrics.matudata.com](https://ytmetrics.matudata.com)** (`ADR-015`).
 *   **Infrastructure**: Custom Python-driven **DDL Deployment Engine** (`deploy.py`) for SHA256-based idempotency.
 *   **Governance**: Two-tier **RBAC** model with strict workload isolation and resource monitor capping (5 Credits/month for CI/CD & Admin, 15 Credits/month for Load & Transform).
 
@@ -73,7 +79,7 @@ This project serves as a "Living Masterclass." Explore our domain-specific guide
 *   🧡 **[dbt Essentials](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/03_dbt/dbt_essentials.md)**: Materializations, SCD Type 2, and Lineage.
 *   ⚙️ **[GitOps Principles](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/04_cicd/gitops_principles.md)**: SHA256 Idempotency and Environmental Isolation.
 *   🤖 **[AI Quota Strategy](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/01_agentic_development/ai_quotas_and_efficiency.md)**: Context caching, token budget optimization, and LLM orchestration.
-*   📊 **[DigitalOcean App Platform](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/07_presentation_layer/streamlit_hosting.md)**: Dual-mode presentation layer abstraction.
+*   📊 **[DigitalOcean & Cloudflare Architecture](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/07_presentation_layer/streamlit_hosting.md)**: Containerized Streamlit deployment, S3 data decoupling, and Cloudflare edge proxy protection.
 *   ☁️ **[AWS S3 & IAM](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/08_cloud_infrastructure/aws_s3_iam.md)**: Serverless static data hosting, IAM security, and least-privilege policies.
 
 ---
@@ -87,6 +93,7 @@ This project serves as a "Living Masterclass." Explore our domain-specific guide
 *   📁 **[docs/](file:///Users/matu/git/YT-SF-Agentic/docs)**: Technical guides, diagrams, and documentation.
 *   📁 **[snowflake/](file:///Users/matu/git/YT-SF-Agentic/snowflake)**: Layered Medallion DDL files (e.g., `01_landing`, `02_raw`).
 *   📁 **[streamlit/](file:///Users/matu/git/YT-SF-Agentic/streamlit)**: Application code for the presentation layer.
+*   📄 **[CHANGELOG.md](file:///Users/matu/git/YT-SF-Agentic/CHANGELOG.md)**: Full release history and semantic version tracking.
 
 ---
 *Built with passion by **Matu94** & **Antigravity***
