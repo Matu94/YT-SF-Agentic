@@ -1,6 +1,6 @@
 # Snowflake Native Streamlit Application
 
-This directory contains the Python source code and environment configuration for the **YouTube Metrics Dashboard**, hosted natively in Snowflake as a multi-page Streamlit application.
+This directory contains the Python source code and environment configuration for the **YouTube Metrics Dashboard**, deployed in production at **[https://ytmetrics.matudata.com](https://ytmetrics.matudata.com)**.
 
 ## 🏗️ Architecture & Data Sourcing
 
@@ -8,8 +8,9 @@ Following Kimball dimensional modeling principles and **ADR-010**, the applicati
 
 Data loading is fully abstracted via `streamlit/utils/data_loader.py`:
 - **Dual Sourcing Mode**:
-  1. **Streamlit in Snowflake (SiS)**: Automatically detects active Snowflake session (`get_active_session()`) and queries live views in Snowflake `MART`.
-  2. **DigitalOcean App Platform / Local Static Mode**: Falls back to reading exported Parquet files directly from **AWS S3** (`s3://<bucket_name>/mart/<view_name>.parquet`) or local dev exports without needing Snowflake credentials or compute.
+  1. **Streamlit in Snowflake (SiS)**: Automatically detects active Snowflake session (`get_active_session()`) and queries live views in Snowflake `MART` (used for `DEV` testing).
+  2. **Production Mode (DigitalOcean + S3 + Cloudflare Edge)**: Reads Hive-partitioned Parquet files directly from **AWS S3** (`s3://<bucket_name>/mart/<view_name>.parquet`) via DuckDB and PyArrow without needing Snowflake credentials or compute (`ADR-010`, `ADR-014`). Traffic is proxied through **Cloudflare** for edge caching and DDoS protection at **`https://ytmetrics.matudata.com`** (`ADR-015`).
+  3. **Local Static Mode**: Falls back to local dev exports in `data/export/` for offline development.
 
 - **Presentation Views Used**:
   - `MART.RPT_CHANNEL_PERFORMANCE_DAILY`

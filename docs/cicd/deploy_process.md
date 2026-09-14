@@ -54,6 +54,7 @@ To isolate analytical compute costs from public-facing dashboard traffic (**ADR-
 1. **GitHub Action (`export_parquet_s3.yml`)**: Executes daily at 03:30 Budapest time (01:30 UTC), automatically restricted to the `prod` branch and reading from `YT_SF_PROD`. Also supports manual on-demand execution from `dev` to export development data.
 2. **Python Exporter (`export_to_s3.py`)**: Interrogates 9 Snowflake presentation views (`MART.RPT_*`).
 3. **AWS S3 Gateway**: Transforms SQL results into heavily optimized Parquet binaries and statically publishes them to `s3://yt-sf-metrics-data-prod/mart/` allowing DigitalOcean App Platform to serve the data without executing warehouse compute queries.
+4. **Cloudflare Edge Shield & Custom Domain**: Public user requests hit Cloudflare's global edge network at **`https://ytmetrics.matudata.com`** (`ADR-015`), which offloads static asset caching and shields the single DigitalOcean container from volumetric spikes and crawlers.
 
 ## 7. Automated Safety Nets: Table Backup & Restore
 To prevent accidental data loss during destructive DDL operations (like `CREATE OR REPLACE TABLE`), the `deploy.py` engine implements an automated backup and restore mechanism for table files (located in `*_tables/` directories):
