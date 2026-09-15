@@ -32,7 +32,7 @@ This directory configures the GitHub Actions workflows responsible for orchestra
 **Purpose**: Decouples Snowflake compute from DigitalOcean App Platform hosting (per **ADR-010**) by extracting and statically exporting presentation views into AWS S3, served to the public via Cloudflare at **`https://ytmetrics.matudata.com`** (**ADR-015**).
 
 **Triggers**:
-- Automatically on a cron schedule (`30 1 * * *` / daily at 03:30 Budapest time / 01:30 UTC), restricted strictly to the `prod` branch and reading from `YT_SF_PROD`.
+- Automatically on a cron schedule (`22 1 * * *` / daily at 03:22 Budapest time / 01:22 UTC), restricted strictly to the `prod` branch and reading from `YT_SF_PROD`.
 - Manual execution via `workflow_dispatch` (supports explicit environment selection or branch-based detection, allowing manual exports from `dev`).
 
 **Behavior**:

@@ -2,8 +2,8 @@ name: Export Streamlit Data to S3
 
 on:
   schedule:
-    # Runs daily at 03:30 Budapest time (01:30 UTC in CEST / Summer time)
-    - cron: "30 1 * * *"
+    # Runs daily at 03:22 Budapest time (01:22 UTC in CEST / Summer time) - 22 because queues, if not works i migrate to airflow.
+    - cron: "22 1 * * *"
   workflow_dispatch:
     inputs:
       environment:
