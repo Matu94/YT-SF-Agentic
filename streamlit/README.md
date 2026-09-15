@@ -31,17 +31,17 @@ Data loading is fully abstracted via `streamlit/utils/data_loader.py`:
 - **Platform KPIs**: Displays top-level metrics (`st.metric`) for total tracked channels, total subscribers, and cumulative views across all tracked entities for the latest available date.
 - **Channel Directory**: Renders an expandable (`st.expander`) directory listing all channels grouped hierarchically by **Organization** and **Team/Studio**.
 
-### 2. `pages/1_Channel_Info.py` — Channel Information Dashboard
-- **Channel Selection**: Single-select dropdown for inspecting current organization, studio, content type, subscribers, views, and videos.
-
-### 3. `pages/2_Video_Statistics.py` — Video Statistics Dashboard
+### 2. `pages/1_Video_Statistics.py` — Video Statistics Dashboard
 - **Metric Grain Toggle**: UI toggle for switching between Daily, Rolling 7-day, and Rolling 30-day metrics.
 - **Cascading Multi-Select Filters**: Independent multi-select filters for Organizations, Teams (Studios), Channels, and Video Types.
 - **Aggregated Channel Chart**: Altair charts for discrete and rolling trends.
 - **Top Videos Table**: Data table displaying top performing videos with YouTube watch links.
 
-### 4. `pages/3_Leaderboard.py` — Leaderboards Dashboard
+### 3. `pages/2_Leaderboard.py` — Leaderboards Dashboard
 - **Video & Channel Rankings**: Displays Top 3 medal KPIs, Top 10 Altair bar charts, and Top 50 progress data grids for views, likes, comments, subscribers, and video count.
+
+### 4. `pages/3_Channel_Info.py` — Channel Information Dashboard
+- **Channel Selection**: Single-select dropdown for inspecting current organization, studio, content type, subscribers, views, and videos.
 
 ---
 
