@@ -6,3 +6,4 @@ docs/cicd/deploy_process.md
 streamlit/pages/2_Leaderboard.py
 streamlit/pages/1_Video_Statistics.py
 streamlit/README.md
+CHANGELOG.md

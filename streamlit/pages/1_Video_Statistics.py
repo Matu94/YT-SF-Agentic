@@ -86,7 +86,7 @@ all_channels = df_channel_filtered['CHANNEL_TITLE'].dropna().unique().tolist()
 all_channels.sort()
 
 # Pre-select specific default channels ("JÓLVANEZÍGY", "TheVR Podcast", "444.hu")
-target_defaults = ["JÓLVANEZÍGY", "TheVR Podcast", "444.hu", "ATV magyarorszag", "TheZone"]
+target_defaults = ["JÓLVANEZÍGY", "TheVR Podcast", "444.hu", "ATV Magyarország", "the Zone"]
 default_channels = [
     c for target in target_defaults
     for c in all_channels if c.lower() == target.lower()
@@ -220,7 +220,7 @@ if metric_grain == "Daily - Yesterday Snapshot":
         ]
     ).properties(
         height=450
-    ).interactive()
+    )
 
     st.altair_chart(chart, use_container_width=True)
 
@@ -256,7 +256,7 @@ elif metric_grain in ["Daily - Past 7 Days Trend", "Daily - Past 30 Days Trend"]
         ]
     ).properties(
         height=450
-    ).interactive()
+    )
 
     st.altair_chart(line_chart, use_container_width=True)
 
@@ -290,7 +290,7 @@ elif metric_grain == "Rolling 7-Day Trend":
         ]
     ).properties(
         height=450
-    ).interactive()
+    )
 
     st.altair_chart(line_chart, use_container_width=True)
 
@@ -324,7 +324,7 @@ else:
         ]
     ).properties(
         height=450
-    ).interactive()
+    )
 
     st.altair_chart(line_chart, use_container_width=True)
 
