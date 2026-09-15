@@ -16,31 +16,31 @@ Our mission is to turn raw, cumulative YouTube API metrics into deep, actionable
 ```mermaid
 graph LR
     subgraph "External"
-        API[YouTube Data API]
+        API["YouTube Data API"]
     end
 
     subgraph "Snowflake (Target)"
         direction TB
-        L[01_LANDING] --> R[02_RAW]
-        R --> S[03_STAGING]
-        S --> M[04_MART]
+        L["01_LANDING"] --> R["02_RAW"]
+        R --> S["03_STAGING"]
+        S --> M["04_MART"]
     end
 
     subgraph "Control Plane"
-        API --> SP[Snowpark Python]
-        Tasks[Snowflake Tasks] --> SP
+        API --> SP["Snowpark Python"]
+        Tasks["Snowflake Tasks"] --> SP
         SP --> L
         dbt["dbt (Integrated/Cloud)"] --> S
     end
 
     subgraph "Presentation & Edge"
-        S3[(AWS S3)]
-        ST[Streamlit App (DigitalOcean)]
-        CF[Cloudflare Edge & DNS]
-        User[Public Users]
+        S3[("AWS S3")]
+        ST["Streamlit App (DigitalOcean)"]
+        CF["Cloudflare Edge & DNS"]
+        User["Public Users"]
     end
 
-    M -- "export_to_s3.py" --> S3
+    M -->|"export_to_s3.py"| S3
     S3 --> ST
     ST <--> CF
     CF <--> User
