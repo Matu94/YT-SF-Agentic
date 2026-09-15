@@ -8,7 +8,7 @@ import pandas as pd
 from utils.data_loader import load_data
 
 
-st.set_page_config(page_title="YT Metrics - Leaderboards", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="YT Metrics - Leaderboards", layout="wide")
 
 st.title("Leaderboards")
 st.markdown("Discover the most engaging content and top-performing channels across the network.")
@@ -91,7 +91,7 @@ def render_video_leaderboard_tab(df, metric_col, metric_label, tab_icon):
         ]
     ).properties(
         height=400
-    ).interactive()
+    )
 
     st.altair_chart(chart, use_container_width=True)
     
@@ -170,7 +170,7 @@ def render_channel_leaderboard_tab(df_latest, metric_col, metric_label, tab_icon
         ]
     ).properties(
         height=400
-    ).interactive()
+    )
 
     st.altair_chart(chart, use_container_width=True)
     
