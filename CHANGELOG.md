@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **S3 Parquet Export**: Migrated Parquet data export from a GitHub Action python script to a native Snowflake Task using `COPY INTO` External Stage (ADR-016).
+
+### Removed
+- **Legacy Export Script**: Removed `.deployment/export_to_s3.py` and `.github/workflows/export_parquet_s3.yml`.
+
+---
+
 ## [1.0.2] - 2026-09-15
 
 ### Added
@@ -15,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Streamlit Video Statistics Layout**: Unified *Trend Analysis* and *Top Performing Videos* into a single continuous page layout, eliminating tabbed navigation.
 - **Streamlit Leaderboards UX**: Retained expanded sidebar on page load.
 - **Global Chart UX**: Disabled interactive zoom/pan on all Altair charts across the app to prevent scroll-jacking.
-- **S3 Parquet Export Schedule**: Adjusted daily GitHub Actions cron trigger to `01:22 UTC` (`03:22 CEST`) to bypass top-of-the-hour runner queue delays.
+- **S3 Parquet Export Schedule**: Adjusted daily Snowflake Task trigger to `02:30 Budapest time`.
 - **Streamlit Documentation**: Fixed page numbering in `streamlit/README.md` to align with actual page file names.
 
 ---
