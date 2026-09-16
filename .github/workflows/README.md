@@ -28,15 +28,3 @@ This directory configures the GitHub Actions workflows responsible for orchestra
 2. Checks out the specific artifacts listed explicitly on the CSV mapping to tightly enforce explicit versioning.
 3. Auto-commits the packaged state under a new `release/*` branch natively spanning from `dev` or `prod`. This branch can then be historically reviewed and subsequently merged into the main `prod` trunk.
 
-### 3. Export Streamlit Data to S3 (`export_parquet_s3.yml`)
-**Purpose**: Decouples Snowflake compute from DigitalOcean App Platform hosting (per **ADR-010**) by extracting and statically exporting presentation views into AWS S3, served to the public via Cloudflare at **`https://ytmetrics.matudata.com`** (**ADR-015**).
-
-**Triggers**:
-- Automatically on a cron schedule (`22 1 * * *` / daily at 03:22 Budapest time / 01:22 UTC), restricted strictly to the `prod` branch and reading from `YT_SF_PROD`.
-- Manual execution via `workflow_dispatch` (supports explicit environment selection or branch-based detection, allowing manual exports from `dev`).
-
-**Behavior**:
-1. Maps dynamic environments: scheduled runs enforce `prod` environment context, while manual dispatches resolve `dev` or `prod` based on selection or triggering branch.
-2. Injects securely hosted Snowflake Private Keys and AWS S3 credentials (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
-3. Executes `.deployment/export_to_s3.py` which dynamically converts 9 Snowflake presentation views (`RPT_*`) into optimized Parquet formats and uploads them to the S3 bucket (`s3://yt-sf-metrics-data-prod/mart/`).
-

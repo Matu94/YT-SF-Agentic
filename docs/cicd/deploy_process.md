@@ -50,10 +50,10 @@ While the `deploy.py` engine remains the primary tool for **automated, idempoten
 *   **UI Synchronization**: Powering Streamlit applications natively from Git branches, ensuring the visualization layer is always aligned with the version-controlled code.
 
 ## 6. Static Data Export Pipeline (Streamlit Decoupling)
-To isolate analytical compute costs from public-facing dashboard traffic (**ADR-010**), the deployment architecture includes a daily data exfiltration pipeline:
-1. **GitHub Action (`export_parquet_s3.yml`)**: Executes daily at 03:22 Budapest time (01:22 UTC), automatically restricted to the `prod` branch and reading from `YT_SF_PROD`. Also supports manual on-demand execution from `dev` to export development data.
-2. **Python Exporter (`export_to_s3.py`)**: Interrogates 9 Snowflake presentation views (`MART.RPT_*`).
-3. **AWS S3 Gateway**: Transforms SQL results into heavily optimized Parquet binaries and statically publishes them to `s3://yt-sf-metrics-data-prod/mart/` allowing DigitalOcean App Platform to serve the data without executing warehouse compute queries.
+To isolate analytical compute costs from public-facing dashboard traffic (**ADR-010** and **ADR-016**), the deployment architecture includes a native daily data exfiltration pipeline:
+1. **Snowflake Task Orchestration**: A native Snowflake Task executes daily on a schedule to handle extraction, entirely removing the need for external GitHub Actions or Python scripts.
+2. **Native Parquet Export (`COPY INTO`)**: The task interrogates Snowflake presentation views (`MART.RPT_*`) and uses native `COPY INTO <location>` commands to export data efficiently into Parquet format.
+3. **AWS S3 Gateway**: Using a Snowflake Storage Integration mapped to an AWS IAM Role, the Parquet binaries are statically published to an External Stage at `s3://yt-sf-metrics-data-prod/mart/`. This allows DigitalOcean App Platform to serve the data without executing warehouse compute queries.
 4. **Cloudflare Edge Shield & Custom Domain**: Public user requests hit Cloudflare's global edge network at **`https://ytmetrics.matudata.com`** (`ADR-015`), which offloads static asset caching and shields the single DigitalOcean container from volumetric spikes and crawlers.
 
 ## 7. Automated Safety Nets: Table Backup & Restore

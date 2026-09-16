@@ -40,7 +40,7 @@ graph LR
         User["Public Users"]
     end
 
-    M -->|"export_to_s3.py"| S3
+    M -->|"Snowflake Native Task (COPY INTO)"| S3
     S3 --> ST
     ST <--> CF
     CF <--> User
@@ -50,7 +50,7 @@ graph LR
 *   **Extraction**: Snowflake Native **Snowpark (Python)** Stored Procedures calling the YouTube API via External Network Access.
 *   **Orchestration**: Snowflake **Tasks** for daily 1-2x refresh cycles.
 *   **Transformation**: **dbt** (Data Build Tool) implementing Kimball Dimensional Modeling (Star Schema). We utilize the **Snowflake-integrated environment** (dbt Cloud) for centralized management and execution.
-*   **Presentation**: Dual-mode **Streamlit** dashboard pulling statically exported Parquet data from **AWS S3** (`ADR-010`), hosted in a container on **DigitalOcean App Platform** (`ADR-014`), and shielded globally by **Cloudflare** with a custom domain at **[ytmetrics.matudata.com](https://ytmetrics.matudata.com)** (`ADR-015`).
+*   **Presentation**: Dual-mode **Streamlit** dashboard pulling natively exported Parquet data from **AWS S3** (`ADR-010` & `ADR-016`), hosted in a container on **DigitalOcean App Platform** (`ADR-014`), and shielded globally by **Cloudflare** with a custom domain at **[ytmetrics.matudata.com](https://ytmetrics.matudata.com)** (`ADR-015`).
 *   **Infrastructure**: Custom Python-driven **DDL Deployment Engine** (`deploy.py`) for SHA256-based idempotency.
 *   **Governance**: Two-tier **RBAC** model with strict workload isolation and resource monitor capping (5 Credits/month for CI/CD & Admin, 15 Credits/month for Load & Transform).
 
@@ -87,7 +87,7 @@ This project serves as a "Living Masterclass." Explore our domain-specific guide
 
 ## 📂 Project Structure
 *   📁 **[.agents/](file:///Users/matu/git/YT-SF-Agentic/.agents)**: Personas, rules, and ADRs.
-*   📁 **[.deployment/](file:///Users/matu/git/YT-SF-Agentic/.deployment)**: Custom Snowflake Deployer CLI ([deploy.py](file:///Users/matu/git/YT-SF-Agentic/.deployment/deploy.py)) and Exporters.
+*   📁 **[.deployment/](file:///Users/matu/git/YT-SF-Agentic/.deployment)**: Custom Snowflake Deployer CLI ([deploy.py](file:///Users/matu/git/YT-SF-Agentic/.deployment/deploy.py)).
 *   📁 **[.setup/](file:///Users/matu/git/YT-SF-Agentic/.setup)**: Snowflake role, database, and user bootstrap scripts.
 *   📁 **[dbt/](file:///Users/matu/git/YT-SF-Agentic/dbt)**: Data transformation models, schemas, and seeds.
 *   📁 **[docs/](file:///Users/matu/git/YT-SF-Agentic/docs)**: Technical guides, diagrams, and documentation.
