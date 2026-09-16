@@ -25,7 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Streamlit Video Statistics Layout**: Unified *Trend Analysis* and *Top Performing Videos* into a single continuous page layout, eliminating tabbed navigation.
 - **Streamlit Leaderboards UX**: Retained expanded sidebar on page load.
 - **Global Chart UX**: Disabled interactive zoom/pan on all Altair charts across the app to prevent scroll-jacking.
-- **S3 Parquet Export Schedule**: Adjusted daily GitHub Actions cron trigger to `01:22 UTC` (`03:22 CEST`) to bypass top-of-the-hour runner queue delays.
+- **S3 Parquet Export Schedule**: Adjusted daily Snowflake Task trigger to `02:30 Budapest time`.
 - **Streamlit Documentation**: Fixed page numbering in `streamlit/README.md` to align with actual page file names.
 
 ---
