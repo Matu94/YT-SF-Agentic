@@ -1,4 +1,4 @@
-# 🚀 YouTube Metrics Pipeline
+# YouTube Metrics Pipeline
 
 ![Status](https://img.shields.io/badge/Status-Milestone%201%20Live-brightgreen) ![Snowflake](https://img.shields.io/badge/Built%20on-Snowflake-blue?logo=snowflake&logoColor=white) ![dbt](https://img.shields.io/badge/Logic-dbt-orange?logo=dbt&logoColor=white) ![AWS S3](https://img.shields.io/badge/Storage-Amazon%20S3-FF9900?logo=amazons3&logoColor=white) ![Streamlit](https://img.shields.io/badge/Presentation-Streamlit-FF4B4B?logo=streamlit&logoColor=white) ![DigitalOcean](https://img.shields.io/badge/Hosting-DigitalOcean-0080FF?logo=digitalocean&logoColor=white) ![Cloudflare](https://img.shields.io/badge/Edge%20%26%20Security-Cloudflare-F38020?logo=cloudflare&logoColor=white) ![Python](https://img.shields.io/badge/Python-3.8%2B-blue?logo=python&logoColor=white)
 
@@ -8,10 +8,10 @@ An automated, end-to-end data platform built to extract, transform, and visualiz
 
 ---
 
-## 🌌 The Vision
+## The Vision
 Our mission is to turn raw, cumulative YouTube API metrics into deep, actionable insights for various **Hungarian YouTube channels**. We leverage the full power of the Snowflake Native stack to build a platform that is scalable, cost-efficient, and secure.
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
 ```mermaid
 graph LR
@@ -56,7 +56,7 @@ graph LR
 
 ---
 
-## 🧠 Agentic Development Methodology
+## Agentic Development Methodology
 This repository is built using an **Agentic AI Lifecycle**. Every line of code and architectural pivot is a collaboration between the Human Pilot and a team of specialized AI Personas:
 
 *   **Antigravity**: The Architectural Conscience & Project Mentor.
@@ -69,7 +69,7 @@ This repository is built using an **Agentic AI Lifecycle**. Every line of code a
 
 ---
 
-## 📚 Knowledge Base & Learning
+## Knowledge Base & Learning
 This project serves as a "Living Masterclass." Explore our domain-specific guides to learn the "Why" behind the architecture:
 
 *   📖 **[Agentic Framework](file:///Users/matu/git/YT-SF-Agentic/docs/knowledge_base/01_agentic_development/conceptual_framework.md)**: PRDs, ADRs, and the Atomic Task Rule.
@@ -85,7 +85,7 @@ This project serves as a "Living Masterclass." Explore our domain-specific guide
 ---
 
 
-## 📂 Project Structure
+## Project Structure
 *   📁 **[.agents/](file:///Users/matu/git/YT-SF-Agentic/.agents)**: Personas, rules, and ADRs.
 *   📁 **[.deployment/](file:///Users/matu/git/YT-SF-Agentic/.deployment)**: Custom Snowflake Deployer CLI ([deploy.py](file:///Users/matu/git/YT-SF-Agentic/.deployment/deploy.py)).
 *   📁 **[.setup/](file:///Users/matu/git/YT-SF-Agentic/.setup)**: Snowflake role, database, and user bootstrap scripts.
