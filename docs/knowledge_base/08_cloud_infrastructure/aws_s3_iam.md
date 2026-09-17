@@ -17,7 +17,7 @@ As part of our strategy to decouple analytical compute from public dashboard web
 Security is paramount. We do not use the root AWS account, nor do we hardcode credentials. We enforce the Principle of Least Privilege across two distinct identities:
 
 1.  **IAM Role (Snowflake Egress)**: `yt-sf-exporter-role`
-    *   **ARN**: `arn:aws:iam::994452066709:role/yt-sf-exporter-role`
+    *   **ARN**: `arn:aws:iam::ACCOUNTID:role/yt-sf-exporter-role`
     *   **Purpose**: Assumed natively by Snowflake's Storage Integration via AWS STS (`sts:AssumeRole`) during `COPY INTO` task executions. No long-lived credentials exist for this role.
     *   **Permissions Policy**: `YTMetricsS3AccessPolicy` attached directly to the role.
     *   **Trust Relationship (Trust Policy)**: Configured to allow Snowflake's specific IAM virtual user with an External ID condition:
@@ -43,7 +43,7 @@ Security is paramount. We do not use the root AWS account, nor do we hardcode cr
 ```
 
 2.  **IAM User (Streamlit Ingress)**: `yt-sf-exporter-user`
-    *   **ARN**: `arn:aws:iam::994452066709:user/yt-sf-exporter-user`
+    *   **ARN**: `arn:aws:iam::ACCOUNTID:user/yt-sf-exporter-user`
     *   **Purpose**: Programmatic-only user used exclusively by the Streamlit presentation container (DigitalOcean App Platform) to read Parquet files via `s3:GetObject`.
     *   **Access Keys**: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are stored strictly as encrypted environment variables in the hosting platform.
 
