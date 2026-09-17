@@ -613,6 +613,7 @@ def cmd_deploy(args):
                 summary_lines.append(f"| `{fp}` | ⚠️ Skipped | File missing |")
                 continue
 
+            sql = Path(fp).read_text()
             env_val = os.environ.get("SNOWFLAKE_ENVIRONMENT", "")
             for var in ("SNOWFLAKE_DATABASE", "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_ENVIRONMENT", "YOUTUBE_API_KEY", "S3_BUCKET_NAME"):
                 sql = sql.replace(f"{{{{{var}}}}}", os.environ.get(var, ""))
