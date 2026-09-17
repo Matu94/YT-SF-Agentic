@@ -40,10 +40,11 @@ BEGIN
     
     export_sql := 'COPY INTO @MART.S3_EXPORT_STAGE/' || LOWER(view_name) || '.parquet ' ||
                   'FROM (SELECT ' || select_list || ' FROM MART."' || view_name || '") ' ||
-                  'FILE_FORMAT = (TYPE = PARQUET) ' ||
+                  'FILE_FORMAT = (TYPE = PARQUET COMPRESSION = SNAPPY) ' ||
                   'HEADER = TRUE ' ||
                   'OVERWRITE = TRUE ' ||
-                  'SINGLE = TRUE;';
+                  'SINGLE = TRUE ' ||
+                  'MAX_FILE_SIZE = 5368709120;';
     
     EXECUTE IMMEDIATE :export_sql;
     result_msg := result_msg || view_name || ', ';
