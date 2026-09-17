@@ -7,11 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **S3 Development Environment Isolation**: Created dedicated AWS S3 bucket `yt-sf-metrics-data-dev` to maintain complete data isolation between DEV and PROD environments.
+- **Deployer Interpolation Features**: Enhanced `deploy.py` to support `{{SNOWFLAKE_ENVIRONMENT_LOWER}}` and `{{S3_BUCKET_NAME}}` placeholder interpolation for dynamic environment-specific stage URLs.
+
 ### Changed
-- **S3 Parquet Export**: Migrated Parquet data export from a GitHub Action python script to a native Snowflake Task using `COPY INTO` External Stage (ADR-016).
+- **S3 Parquet Export Pipeline**: Migrated Parquet data export from GitHub Actions Python runner to native Snowflake Task (`MART.EXPORT_MART_TO_S3_TASK`) and Stored Procedure (`MART.EXPORT_MART_TO_S3`) using `COPY INTO` External Stage ([ADR-016](.agents/knowledge/adr/ADR-016-snowflake-native-s3-export.md)).
+- **Export Task Schedule**: Configured daily execution trigger to `02:30 Europe/Budapest` running on `YT_SF_TRANSFORM_WH`.
 
 ### Removed
-- **Legacy Export Script**: Removed `.deployment/export_to_s3.py` and `.github/workflows/export_parquet_s3.yml`.
+- **Legacy Export Infrastructure**: Removed `.deployment/export_to_s3.py` and `.github/workflows/export_parquet_s3.yml`.
 
 ---
 

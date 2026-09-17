@@ -613,9 +613,10 @@ def cmd_deploy(args):
                 summary_lines.append(f"| `{fp}` | ⚠️ Skipped | File missing |")
                 continue
 
-            sql = Path(fp).read_text()
-            for var in ("SNOWFLAKE_DATABASE", "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_ENVIRONMENT", "YOUTUBE_API_KEY"):
+            env_val = os.environ.get("SNOWFLAKE_ENVIRONMENT", "")
+            for var in ("SNOWFLAKE_DATABASE", "SNOWFLAKE_WAREHOUSE", "SNOWFLAKE_ENVIRONMENT", "YOUTUBE_API_KEY", "S3_BUCKET_NAME"):
                 sql = sql.replace(f"{{{{{var}}}}}", os.environ.get(var, ""))
+            sql = sql.replace("{{SNOWFLAKE_ENVIRONMENT_LOWER}}", env_val.lower())
 
             fhash = file_hash(fp)
 

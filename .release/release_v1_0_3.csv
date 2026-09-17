@@ -11,3 +11,5 @@ snowflake/04_mart/06_procedures/01_export_parquet_to_s3.sql
 snowflake/04_mart/01_infrastructure/02_s3_export_stage.sql
 docs/database/mart.md
 .setup/snowflake/06_storage_integration.sql
+docs/knowledge_base/01_agentic_development/conceptual_framework.md
+.deployment/deploy.py
