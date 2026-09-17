@@ -11,9 +11,9 @@ While this approach successfully protected Snowflake compute costs from public w
 ## Decision
 We will deprecate the GitHub Actions Python export script in favor of a **Native Snowflake Task** that uses the `COPY INTO <location>` command to push Parquet files directly to our AWS S3 bucket.
 
-1. **Storage Integration & External Stage:** We will configure a Snowflake Storage Integration (`AWS_S3_INTEGRATION`) mapped to an IAM role, and create an External Stage pointing to the `s3://yt-sf-metrics-data-prod/mart/` prefix.
-2. **Native Extraction Procedure/Task:** We will implement a Snowflake Stored Procedure (or direct SQL Task) that dynamically loops over the presentation views and executes `COPY INTO @our_s3_stage/view_name.parquet FROM view_name FILE_FORMAT = (TYPE = PARQUET) HEADER = TRUE`.
-3. **Orchestration:** The native Task will be scheduled using Snowflake's built-in `SCHEDULE` engine, completely replacing the GitHub Actions cron.
+1. **Storage Integration & External Stage:** We will configure a Snowflake Storage Integration (`AWS_S3_INTEGRATION`) mapped to an IAM role, and create an External Stage dynamically pointing to the environment-specific bucket (`s3://yt-sf-metrics-data-dev/mart/` for DEV, `s3://yt-sf-metrics-data-prod/mart/` for PROD).
+2. **Native Extraction Procedure/Task:** We will implement a Snowflake Stored Procedure (`MART.EXPORT_MART_TO_S3`) that dynamically loops over the presentation views and executes `COPY INTO @S3_EXPORT_STAGE/view_name.parquet FROM view_name FILE_FORMAT = (TYPE = PARQUET) HEADER = TRUE OVERWRITE = TRUE SINGLE = TRUE`.
+3. **Orchestration:** The native Task (`MART.EXPORT_MART_TO_S3_TASK`) runs daily at `02:30 Europe/Budapest` on `YT_SF_TRANSFORM_WH`, completely replacing the GitHub Actions cron.
 4. **Clean-up:** The legacy `.github/workflows/export_parquet_s3.yml` and `.deployment/export_to_s3.py` files will be removed.
 
 ## Consequences

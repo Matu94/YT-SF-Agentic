@@ -48,3 +48,12 @@ Agentic systems must be flexible enough to pivot architecture when code optimiza
 *   **The Scenario**: Our presentation layer on Streamlit Community Cloud (1GB RAM limit) hit severe `Out of Memory` crashes.
 *   **The Agentic Process**: We did not immediately spend money. We first attempted aggressive algorithmic optimizations (`max_entries=2`, PyArrow, DuckDB pushdown) in Option C. Only when those physical limits were mathematically proven to be insufficient did we formally adopt a new architecture.
 *   **The Pivot**: We issued `ADR-014`, migrated to DigitalOcean App Platform (2GB RAM), and instantly propagated that context shift across all documentation (`READMEs`, `streamlit_hosting.md`, `deploy_process.md`) to maintain the single source of truth for future agents.
+
+## 8. The Native Warehouse Consolidation & Environment Isolation Pivot (ADR-016)
+Architecture should eliminate redundant hops and enforce strict environment isolation across third-party clouds.
+*   **The Scenario**: Our presentation layer decoupling was originally orchestrated via a GitHub Actions cron job executing a Python script that queried Snowflake, parsed data into Pandas DataFrames, serialized them into Parquet, and uploaded them to S3.
+*   **The Agentic Process**: We recognized two architectural vulnerabilities:
+    1. *Runner Fragility & Network Egress*: Passing analytical datasets through ephemeral GitHub Actions runners was slow, bottlenecked on memory, and introduced unnecessary operational dependencies.
+    2. *Environment Bleed*: Both DEV and PROD were initially writing into the same production S3 bucket, risking staging validation corrupting production metrics.
+*   **The Consolidation**: We authored `ADR-016`, eliminating the GitHub Action and intermediate Python script in favor of native Snowflake Tasks (`MART.EXPORT_MART_TO_S3_TASK`) and Stored Procedures executing `COPY INTO <location>` directly through Snowflake Storage Integrations.
+*   **The Multi-Environment Standard**: We provisioned an isolated `yt-sf-metrics-data-dev` bucket alongside `yt-sf-metrics-data-prod`, extended our deployment engine (`deploy.py`) with lowercase environment interpolation, and updated IAM policies and living documentation within the exact same release cycle.

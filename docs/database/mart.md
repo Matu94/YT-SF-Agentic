@@ -100,7 +100,7 @@ The `MART` schema is the presentation layer serving downstream data consumers (s
 
 ### 1.5 Export Pipeline (ADR-016)
 *   **`MART.S3_EXPORT_STAGE` (External Stage)**
-    *   **Purpose**: Pointing to the AWS S3 bucket `s3://yt-sf-metrics-data-prod/mart/` via the Storage Integration `YT_SF_{ENV}_AWS_S3_INTEGRATION`. Used as the destination for Parquet files.
+    *   **Purpose**: Points to the environment-specific AWS S3 bucket (`s3://yt-sf-metrics-data-dev/mart/` in DEV, `s3://yt-sf-metrics-data-prod/mart/` in PROD) via the Storage Integration `YT_SF_{ENV}_AWS_S3_INTEGRATION`. Used as the destination for Parquet files.
 *   **`MART.EXPORT_MART_TO_S3` (Stored Procedure)**
     *   **Purpose**: Dynamically queries the `INFORMATION_SCHEMA.VIEWS` to find all `RPT_%` presentation views and executes a `COPY INTO` command to export them to the external stage as Parquet files.
 *   **`MART.EXPORT_MART_TO_S3_TASK` (Task)**
