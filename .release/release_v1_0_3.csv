@@ -13,3 +13,4 @@ docs/database/mart.md
 .setup/snowflake/06_storage_integration.sql
 docs/knowledge_base/01_agentic_development/conceptual_framework.md
 .deployment/deploy.py
+.setup/snowflake/02_grant_init.sql
