@@ -14,50 +14,79 @@ As part of our strategy to decouple analytical compute from public dashboard web
 *   **Format**: Apache Parquet. We use Parquet because it is highly compressed, columnar, and native to Pandas, making it incredibly fast for Streamlit to download and load into memory.
 
 ### IAM (Identity and Access Management)
-Security is paramount. We do not use the root AWS account, nor do we hardcode credentials. We enforce the Principle of Least Privilege.
+Security is paramount. We do not use the root AWS account, nor do we hardcode credentials. We enforce the Principle of Least Privilege across two distinct identities:
 
-*   **IAM User**: `yt-sf-exporter-user`
-    *   This is a programmatic-access-only user. It has no AWS Console access.
-    *   Access Keys (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) are generated for this user and securely injected into our pipelines.
-*   **IAM Policy**: `YTMetricsS3AccessPolicy`
-    *   This custom policy is attached directly to the `yt-sf-exporter-user`.
-    *   It strictly limits the user's capabilities to only exactly what the pipeline requires across both environments.
+1.  **IAM Role (Snowflake Egress)**: `yt-sf-exporter-role`
+    *   **ARN**: `arn:aws:iam::994452066709:role/yt-sf-exporter-role`
+    *   **Purpose**: Assumed natively by Snowflake's Storage Integration via AWS STS (`sts:AssumeRole`) during `COPY INTO` task executions. No long-lived credentials exist for this role.
+    *   **Permissions Policy**: `YTMetricsS3AccessPolicy` attached directly to the role.
+    *   **Trust Relationship (Trust Policy)**: Configured to allow Snowflake's specific IAM virtual user with an External ID condition:
 
-#### Reference IAM Policy JSON:
 ```json
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:ListBucket"
-            ],
-            "Resource": [
-                "arn:aws:s3:::yt-sf-metrics-data-prod",
-                "arn:aws:s3:::yt-sf-metrics-data-dev"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "s3:PutObject",
-                "s3:GetObject"
-            ],
-            "Resource": [
-                "arn:aws:s3:::yt-sf-metrics-data-prod/*",
-                "arn:aws:s3:::yt-sf-metrics-data-dev/*"
-            ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::970547364499:user/e2gx0000-s"
+      },
+      "Action": "sts:AssumeRole",
+      "Condition": {
+        "StringEquals": {
+          "sts:ExternalId": "<STORAGE_AWS_EXTERNAL_ID_FROM_DESC_INTEGRATION>"
         }
-    ]
+      }
+    }
+  ]
 }
 ```
 
-## 3. Secret Injection Flow
+2.  **IAM User (Streamlit Ingress)**: `yt-sf-exporter-user`
+    *   **ARN**: `arn:aws:iam::994452066709:user/yt-sf-exporter-user`
+    *   **Purpose**: Programmatic-only user used exclusively by the Streamlit presentation container (DigitalOcean App Platform) to read Parquet files via `s3:GetObject`.
+    *   **Access Keys**: `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are stored strictly as encrypted environment variables in the hosting platform.
+
+#### Reference Permissions Policy (`YTMetricsS3AccessPolicy`):
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "BucketLevelAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation"
+      ],
+      "Resource": [
+        "arn:aws:s3:::yt-sf-metrics-data-prod",
+        "arn:aws:s3:::yt-sf-metrics-data-dev"
+      ]
+    },
+    {
+      "Sid": "ObjectLevelAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:AbortMultipartUpload"
+      ],
+      "Resource": [
+        "arn:aws:s3:::yt-sf-metrics-data-prod/*",
+        "arn:aws:s3:::yt-sf-metrics-data-dev/*"
+      ]
+    }
+  ]
+}
+```
+
+## 3. Secret Injection & Authentication Flow
 To maintain zero-trust security:
 
-1.  **Snowflake Data Warehouse**: AWS credentials are NOT stored as plain text. Instead, a Snowflake Storage Integration (`AWS_S3_INTEGRATION`) is configured to assume the `yt-sf-exporter-user` IAM Role. This provides secure, temporary credentials to the Snowflake engine to authenticate `PutObject` requests natively during the `COPY INTO` task execution (**ADR-016**).
-2.  **DigitalOcean App Platform**: The AWS Access Keys (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) are stored in DigitalOcean App Platform Environment Variables. The `data_loader.py` script reads them via `st.secrets` to authenticate the `GetObject` request when populating the dashboard.
+1.  **Snowflake Data Warehouse**: AWS credentials are NOT stored as plain text. Instead, Snowflake Storage Integrations (`YT_SF_{ENV}_AWS_S3_INTEGRATION`) use AWS STS to assume the `yt-sf-exporter-role`. Snowflake authenticates with temporary credentials to write Parquet files directly to S3 (**ADR-016**).
+2.  **DigitalOcean App Platform**: The AWS Access Keys (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`) are injected into DigitalOcean App Platform Environment Variables. The `data_loader.py` script uses them to authenticate read-only `GetObject` requests when serving the dashboard.
 
 ## 4. Cost Efficiency
 S3 storage costs for MBs of Parquet files are effectively $0.00 per month under the AWS Free Tier, and data transfer IN is free. Data transfer OUT (Streamlit pulling from S3) is pennies compared to the cost of spinning up a Snowflake Virtual Warehouse for every user session.
