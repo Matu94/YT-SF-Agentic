@@ -50,10 +50,10 @@ While the `deploy.py` engine remains the primary tool for **automated, idempoten
 *   **UI Synchronization**: Powering Streamlit applications natively from Git branches, ensuring the visualization layer is always aligned with the version-controlled code.
 
 ## 6. Static Data Export Pipeline (Streamlit Decoupling)
-To isolate analytical compute costs from public-facing dashboard traffic (**ADR-010**), the deployment architecture includes a daily data exfiltration pipeline:
-1. **GitHub Action (`export_parquet_s3.yml`)**: Executes daily at 03:22 Budapest time (01:22 UTC), automatically restricted to the `prod` branch and reading from `YT_SF_PROD`. Also supports manual on-demand execution from `dev` to export development data.
-2. **Python Exporter (`export_to_s3.py`)**: Interrogates 9 Snowflake presentation views (`MART.RPT_*`).
-3. **AWS S3 Gateway**: Transforms SQL results into heavily optimized Parquet binaries and statically publishes them to `s3://yt-sf-metrics-data-prod/mart/` allowing DigitalOcean App Platform to serve the data without executing warehouse compute queries.
+To isolate analytical compute costs from public-facing dashboard traffic (**ADR-010** and **ADR-016**), the deployment architecture includes a native daily data exfiltration pipeline:
+1. **Snowflake Task Orchestration**: A native Snowflake Task (`MART.EXPORT_MART_TO_S3_TASK`) executes daily at `02:30 AM Europe/Budapest` using `YT_SF_TRANSFORM_WH`, entirely removing the need for external GitHub Actions or Python scripts.
+2. **Native Parquet Export (`COPY INTO`)**: The stored procedure (`MART.EXPORT_MART_TO_S3`) dynamically queries Snowflake presentation views (`MART.RPT_*`) and executes native `COPY INTO @S3_EXPORT_STAGE/<view>.parquet` commands with compression and single-file serialization.
+3. **AWS S3 Gateway & Environmental Isolation**: Using Snowflake Storage Integrations (`YT_SF_{ENV}_AWS_S3_INTEGRATION`), the Parquet binaries are published to environment-specific S3 buckets: `s3://yt-sf-metrics-data-dev/mart/` in DEV and `s3://yt-sf-metrics-data-prod/mart/` in PROD. This keeps staging tests isolated from production while allowing the Streamlit application to serve data without warehouse compute queries.
 4. **Cloudflare Edge Shield & Custom Domain**: Public user requests hit Cloudflare's global edge network at **`https://ytmetrics.matudata.com`** (`ADR-015`), which offloads static asset caching and shields the single DigitalOcean container from volumetric spikes and crawlers.
 
 ## 7. Automated Safety Nets: Table Backup & Restore

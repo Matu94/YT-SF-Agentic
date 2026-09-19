@@ -1,0 +1,16 @@
+file_path
+docs/knowledge_base/08_cloud_infrastructure/aws_s3_iam.md
+docs/cicd/deploy_process.md
+README.md
+CHANGELOG.md
+.github/workflows/README.md
+.deployment/README.md
+.agents/knowledge/adr/ADR-016-snowflake-native-s3-export.md
+snowflake/04_mart/07_tasks/01_export_parquet_task.sql
+snowflake/04_mart/06_procedures/01_export_parquet_to_s3.sql
+snowflake/04_mart/01_infrastructure/02_s3_export_stage.sql
+docs/database/mart.md
+.setup/snowflake/06_storage_integration.sql
+docs/knowledge_base/01_agentic_development/conceptual_framework.md
+.deployment/deploy.py
+.setup/snowflake/02_grant_init.sql
