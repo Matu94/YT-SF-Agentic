@@ -12,7 +12,7 @@ This directory houses the foundational logic for synchronizing local SQL files w
 2.  **Lexicographical Execution Pipeline**:
     The script sweeps directories (e.g., `snowflake/`) recursively and naturally orders files alphabetically. Thanks to our numeric-prefix folder structure (e.g., `00_pre`, `01_landing`, `99_post`), the script guarantees that dependencies are created synchronously.
 3.  **Environment Variable Interpolation**:
-    If scripts contain placeholders like `{{SNOWFLAKE_DATABASE}}`, `{{SNOWFLAKE_WAREHOUSE}}`, or `{{YOUTUBE_API_KEY}}`, the Python engine evaluates and injects the live values immediately before piping them to Snowflake.
+    If scripts contain placeholders like `{{SNOWFLAKE_DATABASE}}`, `{{SNOWFLAKE_WAREHOUSE}}`, `{{SNOWFLAKE_ENVIRONMENT}}`, `{{SNOWFLAKE_ENVIRONMENT_LOWER}}`, `{{S3_BUCKET_NAME}}`, or `{{YOUTUBE_API_KEY}}`, the Python engine evaluates and injects the live values immediately before piping them to Snowflake. This enables dynamic routing such as environment-specific S3 bucket names (`s3://yt-sf-metrics-data-{{SNOWFLAKE_ENVIRONMENT_LOWER}}/mart/`).
 4.  **GitHub Native Summaries**:
     When running in CI/CD, the orchestrator detects the `$GITHUB_STEP_SUMMARY` environment variable and injects a formatted markdown table logging exactly which files succeeded, failed, or were intentionally skipped.
 
@@ -31,18 +31,3 @@ The script natively supports two tiers of authentication:
 
 To prevent common configuration errors, the deployment engine automatically strips leading and trailing whitespaces/newlines from all environment connection variables (`SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, etc.). Additionally, for key-pair authentication, it logs the SHA256 fingerprint of the loaded private key, simplifying validation against Snowflake's registered user public key fingerprint.
 
----
-
-## Data Exfiltration: `export_to_s3.py`
-
-While `deploy.py` handles **ingress** (pushing code into Snowflake), `export_to_s3.py` handles secure **egress** (extracting data out of Snowflake).
-
-### Purpose (ADR-010)
-To decouple the public-facing Streamlit dashboard from Snowflake's compute warehouses, this script executes a daily cron job that queries the 9 Presentation (`MART.RPT_*`) views, serializes the data into heavily optimized Parquet binaries using `pyarrow`, and uploads them directly to an AWS S3 Bucket.
-
-### Execution
-```bash
-python .deployment/export_to_s3.py
-```
-* **Authentication**: Shares the exact same Snowflake connection and SSO/Key-Pair logic as `deploy.py`.
-* **AWS Integration**: Requires `S3_BUCKET_NAME`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` to be present in the environment (`.env`).
