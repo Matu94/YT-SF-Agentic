@@ -38,13 +38,23 @@ BEGIN
     WHERE TABLE_SCHEMA = 'MART' 
       AND TABLE_NAME = :view_name;
     
-    export_sql := 'COPY INTO @MART.S3_EXPORT_STAGE/' || LOWER(view_name) || '.parquet ' ||
-                  'FROM (SELECT ' || select_list || ' FROM MART."' || view_name || '") ' ||
-                  'FILE_FORMAT = (TYPE = PARQUET COMPRESSION = SNAPPY) ' ||
-                  'HEADER = TRUE ' ||
-                  'OVERWRITE = TRUE ' ||
-                  'SINGLE = TRUE ' ||
-                  'MAX_FILE_SIZE = 5368709120;';
+    IF (view_name LIKE 'RPT_VIDEO_PERFORMANCE%') THEN
+      export_sql := 'COPY INTO @MART.S3_EXPORT_STAGE/' || LOWER(view_name) || '.parquet/ ' ||
+                    'FROM (SELECT ' || select_list || ' FROM MART."' || view_name || '") ' ||
+                    'PARTITION BY (''CHANNEL_TITLE='' || CHANNEL_TITLE) ' ||
+                    'FILE_FORMAT = (TYPE = PARQUET COMPRESSION = SNAPPY) ' ||
+                    'HEADER = TRUE ' ||
+                    'OVERWRITE = TRUE ' ||
+                    'MAX_FILE_SIZE = 5368709120;';
+    ELSE
+      export_sql := 'COPY INTO @MART.S3_EXPORT_STAGE/' || LOWER(view_name) || '.parquet ' ||
+                    'FROM (SELECT ' || select_list || ' FROM MART."' || view_name || '") ' ||
+                    'FILE_FORMAT = (TYPE = PARQUET COMPRESSION = SNAPPY) ' ||
+                    'HEADER = TRUE ' ||
+                    'OVERWRITE = TRUE ' ||
+                    'SINGLE = TRUE ' ||
+                    'MAX_FILE_SIZE = 5368709120;';
+    END IF;
     
     EXECUTE IMMEDIATE :export_sql;
     result_msg := result_msg || view_name || ', ';

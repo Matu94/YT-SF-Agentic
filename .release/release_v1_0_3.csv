@@ -14,3 +14,5 @@ docs/database/mart.md
 docs/knowledge_base/01_agentic_development/conceptual_framework.md
 .deployment/deploy.py
 .setup/snowflake/02_grant_init.sql
+.agents/knowledge/adr/ADR-017-snowflake-native-hive-partitioning.md
+streamlit/utils/data_loader.py
