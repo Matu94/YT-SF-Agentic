@@ -160,7 +160,7 @@ def load_video_trend_agg(table_name: str, selected_channels: list, days_back: in
     if os.path.exists(local_path):
         if os.path.isdir(local_path):
             import urllib.parse
-            exact_paths = [f"{local_path}/CHANNEL_TITLE={urllib.parse.quote(c)}/*.parquet" for c in selected_channels]
+            exact_paths = [f"{local_path}/CHANNEL_TITLE={c}/*.parquet" for c in selected_channels]
             target_path_sql = "[" + ", ".join([f"'{p}'" for p in exact_paths]) + "]"
         else:
             target_path_sql = f"'{local_path}'"
@@ -172,7 +172,7 @@ def load_video_trend_agg(table_name: str, selected_channels: list, days_back: in
         if aws_key and aws_secret:
             con.execute(f"SET s3_region='{aws_region}'; SET s3_access_key_id='{aws_key}'; SET s3_secret_access_key='{aws_secret}';")
         import urllib.parse
-        exact_paths = [f"s3://{bucket_name}/mart/{table_name.lower()}.parquet/CHANNEL_TITLE={urllib.parse.quote(c)}/*.parquet" for c in selected_channels]
+        exact_paths = [f"s3://{bucket_name}/mart/{table_name.lower()}.parquet/CHANNEL_TITLE={c}/*.parquet" for c in selected_channels]
         target_path_sql = "[" + ", ".join([f"'{p}'" for p in exact_paths]) + "]"
             
     query = f"SELECT METRIC_DATE, CHANNEL_TITLE{vt_select}, SUM({metric_col}) as {metric_col} FROM read_parquet({target_path_sql}, hive_partitioning=1) WHERE CHANNEL_TITLE IN ({channels_str}) AND METRIC_DATE >= CURRENT_DATE() - INTERVAL {days_back} DAY GROUP BY METRIC_DATE, CHANNEL_TITLE{vt_group}"
@@ -204,14 +204,14 @@ def load_video_snapshot_top(table_name: str, selected_channels: list) -> pd.Data
     if os.path.exists(local_path):
         if os.path.isdir(local_path):
             import urllib.parse
-            exact_paths = [f"{local_path}/CHANNEL_TITLE={urllib.parse.quote(c)}/*.parquet" for c in selected_channels]
+            exact_paths = [f"{local_path}/CHANNEL_TITLE={c}/*.parquet" for c in selected_channels]
             target_path_sql = "[" + ", ".join([f"'{p}'" for p in exact_paths]) + "]"
         else:
             target_path_sql = f"'{local_path}'"
     else:
         bucket_name = _get_config("S3_BUCKET_NAME", "yt-sf-metrics-data-prod")
         import urllib.parse
-        exact_paths = [f"s3://{bucket_name}/mart/{table_name.lower()}.parquet/CHANNEL_TITLE={urllib.parse.quote(c)}/*.parquet" for c in selected_channels]
+        exact_paths = [f"s3://{bucket_name}/mart/{table_name.lower()}.parquet/CHANNEL_TITLE={c}/*.parquet" for c in selected_channels]
         target_path_sql = "[" + ", ".join([f"'{p}'" for p in exact_paths]) + "]"
             
     query = f"SELECT * FROM read_parquet({target_path_sql}, hive_partitioning=1) WHERE CHANNEL_TITLE IN ({channels_str}) AND METRIC_DATE = (SELECT MAX(METRIC_DATE) FROM read_parquet({target_path_sql}, hive_partitioning=1) WHERE CHANNEL_TITLE IN ({channels_str}))"
