@@ -58,7 +58,7 @@ def render_video_leaderboard_tab(df, metric_col, metric_label, tab_icon):
         return
 
     # Top 3 KPIs
-    top_3 = df.nlargest(3, metric_col)
+    top_3 = df.sort_values(by=metric_col, ascending=False).head(3)
     
     col1, col2, col3 = st.columns(3)
     kpi_cols = [col1, col2, col3]
@@ -77,7 +77,7 @@ def render_video_leaderboard_tab(df, metric_col, metric_label, tab_icon):
     st.divider()
     
     st.subheader(f"Top 10 by {metric_label}")
-    top_10 = df.nlargest(10, metric_col).copy()
+    top_10 = df.sort_values(by=metric_col, ascending=False).head(10).copy()
     top_10['SHORT_TITLE'] = top_10['VIDEO_TITLE'].apply(lambda x: x[:40] + '...' if len(str(x)) > 40 else x)
     
     chart = alt.Chart(top_10).mark_bar().encode(
@@ -98,7 +98,7 @@ def render_video_leaderboard_tab(df, metric_col, metric_label, tab_icon):
     st.divider()
     
     st.subheader(f"Top 50 Data Grid")
-    top_50 = df.nlargest(50, metric_col).copy()
+    top_50 = df.sort_values(by=metric_col, ascending=False).head(50).copy()
     top_50['VIDEO_URL'] = "https://www.youtube.com/watch?v=" + top_50['VIDEO_ID']
     
     display_cols = ['VIDEO_TITLE', 'VIDEO_URL', 'CHANNEL_TITLE', 'ORGANIZATION', 'METRIC_DATE', metric_col]
@@ -141,7 +141,7 @@ def render_channel_leaderboard_tab(df_latest, metric_col, metric_label, tab_icon
         return
 
     # Top 3 KPIs
-    top_3 = df_latest.nlargest(3, metric_col)
+    top_3 = df_latest.sort_values(by=metric_col, ascending=False).head(3)
     
     col1, col2, col3 = st.columns(3)
     kpi_cols = [col1, col2, col3]
@@ -158,7 +158,7 @@ def render_channel_leaderboard_tab(df_latest, metric_col, metric_label, tab_icon
     st.divider()
     
     st.subheader(f"Top 10 Channels by {metric_label}")
-    top_10 = df_latest.nlargest(10, metric_col).copy()
+    top_10 = df_latest.sort_values(by=metric_col, ascending=False).head(10).copy()
     
     chart = alt.Chart(top_10).mark_bar().encode(
         x=alt.X(f'{metric_col}:Q', title=metric_label),
@@ -185,7 +185,7 @@ def render_channel_leaderboard_tab(df_latest, metric_col, metric_label, tab_icon
         metric_col: metric_label
     }
     
-    top_50 = df_latest.nlargest(50, metric_col).copy()
+    top_50 = df_latest.sort_values(by=metric_col, ascending=False).head(50).copy()
     display_df = top_50[display_cols].rename(columns=rename_dict)
     
     if 'Report Date' in display_df.columns:
