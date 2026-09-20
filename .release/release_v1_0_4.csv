@@ -1,4 +1,0 @@
-file_path
-.agents/knowledge/adr/ADR-017-snowflake-native-hive-partitioning.md
-streamlit/utils/data_loader.py
-snowflake/04_mart/06_procedures/01_export_parquet_to_s3.sql
