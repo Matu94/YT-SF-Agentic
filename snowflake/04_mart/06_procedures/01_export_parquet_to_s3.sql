@@ -39,12 +39,12 @@ BEGIN
       AND TABLE_NAME = :view_name;
     
     IF (view_name LIKE 'RPT_VIDEO_PERFORMANCE%') THEN
+      EXECUTE IMMEDIATE 'REMOVE @MART.S3_EXPORT_STAGE/' || LOWER(view_name) || '.parquet/';
       export_sql := 'COPY INTO @MART.S3_EXPORT_STAGE/' || LOWER(view_name) || '.parquet/ ' ||
                     'FROM (SELECT ' || select_list || ' FROM MART."' || view_name || '") ' ||
                     'PARTITION BY (''CHANNEL_TITLE='' || CHANNEL_TITLE) ' ||
                     'FILE_FORMAT = (TYPE = PARQUET COMPRESSION = SNAPPY) ' ||
                     'HEADER = TRUE ' ||
-                    'OVERWRITE = TRUE ' ||
                     'MAX_FILE_SIZE = 5368709120;';
     ELSE
       export_sql := 'COPY INTO @MART.S3_EXPORT_STAGE/' || LOWER(view_name) || '.parquet ' ||
