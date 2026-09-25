@@ -57,3 +57,12 @@ Architecture should eliminate redundant hops and enforce strict environment isol
     2. *Environment Bleed*: Both DEV and PROD were initially writing into the same production S3 bucket, risking staging validation corrupting production metrics.
 *   **The Consolidation**: We authored `ADR-016`, eliminating the GitHub Action and intermediate Python script in favor of native Snowflake Tasks (`MART.EXPORT_MART_TO_S3_TASK`) and Stored Procedures executing `COPY INTO <location>` directly through Snowflake Storage Integrations.
 *   **The Multi-Environment Standard**: We provisioned an isolated `yt-sf-metrics-data-dev` bucket alongside `yt-sf-metrics-data-prod`, extended our deployment engine (`deploy.py`) with lowercase environment interpolation, and updated IAM policies and living documentation within the exact same release cycle.
+
+## 9. The Mandatory Agent Directives: Changelog & Release Ledger Governance
+To eliminate "human cleanup debt," every agent persona is bound to `.agents/rules/05-documentation.md`.
+*   **The Vulnerability**: Agents previously wrote high-quality code and modified schemas, but failed to record their work in `CHANGELOG.md` or register altered files in `.release/release_v*.csv`. Because our production promotion workflow (`create-release-branch.yml`) strictly cherry-picks *only* files listed in the release CSV, unregistered assets were orphaned on `dev`.
+*   **The Architectural Standard**: All agent personas (`Data Architect`, `Data Engineer`, `DevOps Engineer`, `BI Developer`, `Data Analyst`, `Product Manager`, `Antigravity`) are explicitly codified to mandate:
+    1.  *Atomic Changelog Maintenance*: Logging all additions, changes, and fixes immediately under `## [Unreleased]` adhering to Keep a Changelog standards.
+    2.  *Manifest Ledger Registration*: Appending all modified or created repository asset paths to the active target `.release/release_v<target>.csv`.
+    3.  *Strict Persona Verification*: Antigravity acts as the project gatekeeper, blocking promotion or PR completion if these two artifacts are missing.
+
