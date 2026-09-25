@@ -8,6 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Agent Governance & Persona Directives**: Bound all seven agent personas (`antigravity.md`, `bi_developer.md`, `data_analyst.md`, `data_architect.md`, `data_engineer.md`, `devops_engineer.md`, `product_manager.md`) directly to `.agents/rules/05-documentation.md`, enforcing mandatory `CHANGELOG.md` updates and `.release/release_v*.csv` manifest registrations for every task.
+- **Data Analyst Persona Documentation**: Integrated and hyperlinked the Senior Business Analyst & YouTube Data Analyst persona in `README.md` with detailed responsibilities for cross-view metric reconciliation, upper-bound date compliance, and performance analytics.
+- **Agentic Knowledge Base Evolution**: Added Section 9 to `docs/knowledge_base/01_agentic_development/conceptual_framework.md` detailing the architectural vulnerability of unmanifested artifacts and the new mandatory agent directives.
+
+---
+
+## [1.0.4] - 2026-09-20
+
+### Fixed
+- **Streamlit Leaderboard Metric Sorting**: Replaced `df.nlargest()` with `.sort_values(by=metric_col, ascending=False).head()` in `render_video_leaderboard_tab` and `render_channel_leaderboard_tab` (`streamlit/pages/2_Leaderboard.py`), resolving a Cython `TypeError: No matching signature found` runtime crash caused by Parquet/PyArrow data types.
+
+---
+
+## [1.0.3] - 2026-09-19
+
+### Added
 - **S3 Development Environment Isolation**: Created dedicated AWS S3 bucket `yt-sf-metrics-data-dev` to maintain complete data isolation between DEV and PROD environments.
 - **Deployer Interpolation Features**: Enhanced `deploy.py` to support `{{SNOWFLAKE_ENVIRONMENT_LOWER}}` and `{{S3_BUCKET_NAME}}` placeholder interpolation for dynamic environment-specific stage URLs.
 
