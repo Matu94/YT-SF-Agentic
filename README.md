@@ -59,13 +59,13 @@ graph LR
 ## Agentic Development Methodology
 This repository is built using an **Agentic AI Lifecycle**. Every line of code and architectural pivot is a collaboration between the Human Pilot and a team of specialized AI Personas:
 
-*   **Antigravity**: The Architectural Conscience & Project Mentor.
-*   **Data Architect**: Strategic visionary for modeling and security.
-*   **Data Engineer**: Precision builder of dbt models and SQL logic.
-*   **DevOps Engineer**: Master of automation and the GitOps pipeline.
-*   **Product Manager**: Bridge between business vision and engineering requirements.
-*   **BI Developer**: Designer of interactive dark-mode dashboards for content performance exploration.
-*   **Senior Business Analyst & Data Analyst**: Domain expert for cross-view metric reconciliation, data integrity auditing, and business insight generation.
+*   [**Antigravity**](.agents/personas/antigravity.md): The Architectural Conscience & Project Mentor. Ensures rule compliance, context hygiene, release manifest enforcement, and living documentation integrity.
+*   [**Data Architect**](.agents/personas/data_architect.md): Strategic visionary for Kimball dimensional modeling, RBAC security, and Snowflake compute isolation.
+*   [**Data Engineer**](.agents/personas/data_engineer.md): Precision builder of Snowpark Python ingestion procedures, dbt models, and idempotent SQL transformations.
+*   [**DevOps Engineer**](.agents/personas/devops_engineer.md): Master of CI/CD automation, GitOps deployment pipelines, SHA256 checksum tracking, and environment promotions.
+*   [**Product Manager**](.agents/personas/product_manager.md): Bridge between business vision and engineering requirements, governing PRD scope and channel metadata hierarchy.
+*   [**BI Developer**](.agents/personas/bi_developer.md): Designer of dark-mode Streamlit dashboards, Altair visual analytics, and cached S3 Parquet consumption.
+*   [**Senior Business Analyst & YouTube Data Analyst**](.agents/personas/data_analyst.md): Domain authority for presentation/mart reporting views (`rpt_*`), cross-view mathematical reconciliation (verifying that 7-day/30-day rolling sums accurately aggregate underlying daily deltas), $T-1$ upper-bound date compliance audits, and actionable creator/network performance insights.
 
 ---
 
