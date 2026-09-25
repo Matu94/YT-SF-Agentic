@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.5] - 2026-09-25
 
 ### Added
 - **Agent Governance & Persona Directives**: Bound all seven agent personas (`antigravity.md`, `bi_developer.md`, `data_analyst.md`, `data_architect.md`, `data_engineer.md`, `devops_engineer.md`, `product_manager.md`) directly to `.agents/rules/05-documentation.md`, enforcing mandatory `CHANGELOG.md` updates and `.release/release_v*.csv` manifest registrations for every task.
