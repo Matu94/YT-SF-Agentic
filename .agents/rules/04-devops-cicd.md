@@ -28,3 +28,7 @@ trigger: always_on
 ## 5. Deployment Framework Expectations
 * **Numerical Prefixing for Execution Order:** The `.deployment/deploy.py` script relies on Python's built-in lexicographical sorting to evaluate the execution sequence. You must always use zero-padded integer prefixes in paths (e.g., `00_pre_hooks`, `01_landing`, `99_post_hooks`) to guarantee absolute execution ordering.
 * **Seeding Existing State:** The pipeline supports a `make seed` CLI utility. Use this to explicitly register `.sql` files into the Snowflake tracking history (`TECH.DEPLOYMENT_FILE_HISTORY`) so they are inherently skipped by future `deploy` commands.
+
+## 6. Release Manifest Governance (`.release/*.csv`)
+* **Strict Promotion Ledger:** Promotion to `prod` via `.github/workflows/create-release-branch.yml` relies exclusively on an approved CSV manifest (e.g., `.release/release_v1_0_5.csv`).
+* **Mandatory Manifest Registration:** Any PR or feature branch introducing new or modified files intended for release **MUST** register their relative repository paths in the active target release CSV. Files omitted from this manifest are not cherry-picked during release branch creation and will fail to deploy to production.
