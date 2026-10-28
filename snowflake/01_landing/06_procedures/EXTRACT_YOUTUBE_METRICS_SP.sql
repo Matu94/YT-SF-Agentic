@@ -104,8 +104,11 @@ def fetch_video_batch_payload(http, batch_ids, api_key):
 
 def main(session):
     try:
-        # Set session timezone to Budapest to ensure EXTRACTED_AT defaults correctly (ADR-005)
+        # Set session timezone and ensure an active schema context exists
+        # (Required when called manually from a Worksheet with no schema selected, as Snowpark bulk create_dataframe creates/drops temp objects)
         session.sql("ALTER SESSION SET TIMEZONE = 'Europe/Budapest'").collect()
+        if not session.get_current_schema():
+            session.sql("USE SCHEMA {{SNOWFLAKE_DATABASE}}.LANDING").collect()
 
         # Truncate the transient landing table before each new extraction run
         session.sql("TRUNCATE TABLE {{SNOWFLAKE_DATABASE}}.LANDING.YOUTUBE_RAW_DATA").collect()
