@@ -1,4 +1,5 @@
 file_path
 .agents/knowledge/adr/ADR-018-snowpark-api-extraction-optimization.md
 docs/knowledge_base/01_agentic_development/conceptual_framework.md
+docs/knowledge_base/02_snowflake/architecture_patterns.md
 CHANGELOG.md

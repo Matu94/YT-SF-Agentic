@@ -35,6 +35,10 @@ Snowflake isn't just for SQL. We use **Snowpark (Python)** to call the YouTube A
 *   **Network Rules**: Whitelist specific domains (`youtube.googleapis.com`).
 *   **Secrets**: Store API keys securely in the `TECH` schema so they are never visible in code.
 *   **External Access Integrations**: Bind the Rule and the Secret together, allowing our Python Stored Procedures to "reach out" to the internet securely.
+*   **The Bulk Micro-Partition Ingestion Pattern (ADR-018)**: Because Snowflake is a columnar OLAP engine backed by immutable S3 micro-partitions, executing individual `INSERT` statements inside a Python `for` loop is a severe anti-pattern that triggers hundreds of query compilations, table locks, and tiny micro-partition commits while the warehouse bills by the second. Snowpark ingestion procedures must always:
+    1.  Batch outbound API calls to the maximum supported endpoint payload size (50 IDs per request for YouTube Data API v3) and pool video IDs globally across channels before slicing into 50-ID batches.
+    2.  Execute network I/O concurrently (`ThreadPoolExecutor` + `requests.Session()` with exponential backoff retries) so warehouse compute is never blocked on serial HTTP latency.
+    3.  Accumulate all JSON payloads in memory and perform a **single atomic bulk write** at the end of the procedure, minimizing micro-partition fragmentation and guaranteeing a single deterministic `EXTRACTED_AT` timestamp across the entire run.
 
 ## 6. Data Protection (Zero-Copy Cloning)
 Our **`TECH_BKP`** schema leverages Snowflake's **Zero-Copy Cloning**.
