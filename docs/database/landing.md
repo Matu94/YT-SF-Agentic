@@ -30,14 +30,14 @@ To prevent infinite storage accumulation and keep Snowflake operations lightweig
 
 ### 1.4 Stored Procedures
 *   **`LANDING.EXTRACT_YOUTUBE_METRICS_SP` (Snowpark Python)**
-    *   **Purpose**: Programmatically connects to the YouTube API using External Network Access, queries channel and video metrics, parses the raw payload structure, and inserts it into `LANDING.YOUTUBE_RAW_DATA`.
+    *   **Purpose**: Programmatically connects to the YouTube API using External Network Access, queries channel and video metrics concurrently, accumulates the raw JSON payloads in memory, and performs a single atomic bulk insert into `LANDING.YOUTUBE_RAW_DATA` (per [ADR-018](../../.agents/knowledge/adr/ADR-018-snowpark-api-extraction-optimization.md)).
     *   **Flow**:
         1. Sets session/account timezone context to `Europe/Budapest` (guaranteeing `CURRENT_DATE()` alignment across morning loads per ADR-005).
         2. Truncates `LANDING.YOUTUBE_RAW_DATA`.
-        3. Fetches details for the targeted channels (configured inside the procedure).
-        4. Extracts the "uploads" playlist for each channel and paginates through all video IDs.
-        5. Batches video queries (max 50 per call) to retrieve stats (views, likes, comments, duration).
-        6. Inserts raw JSON payloads into the table.
+        3. Fetches channel details in chunks of up to 50 channel IDs per API call using a connection-pooled `requests.Session()` with exponential backoff retries (`HTTPAdapter` + `Retry`).
+        4. Concurrently paginates through all channels' `uploads` playlists via `ThreadPoolExecutor(max_workers=8)` with per-channel fault isolation, pooling and deduplicating all discovered video IDs globally.
+        5. Slices the global video ID pool into exact 50-ID batches and concurrently fetches video statistics (`snippet,contentDetails,statistics`) across worker threads.
+        6. Performs a **single atomic bulk write** (`session.create_dataframe` + `PARSE_JSON` + `save_as_table(..., mode="append")`) into `LANDING.YOUTUBE_RAW_DATA`, ensuring all rows share an identical `EXTRACTED_AT` timestamp and eliminating row-by-row DML overhead.
 
 ### 1.5 Tasks
 *   **`LANDING.LOAD_YOUTUBE_API_DATA_TASK`**

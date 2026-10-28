@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.7] - 2026-10-28
+
+### Added
+- **Architecture Decision Record (ADR-018)**: Authored and architecturally validated `.agents/knowledge/adr/ADR-018-snowpark-api-extraction-optimization.md` mandating in-memory payload batching, single atomic bulk DML writes, 50-ID channel chunking, global cross-channel video ID pooling, and resilient concurrent HTTP fetching (`ThreadPoolExecutor` + `Retry`) inside `LANDING.EXTRACT_YOUTUBE_METRICS_SP`.
+- **Agentic Conceptual Framework (Section 10)**: Documented the principle of *Algorithmic Optimization Over Premature Architectural Migration (ADR-018)* in `docs/knowledge_base/01_agentic_development/conceptual_framework.md`.
+- **Snowflake Architecture Patterns (Section 5)**: Documented *The Bulk Micro-Partition Ingestion Pattern (ADR-018)* in `docs/knowledge_base/02_snowflake/architecture_patterns.md`.
+- **Release Manifest (`v1.0.7`)**: Initialized `.release/release_v1_0_7.csv` to track artifacts for the API extraction optimization release.
+
+### Changed
+- **Snowpark YouTube Extraction Procedure (`ADR-018`)**: Refactored `snowflake/01_landing/06_procedures/EXTRACT_YOUTUBE_METRICS_SP.sql` to batch `/channels` lookups (up to 50 IDs/call), parallelize `playlistItems` pagination and `/videos` batch requests via `ThreadPoolExecutor(max_workers=8)` with `Retry` backoff, pool video IDs globally across channels before slicing into 50-ID batches, ensure active session schema context for Snowpark temporary staging, and flush all JSON payloads in a single atomic Snowpark DataFrame bulk write into `LANDING.YOUTUBE_RAW_DATA`.
+- **Landing Layer Documentation**: Updated `docs/database/landing.md` to reflect the concurrent bulk ingestion flow of `LANDING.EXTRACT_YOUTUBE_METRICS_SP`.
+
+---
+
 ## [1.0.6] - 2026-10-16
 
 ### Added
