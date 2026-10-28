@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Architecture Decision Record (ADR-018)**: Authored `.agents/knowledge/adr/ADR-018-snowpark-api-extraction-optimization.md` mandating in-memory payload batching, single bulk DML writes, 50-channel API request batching, and concurrent HTTP fetching (`ThreadPoolExecutor`) inside `LANDING.EXTRACT_YOUTUBE_METRICS_SP` instead of migrating ingestion out of Snowflake.
+- **Agentic Conceptual Framework (Section 10)**: Documented the principle of *Algorithmic Optimization Over Premature Architectural Migration (ADR-018)* in `docs/knowledge_base/01_agentic_development/conceptual_framework.md`.
+- **Release Manifest (`v1.0.7`)**: Initialized `.release/release_v1_0_7.csv` to track artifacts for the API extraction optimization release.
+
 ---
 
 ## [1.0.6] - 2026-10-16
