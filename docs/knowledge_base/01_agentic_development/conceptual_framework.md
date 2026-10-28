@@ -66,3 +66,10 @@ To eliminate "human cleanup debt," every agent persona is bound to `.agents/rule
     2.  *Manifest Ledger Registration*: Appending all modified or created repository asset paths to the active target `.release/release_v<target>.csv`.
     3.  *Strict Persona Verification*: Antigravity acts as the project gatekeeper, blocking promotion or PR completion if these two artifacts are missing.
 
+## 10. Algorithmic Optimization Over Premature Architectural Migration (ADR-018)
+When a cloud workload becomes expensive, the default human impulse is often to migrate the workload to another platform. An governed agentic system must first diagnose whether the cost is caused by **architectural limits** or **algorithmic anti-patterns**.
+*   **The Scenario**: As channel volume grew to 44+ channels, the daily Snowpark extraction (`LANDING.EXTRACT_YOUTUBE_METRICS_SP`) consumed excessive Snowflake credits on `YT_SF_LOAD_WH`, prompting consideration of moving extraction out of Snowflake to GitHub Actions or AWS Lambda.
+*   **The Agentic Audit**: Antigravity evaluated the proposal against `.agents/rules/00-product-vision.md` (which mandates native Snowpark extraction) and `ADR-016` (which explicitly consolidated external schedulers into native Snowflake Tasks). Inspecting the procedure revealed an OLTP anti-pattern: executing hundreds of individual single-row `INSERT INTO ... SELECT PARSE_JSON(...)` statements inside synchronous HTTP loops.
+*   **The Resolution**: Rather than fracturing the architecture and re-introducing external runners, we issued `ADR-018` to refactor the Snowpark procedure with in-memory payload accumulation, a single bulk write, 50-ID channel request batching, and `ThreadPoolExecutor` concurrency—cutting credit consumption by >90% while preserving 100% architectural integrity.
+
+
